@@ -1,12 +1,21 @@
 --Jesse A. Jones
---12 Apr, 2023
---Toy Programming Language Named Ecks Dee
+--24 Apr, 2023
+--Toy Programming Language Named EcksDee
 
 import Data.List
 import Data.Char
 import Data.Maybe 
 import Debug.Trace
 import qualified Data.Map.Strict as M
+
+-- data Value =                                         --UNCOMMENT LATER
+--         BigInteger Integer
+--     |   Integer Int
+--     |   Float Float
+--     |   String String
+--     |   Char Char
+--     |   Array [Value]
+--     deriving (Eq, Show)
 
 -- or it can be an operation, which has a string name.
 -- the program "2 2 +" would have tokens [ I 2, I 2, Op "+" ] 
@@ -229,6 +238,24 @@ astNodeToString (Terminal (Word w)) = w
 astNodeToFloat :: AstNode -> Float
 astNodeToFloat (Terminal (Val v)) = v
 
+makeVar :: ForthState -> String -> ForthState
+makeVar state varName = 
+    let lkup = M.lookup varName (names state)
+    --Throw error if variable exists. Otherwise, make variable by inserting it into hash table.
+    in case lkup of
+        Just _ -> error "Variable Mak Error: Variable already exists."
+        Nothing -> let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
+            in ForthState{stack = (stack state), names = names'}
+
+mutateVar :: ForthState -> String -> ForthState
+mutateVar state varName =
+    let lkup = M.lookup varName (names state)
+    --If variable exists it can be mutated. Otherwise, an error is thrown.
+    in case lkup of
+        Just value -> let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
+            in ForthState{stack = (stack state), names = names'}
+        Nothing -> error "Variable Mut Error: Variable doesn't exist or was deleted"
+
 -- execute an AstNode
 doNode :: AstNode -> ForthState -> ForthState
 
@@ -249,11 +276,11 @@ doNode (Expression((Function {funcName = name, funcBod = body}):rest)) state =
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
-        "mak" -> let lkup = M.lookup (astNodeToString name) (names state) 
-                 in case lkup of
-                     Just _ -> error "Variable Mak Error: Variable already exists"
-                     Nothing -> let names' = M.insert (astNodeToString name) (Terminal $ Val $ fsTop state) (names state)
-                           in doNode (Expression rest) (ForthState{stack = (stack state), names = names'}) 
+        "mak" -> if null (stack state) 
+            then error "Variable Mak Error: Can't create variable when stack is empty."
+            else
+                doNode (Expression rest) (makeVar state (astNodeToString name))
+                           
 
         "get" -> let lkup = M.lookup (astNodeToString name) (names state) 
                  in case lkup of
@@ -267,11 +294,10 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                            in doNode (Expression rest) (ForthState{stack = (stack state), names = names'})
                     Nothing -> error "Variable Del Error: Variable doesn't exist" 
 
-        "mut" -> let lkup = M.lookup (astNodeToString name) (names state) 
-                 in case lkup of
-                    Just value -> let names' = M.insert (astNodeToString name) (Terminal $ Val $ fsTop state) (names state)
-                           in doNode (Expression rest) (ForthState{stack = (stack state), names = names'})
-                    Nothing -> error "Variable Mut Error: Variable doesn't exist"
+        "mut" -> if null (stack state) 
+            then error "Variable Mut Error: Can't mutate variable when stack is empty."
+            else
+                doNode (Expression rest) (mutateVar state (astNodeToString name))
 
         _ -> error "Variable Command Error: Invalid variable command given. Valid: mak, get, mut, del"
 
