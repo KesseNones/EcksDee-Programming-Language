@@ -1,5 +1,5 @@
 --Jesse A. Jones
---24 Apr, 2023
+--25 Apr, 2023
 --Toy Programming Language Named EcksDee
 
 import Data.List
@@ -40,7 +40,7 @@ data AstNode =
         -- a list of nodes. Represents a sequence of instructions like "1 1 + 2 *"
     |   Expression [ AstNode ]
 
-    |   Function {funcName :: AstNode, funcBod :: AstNode}
+    |   Function {funcCmd :: AstNode, funcName :: AstNode, funcBod :: AstNode}
 
     |   Variable {varName :: AstNode, varCmd :: AstNode}
 
@@ -209,28 +209,23 @@ doLessThanEqualTo state =
 -- and push the result. 
 doOp :: String -> ForthState -> ForthState
 -- here's how we turn the strings into their corresponding operation. 
-doOp "+" state = doAdd state
-doOp "-" state = doSub state
-doOp "*" state = doMul state
-doOp "/" state = doDiv state 
-doOp "swap" state = doSwap state 
-doOp "drop" state = doDrop state 
-doOp "rot" state = doRot state 
-doOp "dup" state = doDup state
-doOp "==" state = doEqual state
-doOp "/=" state = doNotEqual state
-doOp ">" state = doGreaterThan state
-doOp "<" state = doLessThan state
-doOp ">=" state = doGreaterThanEqualTo state
-doOp "<=" state = doLessThanEqualTo state
+doOp "+"  = doAdd
+doOp "-"  = doSub
+doOp "*"  = doMul
+doOp "/"  = doDiv  
+doOp "swap"  = doSwap  
+doOp "drop"  = doDrop  
+doOp "rot"  = doRot  
+doOp "dup"  = doDup 
+doOp "=="  = doEqual 
+doOp "/="  = doNotEqual 
+doOp ">"  = doGreaterThan 
+doOp "<"  = doLessThan 
+doOp ">="  = doGreaterThanEqualTo 
+doOp "<=" = doLessThanEqualTo 
 
--- if we go through all the definitions without finding our operation, 
--- it's not supported unless it's a function call. 
-doOp op state = 
-    let funcBod = M.lookup op (names state)
-    in case funcBod of
-        Just funcBod -> doNode funcBod state
-        Nothing -> error $ "unrecognized word: " ++ op 
+-- Error thrown if reached here.
+doOp op = error $ "unrecognized word: " ++ op 
 
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
@@ -256,6 +251,21 @@ mutateVar state varName =
             in ForthState{stack = (stack state), names = names'}
         Nothing -> error "Variable Mut Error: Variable doesn't exist or was deleted"
 
+funcDef :: ForthState -> String -> AstNode -> ForthState
+funcDef state funcName funcBod = 
+    let look = M.lookup funcName (names state)
+    in case look of 
+        Just bod -> error "Function Def Error: Function of same name already exists" 
+        Nothing -> let names' = M.insert funcName funcBod (names state)
+                   in ForthState{stack = (stack state), names = names'}
+
+funcCall :: ForthState -> String -> (ForthState, AstNode)
+funcCall state funcName = 
+    let look = M.lookup funcName (names state)
+    in case look of 
+        Just body -> (state, body)
+        Nothing -> error "Function Call Error: Function isn't defined."
+
 -- execute an AstNode
 doNode :: AstNode -> ForthState -> ForthState
 
@@ -269,9 +279,13 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state =
     else doNode falseBranch state
 
 --Patterm matches function definition.
-doNode (Expression((Function {funcName = name, funcBod = body}):rest)) state =
-    let names' = M.insert (astNodeToString name) body (names state)
-    in doNode (Expression(rest)) (ForthState{stack = (stack state), names = (names')})
+doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
+    case (astNodeToString cmd) of 
+        "def" -> doNode (Expression(rest)) (funcDef state (astNodeToString name) body)
+        "call" -> let (state', funcBod) = funcCall state (astNodeToString name)
+                      state'' = doNode funcBod state'
+                  in doNode (Expression(rest)) state''
+        _ -> error "Function Error: Invalid function command given. Valid: def, call"
 
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
@@ -374,8 +388,8 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
     
     --Parse function definition.
     | token == Word "func" = 
-        let (name, bod, remTokens) = parseFuncDef tokens
-            newParsed = alreadyParsed ++ [Function{funcName = name, funcBod = bod}]
+        let (cmd, name, bod, remTokens) = parseFuncOp tokens
+            newParsed = alreadyParsed ++ [Function{funcCmd = cmd, funcName = name, funcBod = bod}]
         in parseExpression' newParsed remTokens terminators
 
     | token == Word "var" = 
@@ -406,11 +420,12 @@ parseVarAction (token:tokens) =
         in (varAction, varName, remTokens)
 
 --Parses a function definition.
-parseFuncDef :: [Token] -> (AstNode, AstNode, [Token])
-parseFuncDef (token:tokens) =
+parseFuncOp :: [Token] -> (AstNode, AstNode, AstNode, [Token])
+parseFuncOp (command:name:tokens) =
     let (funcBody, remTokens, terminator) = parseExpression' [] tokens [";"]
-        funcName = Terminal token
-        in (funcName, Expression(funcBody), remTokens)
+        funcCommand = Terminal command
+        funcName = Terminal name
+        in (funcCommand, funcName, Expression(funcBody), remTokens)
 
 -- we just saw an "if". now we have to build an "If" AstNode.
 -- returns the two branches and the remaining tokens. 
