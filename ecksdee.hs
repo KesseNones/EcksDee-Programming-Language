@@ -73,7 +73,7 @@ subVals :: Value -> Value -> Value
 subVals (BigInteger a) (BigInteger b) = BigInteger (b - a)
 subVals (Integer a) (Integer b) = Integer (b - a)
 subVals (Float a) (Float b) = Float (b - a)
-subVals _ _ = error "Operator (-) error. Can't subtract types that aren't BigIntegers, Integers, or Floats"
+subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match."
 
 --Multiplies two values together. If the types can't be multiplied, throw an error.
 multVals :: Value -> Value -> Value
@@ -88,7 +88,12 @@ divideVals :: Value -> Value -> Value
 divideVals (BigInteger a) (BigInteger b) = BigInteger (b `div` a)
 divideVals (Integer a) (Integer b) = Integer (b `div` a)
 divideVals (Float a) (Float b) = Float (b / a)
-divideVals _ _ = error "Operator (/) error. Can't divide types that aren't BigIntegers, Integers, or Floats"
+divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
+
+modVals :: Value -> Value -> Value
+modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
+modVals (Integer a) (Integer b) = Integer (b `mod` a)
+modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
 
 doAdd :: ForthState -> ForthState
 doAdd ForthState{stack = [], names = ns} = 
@@ -133,6 +138,16 @@ doDiv ForthState{stack = [x], names = ns} =
 doDiv state = 
     let (stateNew, b, a) = fsPop2 state
     in fsPush (divideVals a b) stateNew
+
+--Apply modulo operation
+doModulo :: ForthState -> ForthState
+doModulo ForthState{stack = [], names = ns} = 
+    error "Operator (%) error. Modulo requires two operands!"
+doModulo ForthState{stack = [x], names = ns} = 
+    error "Operator (%) error. Modulo requires two operands!"
+doModulo state =
+    let (state', b, a) = fsPop2 state
+    in fsPush (modVals a b) state'
 
 -- apply the swap operation. pop 2 values, re-push them in reverse order. 1 2 swap -> 2 1 
 doSwap :: ForthState -> ForthState 
@@ -258,7 +273,6 @@ doLessThanEqualTo state =
             else fsPush (Boolean False) state'
 
 
-
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -278,6 +292,7 @@ doOp ">"  = doGreaterThan
 doOp "<"  = doLessThan 
 doOp ">="  = doGreaterThanEqualTo 
 doOp "<=" = doLessThanEqualTo 
+doOp "%" = doModulo
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
