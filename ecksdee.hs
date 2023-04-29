@@ -1,5 +1,5 @@
 --Jesse A. Jones
---25 Apr, 2023
+--28 Apr, 2023
 --Toy Programming Language Named EcksDee
 
 import Data.List
@@ -8,19 +8,20 @@ import Data.Maybe
 import Debug.Trace
 import qualified Data.Map.Strict as M
 
--- data Value =                                         --UNCOMMENT LATER
---         BigInteger Integer
---     |   Integer Int
---     |   Float Float
---     |   String String
---     |   Char Char
---     |   Array [Value]
---     deriving (Eq, Show)
+data Value =                                         
+        BigInteger Integer
+    |   Integer Int
+    |   Float Float
+    |   String String
+    |   Char Char
+    |   Boolean Bool
+    |   Array [Value]
+    deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
 -- the program "2 2 +" would have tokens [ I 2, I 2, Op "+" ] 
 data Token = 
-        Val Float 
+        Val Value 
     |   Word String
     deriving ( Eq, Show )
 -- Deriving "Eq" means that we can use == and /= between tokens. E.g., I 2 == I 2
@@ -49,14 +50,45 @@ data AstNode =
 -- This is the state of the interpreter. 
 -- Currently it stores the stack, which is where all of the data lives. 
 data ForthState = ForthState { 
-    stack :: [Float], 
+    stack :: [Value], 
     names :: M.Map String AstNode
 } deriving ( Show )
+
+--Adds two values together. If the types can't be added, throw an error.
+--Can also act as an OR operator for Boolean type.
+addVals :: Value -> Value -> Value
+addVals (BigInteger a) (BigInteger b) = BigInteger (a + b)
+addVals (Integer a) (Integer b) = Integer (a + b)
+addVals (Float a) (Float b) = Float (a + b)
+addVals (Boolean a) (Boolean b) = Boolean (a || b)
+addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+
+-- Subtracts two values. If the types can't be subtracted, throw an error.
+subVals :: Value -> Value -> Value
+subVals (BigInteger a) (BigInteger b) = BigInteger (b - a)
+subVals (Integer a) (Integer b) = Integer (b - a)
+subVals (Float a) (Float b) = Float (b - a)
+subVals _ _ = error "Operator (-) error. Can't subtract types that aren't BigIntegers, Integers, or Floats"
+
+--Multiplies two values together. If the types can't be multiplied, throw an error.
+multVals :: Value -> Value -> Value
+multVals (BigInteger a) (BigInteger b) = BigInteger (a * b)
+multVals (Integer a) (Integer b) = Integer (a * b)
+multVals (Float a) (Float b) = Float (a * b)
+multVals (Boolean a) (Boolean b) = Boolean (a && b)
+multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+
+-- Divides two values. If the types can't be divided, throw an error.
+divideVals :: Value -> Value -> Value
+divideVals (BigInteger a) (BigInteger b) = BigInteger (b `div` a)
+divideVals (Integer a) (Integer b) = Integer (b `div` a)
+divideVals (Float a) (Float b) = Float (b / a)
+divideVals _ _ = error "Operator (/) error. Can't divide types that aren't BigIntegers, Integers, or Floats"
 
 doAdd :: ForthState -> ForthState
 doAdd state = 
     let ( state', b, a  ) = fsPop2 state 
-    in fsPush ( a + b ) state' 
+    in fsPush (addVals a b) state' 
 -- we need to pop 2 values so we can add them.
 -- we will pop 2 values in all the below operations. 
 -- you can streamline this by defining a helper function "binary_op" if you want.
@@ -67,19 +99,19 @@ doAdd state =
 doSub :: ForthState -> ForthState
 doSub state =
     let (stateNew, b, a) = fsPop2 state
-    in fsPush (b - a) stateNew
+    in fsPush (subVals a b) stateNew
 
 -- apply the * operation: pop 2 values, multiply them, push the result. 3 4 * -> 12
 doMul :: ForthState -> ForthState
 doMul state = 
     let (stateNew, b, a) = fsPop2 state
-    in fsPush (a * b) stateNew
+    in fsPush (multVals a b) stateNew
 
 -- apply the / operation: pop 2 values, divide them, push the result. 4 2 / -> 2
 doDiv :: ForthState -> ForthState
 doDiv state = 
     let (stateNew, b, a) = fsPop2 state
-    in fsPush (b / a) stateNew
+    in fsPush (divideVals a b) stateNew
 
 -- apply the swap operation. pop 2 values, re-push them in reverse order. 1 2 swap -> 2 1 
 doSwap :: ForthState -> ForthState 
@@ -136,8 +168,8 @@ doEqual ForthState{stack = [x], names = ns} =
 doEqual state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (top == secondToTop) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests inequality. Pushes 1 if not equal, 0 if equal.
 
@@ -149,8 +181,8 @@ doNotEqual ForthState{stack = [x], names = ns} =
 doNotEqual state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (top /= secondToTop) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is greater than top of stack. 
 -- Pushes 1 if true, 0 if false.
@@ -162,8 +194,8 @@ doGreaterThan ForthState{stack = [x], names = ns} =
 doGreaterThan state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop > top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is less than top of stack. 
 -- Pushes 1 if true, 0 if false.
@@ -175,8 +207,8 @@ doLessThan ForthState{stack = [x], names = ns} =
 doLessThan state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop < top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is greater than equal to top of stack. 
 -- Pushes 1 if true, 0 if false.
@@ -188,8 +220,8 @@ doGreaterThanEqualTo ForthState{stack = [x], names = ns} =
 doGreaterThanEqualTo state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop >= top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is less than equal to top of stack. 
 -- Pushes 1 if true, 0 if false.
@@ -201,8 +233,8 @@ doLessThanEqualTo ForthState{stack = [x], names = ns} =
 doLessThanEqualTo state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop <= top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
@@ -230,8 +262,8 @@ doOp op = error $ "unrecognized word: " ++ op
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
 
-astNodeToFloat :: AstNode -> Float
-astNodeToFloat (Terminal (Val v)) = v
+astNodeToValue :: AstNode -> Value
+astNodeToValue (Terminal (Val v)) = v
 
 makeVar :: ForthState -> String -> ForthState
 makeVar state varName = 
@@ -274,7 +306,7 @@ doNode :: AstNode -> ForthState -> ForthState
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
     let top = fsTop state
     in 
-    if (top /= 0.0) then 
+    if (top == (Boolean True)) then 
         doNode trueBranch state 
     else doNode falseBranch state
 
@@ -295,10 +327,9 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
             else
                 doNode (Expression rest) (makeVar state (astNodeToString name))
                            
-
         "get" -> let lkup = M.lookup (astNodeToString name) (names state) 
                  in case lkup of
-                    Just value -> let stack' = fsPush (astNodeToFloat value) state
+                    Just value -> let stack' = fsPush (astNodeToValue value) state
                               in doNode (Expression rest) stack' 
                     Nothing -> error "Variable Get Error: Variable doesn't exist or was deleted"
 
@@ -321,14 +352,14 @@ doNode ( While loopBody ) state =
 
         --Creates new stack if loop body runs.
         -- Otherwise newState is same as state.
-        newState = if top /= 0 then
+        newState = if top == (Boolean True) then
             doNode (loopBody) state
         else state
 
     --If loop ran and can run again, it's run again, 
     -- otherwise, state is returned.
         newTop = fsTop newState
-    in if (newTop /= 0) then doNode ( While loopBody ) newState else newState
+    in if (newTop == (Boolean True)) then doNode ( While loopBody ) newState else newState
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
@@ -459,12 +490,12 @@ fsNew :: ForthState
 fsNew = ForthState { stack = [], names = M.empty }
 
 -- push a new value onto the stack
-fsPush :: Float -> ForthState -> ForthState
-fsPush i state = ForthState { stack = i : stack state, names = (names state)}
+fsPush :: Value -> ForthState -> ForthState
+fsPush val state = ForthState { stack = val : stack state, names = (names state)}
 
 -- remove a value from the stack, or print an error if nothing is there.
 -- returns the value removed and the new state 
-fsPop :: ForthState -> ( ForthState, Float )
+fsPop :: ForthState -> ( ForthState, Value )
 fsPop state = 
     let top = head $ stack state 
         new_stack = tail $ stack state  
@@ -472,7 +503,7 @@ fsPop state =
         ( ForthState { stack = new_stack, names = (names state) }, top )
 
 -- remove two values from the stack. return the new stack and the two items.
-fsPop2 :: ForthState -> ( ForthState, Float, Float )
+fsPop2 :: ForthState -> ( ForthState, Value, Value )
 fsPop2 state = 
     let top  = head $ stack state
         secondToTop = head (tail $ stack state)
@@ -481,7 +512,7 @@ fsPop2 state =
         (ForthState {stack = stackNew, names = names state}, secondToTop, top)
 
 -- remove three values from the stack. return the new stack and the three items. 
-fsPop3 :: ForthState -> ( ForthState, Float, Float, Float )
+fsPop3 :: ForthState -> ( ForthState, Value, Value, Value )
 fsPop3 state = 
     let top = fsTop state
         secondToTop = fsTop ForthState{ stack = (tail $ stack state), 
@@ -494,18 +525,45 @@ fsPop3 state =
             thirdToTop, secondToTop, top) 
 
 -- return the value on top of the stack 
-fsTop :: ForthState -> Float 
+fsTop :: ForthState -> Value 
 fsTop state = head $ stack state 
 
--- Takes a single word and turns it into a token. So "2" becomes "I 2" and 
--- "+" becomes "Op +"
+decCount :: String -> Int
+decCount "" = 0
+decCount (x:xs) = if x == '.' then 1 + decCount xs else decCount xs
+
+isNum' :: String -> Bool -> Bool 
+isNum' "" isNum  = isNum  
+isNum' (x:xs) isNum =
+    let nums = "0123456789"
+    in if not (x `elem` nums || x == '.') 
+        then isNum' xs False
+        else isNum' xs isNum
+
+--Determines if a string is a valid number.
+isNum :: String -> Int
+isNum "" = -1
+isNum numStr = 
+    let containsValidChars = isNum' numStr True
+        decimalPoints = decCount numStr
+    in if containsValidChars 
+        then case decimalPoints of
+            0 -> 0
+            1 -> 1
+            _ -> -1
+        else -1 
+
+-- Used to turn the strings into values and other tokens.
 lexToken :: String -> Token
-lexToken t = 
-    let firstChar = ord . head in 
-    if firstChar t >= ord '0' && firstChar t <= ord '9' then 
-        Val $ read t 
-    else 
-        Word t 
+lexToken t
+    | t == "true" = Val $ Boolean True
+    | t == "false" = Val $ Boolean False
+    | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case
+    | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
+    | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInt case
+    | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
+    | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case.
+    | otherwise = Word t                             
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
 tokenize :: String -> [Token]
@@ -547,5 +605,7 @@ main = do
 
     -- parse the ast 
     let ast = parseExpression tokens
+
+    --print ast
 
     print $ reverse $ stack $ doNode ast fsNew 
