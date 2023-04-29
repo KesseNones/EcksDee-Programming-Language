@@ -352,10 +352,12 @@ funcCall state funcName =
 -- execute an AstNode
 doNode :: AstNode -> ForthState -> ForthState
 
--- if we execute a terminal that's an if-statement, we need to determine whether
--- the top of the stack is "true" (/= 0.0)
+-- Runs true branch if top of stack is true 
+--and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
-    let top = fsTop state
+    let top = if (null (stack state)) 
+        then error "If statement error: \nNo boolean value for if to check because stack is empty." 
+        else fsTop state
     in 
     if (top == (Boolean True)) then 
         doNode trueBranch state 
@@ -399,7 +401,9 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 
 --Runs while loop.
 doNode ( While loopBody ) state =
-    let top = fsTop state
+    let top = if (null (stack state)) 
+        then error "While Loop error: \nNo boolean value for while loop to check because stack is empty." 
+        else fsTop state
 
         --Creates new stack if loop body runs.
         -- Otherwise newState is same as state.
