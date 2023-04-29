@@ -2,6 +2,11 @@
 --28 Apr, 2023
 --Toy Programming Language Named EcksDee
 
+{-
+    ISSUES:
+        -String doesn't work with spaces in it.
+-}
+
 import Data.List
 import Data.Char
 import Data.Maybe 
@@ -86,6 +91,10 @@ divideVals (Float a) (Float b) = Float (b / a)
 divideVals _ _ = error "Operator (/) error. Can't divide types that aren't BigIntegers, Integers, or Floats"
 
 doAdd :: ForthState -> ForthState
+doAdd ForthState{stack = [], names = ns} = 
+    error "Operator (+) error. Addition requires two operands!"
+doAdd ForthState{stack = [x], names = ns} = 
+    error "Operator (+) error. Addition requires two operands!"
 doAdd state = 
     let ( state', b, a  ) = fsPop2 state 
     in fsPush (addVals a b) state' 
@@ -97,18 +106,30 @@ doAdd state =
 
 -- apply the - operation: pop 2 values, subtract them, push the result. 1 2 - -> -1
 doSub :: ForthState -> ForthState
+doSub ForthState{stack = [], names = ns} = 
+    error "Operator (-) error. Subtraction requires two operands!"
+doSub ForthState{stack = [x], names = ns} = 
+    error "Operator (-) error. Subtraction requires two operands!"
 doSub state =
     let (stateNew, b, a) = fsPop2 state
     in fsPush (subVals a b) stateNew
 
 -- apply the * operation: pop 2 values, multiply them, push the result. 3 4 * -> 12
 doMul :: ForthState -> ForthState
+doMul ForthState{stack = [], names = ns} = 
+    error "Operator (*) error. Multiplication requires two operands!"
+doMul ForthState{stack = [x], names = ns} = 
+    error "Operator (*) error. Multiplication requires two operands!"
 doMul state = 
     let (stateNew, b, a) = fsPop2 state
     in fsPush (multVals a b) stateNew
 
 -- apply the / operation: pop 2 values, divide them, push the result. 4 2 / -> 2
 doDiv :: ForthState -> ForthState
+doDiv ForthState{stack = [], names = ns} = 
+    error "Operator (/) error. Division requires two operands!"
+doDiv ForthState{stack = [x], names = ns} = 
+    error "Operator (/) error. Division requires two operands!"
 doDiv state = 
     let (stateNew, b, a) = fsPop2 state
     in fsPush (divideVals a b) stateNew
@@ -236,6 +257,8 @@ doLessThanEqualTo state =
             then fsPush (Boolean True) state' 
             else fsPush (Boolean False) state'
 
+
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -274,13 +297,26 @@ makeVar state varName =
         Nothing -> let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
             in ForthState{stack = (stack state), names = names'}
 
+--Comapres types in order to enforce static typing when mutating variables.
+compareTypesForMut :: Value -> Value -> Bool
+compareTypesForMut (Boolean _) (Boolean _) = True
+compareTypesForMut (BigInteger _) (BigInteger _) = True
+compareTypesForMut (Integer _) (Integer _) = True
+compareTypesForMut (Float _) (Float _) = True
+compareTypesForMut (String _) (String _) = True
+compareTypesForMut (Char _) (Char _) = True
+compareTypesForMut _ _ = False
+
 mutateVar :: ForthState -> String -> ForthState
 mutateVar state varName =
-    let lkup = M.lookup varName (names state)
+    let lkupVal = M.lookup varName (names state)
+        newVal = fsTop state
     --If variable exists it can be mutated. Otherwise, an error is thrown.
-    in case lkup of
-        Just value -> let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
+    in case lkupVal of
+        Just value -> if compareTypesForMut (astNodeToValue value) newVal then 
+            let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
             in ForthState{stack = (stack state), names = names'}
+            else error "Variable Mut Error: Can't mutate variable to different type."
         Nothing -> error "Variable Mut Error: Variable doesn't exist or was deleted"
 
 funcDef :: ForthState -> String -> AstNode -> ForthState
@@ -558,7 +594,7 @@ lexToken :: String -> Token
 lexToken t
     | t == "true" = Val $ Boolean True
     | t == "false" = Val $ Boolean False
-    | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case
+    | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
     | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
     | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInt case
     | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
