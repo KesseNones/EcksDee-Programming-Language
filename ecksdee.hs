@@ -5,6 +5,8 @@
 {-
     ISSUES:
         -Array tokenization is still needed.
+        -Casting is still needed.
+        -IO needed.
 -}
 
 import Data.List
@@ -94,6 +96,20 @@ modVals :: Value -> Value -> Value
 modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
 modVals (Integer a) (Integer b) = Integer (b `mod` a)
 modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
+
+--Concatenates two strings.
+doConcat' :: Value -> Value -> Value
+doConcat' (String a) (String b) = String (a ++ b)
+doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings."
+
+doConcat :: ForthState -> ForthState
+doConcat ForthState{stack = [], names = ns} = 
+    error "Operator (++) error. Concatenation requires two operands!"
+doConcat ForthState{stack = [x], names = ns} = 
+    error "Operator (++) error. Concatenation requires two operands!"
+doConcat state =
+    let (state', a, b) = fsPop2 state
+    in fsPush (doConcat' a b) state'
 
 doAdd :: ForthState -> ForthState
 doAdd ForthState{stack = [], names = ns} = 
@@ -293,6 +309,7 @@ doOp "<"  = doLessThan
 doOp ">="  = doGreaterThanEqualTo 
 doOp "<=" = doLessThanEqualTo 
 doOp "%" = doModulo
+doOp "++" = doConcat
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
