@@ -1,10 +1,10 @@
 --Jesse A. Jones
---28 Apr, 2023
+--30 Apr, 2023
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
-        -String doesn't work with spaces in it.
+        -Array tokenization is still needed.
 -}
 
 import Data.List
@@ -622,7 +622,33 @@ lexToken t
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
 tokenize :: String -> [Token]
-tokenize code = map lexToken $ words code 
+tokenize code = map lexToken $ tokenize' code 
+
+--This code makes creating a list of strings 
+-- from the code easier in the above function call.
+tokenize' :: String -> [String]
+tokenize' "" = []
+tokenize' str = tokenize'' str "" [] False False
+
+--This function does the heavy lifting of spitting up the code into tokens.
+tokenize'' :: String -> String -> [String] -> Bool -> Bool -> [String]
+tokenize'' "" _ _ False True = error "Parse Error: Code ended without array being closed." --Error case if array isn't closed.          
+tokenize'' "" _ _ True False = error "Parse Error: Code ended without string being closed." --Error case for non closed string.         
+tokenize'' "" currStr strs False False = strs ++ (if null currStr then [] else [currStr]) --Parsing is complete case.
+
+tokenize'' (('\"'):xs) currStr strs False False = tokenize'' xs (currStr ++ ['\"']) strs True False --String enter case.
+tokenize'' (('\"'):xs) currStr strs True False = tokenize'' xs [] (strs ++ [currStr ++ ['\"']]) False False --Exiting string case.
+tokenize'' (('\\'):('\"'):xs) currStr strs True False = tokenize'' xs (currStr ++ "\\\"") (strs) True False --In string case for quotes in quotes.
+--tokenize'' (('\\'):('{'):xs) currStr strs True False = tokenize'' xs (currStr ++ ['\{']) strs True False --In string case for left array bracket in a string. FIX LATER MAYBE???????
+--tokenize'' (('\\'):('}'):xs) currStr strs True False = tokenize'' xs (currStr ++ ['\}']) strs True False --In string case for right array bracket in a string.
+
+tokenize'' (x:xs) currStr strs True False = tokenize'' xs (currStr ++ [x]) strs True False --In string case
+
+--ADD ARRAY TOKENIZATION LATER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--General parsing case.
+tokenize'' (x:xs) currStr strs False False = if not $ isSpace x 
+    then tokenize'' xs (currStr ++ [x]) strs False False
+    else tokenize'' xs [] (strs ++ (if null currStr then [] else [currStr])) False False
 
 -- removes comments from a token stream. comments are between /' and '/
 -- arguments:
