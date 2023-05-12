@@ -1,6 +1,13 @@
 --Jesse A. Jones
---24 Apr, 2023
+--Version: 2023-05-12.11
 --Toy Programming Language Named EcksDee
+
+{-
+    ISSUES:
+        -Array tokenization is still needed.
+        -Casting is still needed.
+        -IO needed.
+-}
 
 import Data.List
 import Data.Char
@@ -8,19 +15,20 @@ import Data.Maybe
 import Debug.Trace
 import qualified Data.Map.Strict as M
 
--- data Value =                                         --UNCOMMENT LATER
---         BigInteger Integer
---     |   Integer Int
---     |   Float Float
---     |   String String
---     |   Char Char
---     |   Array [Value]
---     deriving (Eq, Show)
+data Value =                                         
+        BigInteger Integer
+    |   Integer Int
+    |   Float Float
+    |   String String
+    |   Char Char
+    |   Boolean Bool
+    |   Array [Value]
+    deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
 -- the program "2 2 +" would have tokens [ I 2, I 2, Op "+" ] 
 data Token = 
-        Val Float 
+        Val Value 
     |   Word String
     deriving ( Eq, Show )
 -- Deriving "Eq" means that we can use == and /= between tokens. E.g., I 2 == I 2
@@ -40,7 +48,7 @@ data AstNode =
         -- a list of nodes. Represents a sequence of instructions like "1 1 + 2 *"
     |   Expression [ AstNode ]
 
-    |   Function {funcName :: AstNode, funcBod :: AstNode}
+    |   Function {funcCmd :: AstNode, funcName :: AstNode, funcBod :: AstNode}
 
     |   Variable {varName :: AstNode, varCmd :: AstNode}
 
@@ -48,15 +56,70 @@ data AstNode =
 
 -- This is the state of the interpreter. 
 -- Currently it stores the stack, which is where all of the data lives. 
-data ForthState = ForthState { 
-    stack :: [Float], 
-    names :: M.Map String AstNode
+data EDState = EDState { 
+    stack :: [Value], 
+    fns :: M.Map String AstNode,
+    vars :: M.Map String Value
 } deriving ( Show )
 
-doAdd :: ForthState -> ForthState
+--Adds two values together. If the types can't be added, throw an error.
+--Can also act as an OR operator for Boolean type.
+addVals :: Value -> Value -> Value
+addVals (BigInteger a) (BigInteger b) = BigInteger (a + b)
+addVals (Integer a) (Integer b) = Integer (a + b)
+addVals (Float a) (Float b) = Float (a + b)
+addVals (Boolean a) (Boolean b) = Boolean (a || b)
+addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+
+-- Subtracts two values. If the types can't be subtracted, throw an error.
+subVals :: Value -> Value -> Value
+subVals (BigInteger a) (BigInteger b) = BigInteger (b - a)
+subVals (Integer a) (Integer b) = Integer (b - a)
+subVals (Float a) (Float b) = Float (b - a)
+subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match."
+
+--Multiplies two values together. If the types can't be multiplied, throw an error.
+multVals :: Value -> Value -> Value
+multVals (BigInteger a) (BigInteger b) = BigInteger (a * b)
+multVals (Integer a) (Integer b) = Integer (a * b)
+multVals (Float a) (Float b) = Float (a * b)
+multVals (Boolean a) (Boolean b) = Boolean (a && b)
+multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+
+-- Divides two values. If the types can't be divided, throw an error.
+divideVals :: Value -> Value -> Value
+divideVals (BigInteger a) (BigInteger b) = BigInteger (b `div` a)
+divideVals (Integer a) (Integer b) = Integer (b `div` a)
+divideVals (Float a) (Float b) = Float (b / a)
+divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
+
+modVals :: Value -> Value -> Value
+modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
+modVals (Integer a) (Integer b) = Integer (b `mod` a)
+modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
+
+--Concatenates two strings.
+doConcat' :: Value -> Value -> Value
+doConcat' (String a) (String b) = String (a ++ b)
+doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings."
+
+doConcat :: EDState -> EDState
+doConcat EDState{stack = [], fns = fs, vars = vs} = 
+    error "Operator (++) error. Concatenation requires two operands!"
+doConcat EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Operator (++) error. Concatenation requires two operands!"
+doConcat state =
+    let (state', a, b) = fsPop2 state
+    in fsPush (doConcat' a b) state'
+
+doAdd :: EDState -> EDState
+doAdd EDState{stack = [], fns = fs, vars = vs} = 
+    error "Operator (+) error. Addition requires two operands!"
+doAdd EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Operator (+) error. Addition requires two operands!"
 doAdd state = 
     let ( state', b, a  ) = fsPop2 state 
-    in fsPush ( a + b ) state' 
+    in fsPush (addVals a b) state' 
 -- we need to pop 2 values so we can add them.
 -- we will pop 2 values in all the below operations. 
 -- you can streamline this by defining a helper function "binary_op" if you want.
@@ -64,27 +127,51 @@ doAdd state =
 -- two values on the stack, pushing the result. 
 
 -- apply the - operation: pop 2 values, subtract them, push the result. 1 2 - -> -1
-doSub :: ForthState -> ForthState
+doSub :: EDState -> EDState
+doSub EDState{stack = [], fns = fs, vars = vs} = 
+    error "Operator (-) error. Subtraction requires two operands!"
+doSub EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Operator (-) error. Subtraction requires two operands!"
 doSub state =
     let (stateNew, b, a) = fsPop2 state
-    in fsPush (b - a) stateNew
+    in fsPush (subVals a b) stateNew
 
 -- apply the * operation: pop 2 values, multiply them, push the result. 3 4 * -> 12
-doMul :: ForthState -> ForthState
+doMul :: EDState -> EDState
+doMul EDState{stack = [], fns = fs, vars = vs} = 
+    error "Operator (*) error. Multiplication requires two operands!"
+doMul EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Operator (*) error. Multiplication requires two operands!"
 doMul state = 
     let (stateNew, b, a) = fsPop2 state
-    in fsPush (a * b) stateNew
+    in fsPush (multVals a b) stateNew
 
 -- apply the / operation: pop 2 values, divide them, push the result. 4 2 / -> 2
-doDiv :: ForthState -> ForthState
+doDiv :: EDState -> EDState
+doDiv EDState{stack = [], fns = fs, vars = vs} = 
+    error "Operator (/) error. Division requires two operands!"
+doDiv EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Operator (/) error. Division requires two operands!"
 doDiv state = 
     let (stateNew, b, a) = fsPop2 state
-    in fsPush (b / a) stateNew
+    in fsPush (divideVals a b) stateNew
+
+--Apply modulo operation
+doModulo :: EDState -> EDState
+doModulo EDState{stack = [], fns = fs, vars = vs} = 
+    error "Operator (%) error. Modulo requires two operands!"
+doModulo EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Operator (%) error. Modulo requires two operands!"
+doModulo state =
+    let (state', b, a) = fsPop2 state
+    in fsPush (modVals a b) state'
 
 -- apply the swap operation. pop 2 values, re-push them in reverse order. 1 2 swap -> 2 1 
-doSwap :: ForthState -> ForthState 
-doSwap ForthState{stack = [], names = ns} = ForthState{stack = [], names = ns}
-doSwap ForthState{stack = [x], names = ns} = ForthState{stack = [x], names = ns}
+doSwap :: EDState -> EDState 
+doSwap EDState{stack = [], fns = fs, vars = vs} = 
+    EDState{stack = [], fns = fs, vars = vs}
+doSwap EDState{stack = [x], fns = fs, vars = vs} = 
+    EDState{stack = [x], fns = fs, vars = vs}
 doSwap state = 
     let (stateNew, b, a) = fsPop2 state
         stateNewer = fsPush a stateNew
@@ -92,7 +179,7 @@ doSwap state =
 
 -- apply the drop operation. pop 1 value. 1 2 3 -> 1 2 
 -- does nothing if stack is empty 
-doDrop :: ForthState -> ForthState
+doDrop :: EDState -> EDState
 doDrop state = 
     if null $ stack state then state
     else 
@@ -102,11 +189,14 @@ doDrop state =
 -- apply the rot operation. rotates the top three right: 1 2 3 -> 3 1 2 
 -- does nothing if stack is empty or size 1
 -- same as swap if stack has size 2 
-doRot :: ForthState -> ForthState
+doRot :: EDState -> EDState
 --Pattern matches small stack cases.
-doRot ForthState{stack = [], names = ns} = ForthState {stack = [], names = ns}
-doRot ForthState{stack = [x], names = ns} = ForthState {stack = [x], names = ns}
-doRot ForthState{stack = [x, y], names = ns} = ForthState {stack = [y, x], names = ns}
+doRot EDState{stack = [], fns = fs, vars = vs} = 
+    EDState{stack = [], fns = fs, vars = vs}
+doRot EDState{stack = [x], fns = fs, vars = vs} = 
+    EDState{stack = [x], fns = fs, vars = vs}
+doRot EDState{stack = [x, y], fns = fs, vars = vs} = 
+    EDState{stack = [x, y], fns = fs, vars = vs}
 
 --Peforms rotation if stack is 3 or greater in size.
 doRot state =
@@ -116,10 +206,11 @@ doRot state =
     in fsPush b statePush2   
 
 -- duplicate the top value on the stack. 1 -> 1 1 
-doDup :: ForthState -> ForthState
+doDup :: EDState -> EDState
 
 --Nothing to duplicate if stack is empty.
-doDup ForthState{stack = [], names = ns} = ForthState {stack = [], names = ns}
+doDup EDState{stack = [], fns = fs, vars = vs} =
+    EDState{stack = [], fns = fs, vars = vs}
 
 --Duplicates top of stack.
 doDup state = 
@@ -128,150 +219,179 @@ doDup state =
     in fsPush top push1 
 
 --Tests equality. Pushes 1 if equal, 0 if not equal.
-doEqual :: ForthState -> ForthState
-doEqual ForthState{stack = [], names = ns} = 
+doEqual :: EDState -> EDState
+doEqual EDState{stack = [], fns = fs, vars = vs} = 
     error "Eqality comparison requires two operands!"
-doEqual ForthState{stack = [x], names = ns} = 
+doEqual EDState{stack = [x], fns = fs, vars = vs} = 
     error "Eqality comparison requires two operands!"
 doEqual state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (top == secondToTop) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests inequality. Pushes 1 if not equal, 0 if equal.
 
-doNotEqual :: ForthState -> ForthState
-doNotEqual ForthState{stack = [], names = ns} = 
+doNotEqual :: EDState -> EDState
+doNotEqual EDState{stack = [], fns = fs, vars = vs} = 
     error "Ineqality comparison requires two operands!"
-doNotEqual ForthState{stack = [x], names = ns} = 
+doNotEqual EDState{stack = [x], fns = fs, vars = vs} = 
     error "Ineqality comparison requires two operands!"
 doNotEqual state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (top /= secondToTop) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is greater than top of stack. 
 -- Pushes 1 if true, 0 if false.
-doGreaterThan :: ForthState -> ForthState
-doGreaterThan ForthState{stack = [], names = ns} = 
+doGreaterThan :: EDState -> EDState
+doGreaterThan EDState{stack = [], fns = fs, vars = vs} = 
     error "Greater than comparison requires two operands!"
-doGreaterThan ForthState{stack = [x], names = ns} = 
+doGreaterThan EDState{stack = [x], fns = fs, vars = vs} = 
     error "Greater than comparison requires two operands!"
 doGreaterThan state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop > top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is less than top of stack. 
 -- Pushes 1 if true, 0 if false.
-doLessThan :: ForthState -> ForthState
-doLessThan ForthState{stack = [], names = ns} = 
+doLessThan :: EDState -> EDState
+doLessThan EDState{stack = [], fns = fs, vars = vs} = 
     error "Less than comparison requires two operands!"
-doLessThan ForthState{stack = [x], names = ns} = 
+doLessThan EDState{stack = [x], fns = fs, vars = vs} = 
     error "Less than comparison requires two operands!"
 doLessThan state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop < top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is greater than equal to top of stack. 
 -- Pushes 1 if true, 0 if false.
-doGreaterThanEqualTo :: ForthState -> ForthState
-doGreaterThanEqualTo ForthState{stack = [], names = ns} = 
+doGreaterThanEqualTo :: EDState -> EDState
+doGreaterThanEqualTo EDState{stack = [], fns = fs, vars = vs} = 
     error "Greater than equal to comparison requires two operands!"
-doGreaterThanEqualTo ForthState{stack = [x], names = ns} = 
+doGreaterThanEqualTo EDState{stack = [x], fns = fs, vars = vs} = 
     error "Greater than equal to comparison requires two operands!"
 doGreaterThanEqualTo state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop >= top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
 
 --Tests if second to top of stack is less than equal to top of stack. 
 -- Pushes 1 if true, 0 if false.
-doLessThanEqualTo :: ForthState -> ForthState
-doLessThanEqualTo ForthState{stack = [], names = ns} = 
+doLessThanEqualTo :: EDState -> EDState
+doLessThanEqualTo EDState{stack = [], fns = fs, vars = vs} = 
     error "Less than equal to comparison requires two operands!"
-doLessThanEqualTo ForthState{stack = [x], names = ns} = 
+doLessThanEqualTo EDState{stack = [x], fns = fs, vars = vs} = 
     error "Less than equal to comparison requires two operands!"
 doLessThanEqualTo state = 
     let (state', secondToTop, top) = fsPop2 state
     in if (secondToTop <= top) 
-            then fsPush 1 state' 
-            else fsPush 0 state'
+            then fsPush (Boolean True) state' 
+            else fsPush (Boolean False) state'
+
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
-doOp :: String -> ForthState -> ForthState
+doOp :: String -> EDState -> EDState
 -- here's how we turn the strings into their corresponding operation. 
-doOp "+" state = doAdd state
-doOp "-" state = doSub state
-doOp "*" state = doMul state
-doOp "/" state = doDiv state 
-doOp "swap" state = doSwap state 
-doOp "drop" state = doDrop state 
-doOp "rot" state = doRot state 
-doOp "dup" state = doDup state
-doOp "==" state = doEqual state
-doOp "/=" state = doNotEqual state
-doOp ">" state = doGreaterThan state
-doOp "<" state = doLessThan state
-doOp ">=" state = doGreaterThanEqualTo state
-doOp "<=" state = doLessThanEqualTo state
+doOp "+"  = doAdd
+doOp "-"  = doSub
+doOp "*"  = doMul
+doOp "/"  = doDiv  
+doOp "swap"  = doSwap  
+doOp "drop"  = doDrop  
+doOp "rot"  = doRot  
+doOp "dup"  = doDup 
+doOp "=="  = doEqual 
+doOp "/="  = doNotEqual 
+doOp ">"  = doGreaterThan 
+doOp "<"  = doLessThan 
+doOp ">="  = doGreaterThanEqualTo 
+doOp "<=" = doLessThanEqualTo 
+doOp "%" = doModulo
+doOp "++" = doConcat
 
--- if we go through all the definitions without finding our operation, 
--- it's not supported unless it's a function call. 
-doOp op state = 
-    let funcBod = M.lookup op (names state)
-    in case funcBod of
-        Just funcBod -> doNode funcBod state
-        Nothing -> error $ "unrecognized word: " ++ op 
+-- Error thrown if reached here.
+doOp op = error $ "unrecognized word: " ++ op 
 
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
 
-astNodeToFloat :: AstNode -> Float
-astNodeToFloat (Terminal (Val v)) = v
-
-makeVar :: ForthState -> String -> ForthState
+makeVar :: EDState -> String -> EDState
 makeVar state varName = 
-    let lkup = M.lookup varName (names state)
+    let lkup = M.lookup varName (vars state)
     --Throw error if variable exists. Otherwise, make variable by inserting it into hash table.
     in case lkup of
         Just _ -> error "Variable Mak Error: Variable already exists."
-        Nothing -> let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
-            in ForthState{stack = (stack state), names = names'}
+        Nothing -> let vars' = M.insert varName (fsTop state) (vars state)
+            in EDState{stack = (stack state), fns = (fns state), vars = vars'}
 
-mutateVar :: ForthState -> String -> ForthState
+--Comapres types in order to enforce static typing when mutating variables.
+compareTypesForMut :: Value -> Value -> Bool
+compareTypesForMut (Boolean _) (Boolean _) = True
+compareTypesForMut (BigInteger _) (BigInteger _) = True
+compareTypesForMut (Integer _) (Integer _) = True
+compareTypesForMut (Float _) (Float _) = True
+compareTypesForMut (String _) (String _) = True
+compareTypesForMut (Char _) (Char _) = True
+compareTypesForMut _ _ = False
+
+mutateVar :: EDState -> String -> EDState
 mutateVar state varName =
-    let lkup = M.lookup varName (names state)
+    let lkupVal = M.lookup varName (vars state)
+        newVal = fsTop state
     --If variable exists it can be mutated. Otherwise, an error is thrown.
-    in case lkup of
-        Just value -> let names' = M.insert varName (Terminal $ Val $ fsTop state) (names state)
-            in ForthState{stack = (stack state), names = names'}
+    in case lkupVal of
+        Just value -> if compareTypesForMut value newVal then 
+            let vars' = M.insert varName (fsTop state) (vars state)
+            in EDState{stack = (stack state), fns = (fns state), vars = vars'}
+            else error "Variable Mut Error: Can't mutate variable to different type."
         Nothing -> error "Variable Mut Error: Variable doesn't exist or was deleted"
 
--- execute an AstNode
-doNode :: AstNode -> ForthState -> ForthState
+funcDef :: EDState -> String -> AstNode -> EDState
+funcDef state funcName funcBod = 
+    let look = M.lookup funcName (fns state)
+    in case look of 
+        Just bod -> error "Function Def Error: Function of same name already exists" 
+        Nothing -> let fns' = M.insert funcName funcBod (fns state)
+                   in EDState{stack = (stack state), fns = fns', vars = (vars state)}
 
--- if we execute a terminal that's an if-statement, we need to determine whether
--- the top of the stack is "true" (/= 0.0)
+funcCall :: EDState -> String -> (EDState, AstNode)
+funcCall state funcName = 
+    let look = M.lookup funcName (fns state)
+    in case look of 
+        Just body -> (state, body)
+        Nothing -> error "Function Call Error: Function isn't defined."
+
+-- execute an AstNode
+doNode :: AstNode -> EDState -> EDState
+
+-- Runs true branch if top of stack is true 
+--and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
-    let top = fsTop state
+    let top = if (null (stack state)) 
+        then error "If statement error: \nNo boolean value for if to check because stack is empty." 
+        else fsTop state
     in 
-    if (top /= 0.0) then 
+    if (top == (Boolean True)) then 
         doNode trueBranch state 
     else doNode falseBranch state
 
 --Patterm matches function definition.
-doNode (Expression((Function {funcName = name, funcBod = body}):rest)) state =
-    let names' = M.insert (astNodeToString name) body (names state)
-    in doNode (Expression(rest)) (ForthState{stack = (stack state), names = (names')})
+doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
+    case (astNodeToString cmd) of 
+        "def" -> doNode (Expression(rest)) (funcDef state (astNodeToString name) body)
+        "call" -> let (state', funcBod) = funcCall state (astNodeToString name)
+                      state'' = doNode funcBod state'
+                  in doNode (Expression(rest)) state''
+        _ -> error "Function Error: Invalid function command given. Valid: def, call"
 
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
@@ -281,17 +401,16 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
             else
                 doNode (Expression rest) (makeVar state (astNodeToString name))
                            
-
-        "get" -> let lkup = M.lookup (astNodeToString name) (names state) 
+        "get" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
-                    Just value -> let stack' = fsPush (astNodeToFloat value) state
+                    Just value -> let stack' = fsPush value state
                               in doNode (Expression rest) stack' 
                     Nothing -> error "Variable Get Error: Variable doesn't exist or was deleted"
 
-        "del" -> let lkup = M.lookup (astNodeToString name) (names state) 
+        "del" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
-                    Just value -> let names' = M.delete (astNodeToString name) (names state)
-                           in doNode (Expression rest) (ForthState{stack = (stack state), names = names'})
+                    Just value -> let vars' = M.delete (astNodeToString name) (vars state)
+                           in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars'})
                     Nothing -> error "Variable Del Error: Variable doesn't exist" 
 
         "mut" -> if null (stack state) 
@@ -303,18 +422,20 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 
 --Runs while loop.
 doNode ( While loopBody ) state =
-    let top = fsTop state
+    let top = if (null (stack state)) 
+        then error "While Loop error: \nNo boolean value for while loop to check because stack is empty." 
+        else fsTop state
 
         --Creates new stack if loop body runs.
         -- Otherwise newState is same as state.
-        newState = if top /= 0 then
+        newState = if top == (Boolean True) then
             doNode (loopBody) state
         else state
 
     --If loop ran and can run again, it's run again, 
     -- otherwise, state is returned.
         newTop = fsTop newState
-    in if (newTop /= 0) then doNode ( While loopBody ) newState else newState
+    in if (newTop == (Boolean True)) then doNode ( While loopBody ) newState else newState
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
@@ -374,8 +495,8 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
     
     --Parse function definition.
     | token == Word "func" = 
-        let (name, bod, remTokens) = parseFuncDef tokens
-            newParsed = alreadyParsed ++ [Function{funcName = name, funcBod = bod}]
+        let (cmd, name, bod, remTokens) = parseFuncOp tokens
+            newParsed = alreadyParsed ++ [Function{funcCmd = cmd, funcName = name, funcBod = bod}]
         in parseExpression' newParsed remTokens terminators
 
     | token == Word "var" = 
@@ -406,11 +527,12 @@ parseVarAction (token:tokens) =
         in (varAction, varName, remTokens)
 
 --Parses a function definition.
-parseFuncDef :: [Token] -> (AstNode, AstNode, [Token])
-parseFuncDef (token:tokens) =
+parseFuncOp :: [Token] -> (AstNode, AstNode, AstNode, [Token])
+parseFuncOp (command:name:tokens) =
     let (funcBody, remTokens, terminator) = parseExpression' [] tokens [";"]
-        funcName = Terminal token
-        in (funcName, Expression(funcBody), remTokens)
+        funcCommand = Terminal command
+        funcName = Terminal name
+        in (funcCommand, funcName, Expression(funcBody), remTokens)
 
 -- we just saw an "if". now we have to build an "If" AstNode.
 -- returns the two branches and the remaining tokens. 
@@ -440,61 +562,114 @@ parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] t
                     in (Expression(loopBod), (remTokens))
     
 -- create a new interpreter
-fsNew :: ForthState
-fsNew = ForthState { stack = [], names = M.empty }
+fsNew :: EDState
+fsNew = EDState { stack = [], fns = M.empty, vars = M.empty }
 
 -- push a new value onto the stack
-fsPush :: Float -> ForthState -> ForthState
-fsPush i state = ForthState { stack = i : stack state, names = (names state)}
+fsPush :: Value -> EDState -> EDState
+fsPush val state = EDState { stack = val : stack state, fns = (fns state), vars = (vars state)}
 
 -- remove a value from the stack, or print an error if nothing is there.
 -- returns the value removed and the new state 
-fsPop :: ForthState -> ( ForthState, Float )
+fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
     let top = head $ stack state 
         new_stack = tail $ stack state  
     in  
-        ( ForthState { stack = new_stack, names = (names state) }, top )
+        ( EDState { stack = new_stack, fns = (fns state), vars = (vars state) }, top )
 
 -- remove two values from the stack. return the new stack and the two items.
-fsPop2 :: ForthState -> ( ForthState, Float, Float )
+fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let top  = head $ stack state
         secondToTop = head (tail $ stack state)
         stackNew = tail (tail (stack state))
     in
-        (ForthState {stack = stackNew, names = names state}, secondToTop, top)
+        (EDState {stack = stackNew, fns = (fns state), vars = (vars state)}, secondToTop, top)
 
 -- remove three values from the stack. return the new stack and the three items. 
-fsPop3 :: ForthState -> ( ForthState, Float, Float, Float )
+fsPop3 :: EDState -> ( EDState, Value, Value, Value )
 fsPop3 state = 
     let top = fsTop state
-        secondToTop = fsTop ForthState{ stack = (tail $ stack state), 
-            names = (names state)}
-        thirdToTop = fsTop ForthState{ stack = (tail $ tail $ stack state), 
-            names = (names state)}
+        secondToTop = fsTop EDState{ stack = (tail $ stack state), 
+            fns = (fns state), vars = (vars state) }
+        thirdToTop = fsTop EDState{ stack = (tail $ tail $ stack state), 
+            fns = (fns state), vars = (vars state)}
         stackNew = tail $ tail $ tail $ stack state
     in
-        (ForthState {stack = stackNew, names = (names state)}, 
+        (EDState {stack = stackNew, fns = (fns state), vars = (vars state)}, 
             thirdToTop, secondToTop, top) 
 
 -- return the value on top of the stack 
-fsTop :: ForthState -> Float 
+fsTop :: EDState -> Value 
 fsTop state = head $ stack state 
 
--- Takes a single word and turns it into a token. So "2" becomes "I 2" and 
--- "+" becomes "Op +"
+decCount :: String -> Int
+decCount "" = 0
+decCount (x:xs) = if x == '.' then 1 + decCount xs else decCount xs
+
+isNum' :: String -> Bool -> Bool 
+isNum' "" isNum  = isNum  
+isNum' (x:xs) isNum =
+    let nums = "0123456789"
+    in if not (x `elem` nums || x == '.') 
+        then isNum' xs False
+        else isNum' xs isNum
+
+--Determines if a string is a valid number.
+isNum :: String -> Int
+isNum "" = -1
+isNum numStr = 
+    let containsValidChars = isNum' numStr True
+        decimalPoints = decCount numStr
+    in if containsValidChars 
+        then case decimalPoints of
+            0 -> 0
+            1 -> 1
+            _ -> -1
+        else -1 
+
+-- Used to turn the strings into values and other tokens.
 lexToken :: String -> Token
-lexToken t = 
-    let firstChar = ord . head in 
-    if firstChar t >= ord '0' && firstChar t <= ord '9' then 
-        Val $ read t 
-    else 
-        Word t 
+lexToken t
+    | t == "true" = Val $ Boolean True
+    | t == "false" = Val $ Boolean False
+    | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
+    | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
+    | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInt case
+    | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
+    | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case.
+    | otherwise = Word t                             
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
 tokenize :: String -> [Token]
-tokenize code = map lexToken $ words code 
+tokenize code = map lexToken $ tokenize' code 
+
+--This code makes creating a list of strings 
+-- from the code easier in the above function call.
+tokenize' :: String -> [String]
+tokenize' "" = []
+tokenize' str = tokenize'' str "" [] False False
+
+--This function does the heavy lifting of spitting up the code into tokens.
+tokenize'' :: String -> String -> [String] -> Bool -> Bool -> [String]
+tokenize'' "" _ _ False True = error "Parse Error: Code ended without array being closed." --Error case if array isn't closed.          
+tokenize'' "" _ _ True False = error "Parse Error: Code ended without string being closed." --Error case for non closed string.         
+tokenize'' "" currStr strs False False = strs ++ (if null currStr then [] else [currStr]) --Parsing is complete case.
+
+tokenize'' (('\"'):xs) currStr strs False False = tokenize'' xs (currStr ++ ['\"']) strs True False --String enter case.
+tokenize'' (('\"'):xs) currStr strs True False = tokenize'' xs [] (strs ++ [currStr ++ ['\"']]) False False --Exiting string case.
+tokenize'' (('\\'):('\"'):xs) currStr strs True False = tokenize'' xs (currStr ++ "\\\"") (strs) True False --In string case for quotes in quotes.
+--tokenize'' (('\\'):('{'):xs) currStr strs True False = tokenize'' xs (currStr ++ ['\{']) strs True False --In string case for left array bracket in a string. FIX LATER MAYBE???????
+--tokenize'' (('\\'):('}'):xs) currStr strs True False = tokenize'' xs (currStr ++ ['\}']) strs True False --In string case for right array bracket in a string.
+
+tokenize'' (x:xs) currStr strs True False = tokenize'' xs (currStr ++ [x]) strs True False --In string case
+
+--ADD ARRAY TOKENIZATION LATER!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--General parsing case.
+tokenize'' (x:xs) currStr strs False False = if not $ isSpace x 
+    then tokenize'' xs (currStr ++ [x]) strs False False
+    else tokenize'' xs [] (strs ++ (if null currStr then [] else [currStr])) False False
 
 -- removes comments from a token stream. comments are between /' and '/
 -- arguments:
@@ -532,5 +707,7 @@ main = do
 
     -- parse the ast 
     let ast = parseExpression tokens
+
+    --print ast
 
     print $ reverse $ stack $ doNode ast fsNew 
