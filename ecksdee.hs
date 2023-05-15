@@ -685,6 +685,7 @@ fsPop3 state =
 fsTop :: EDState -> Value 
 fsTop state = head $ stack state 
 
+--Counts the number of decimal points in a string.
 decCount :: String -> Int
 decCount "" = 0
 decCount (x:xs) = if x == '.' then 1 + decCount xs else decCount xs
@@ -693,7 +694,7 @@ isNum' :: String -> Bool -> Bool
 isNum' "" isNum  = isNum  
 isNum' (x:xs) isNum =
     let nums = "0123456789"
-    in if not (x `elem` nums || x == '.') 
+    in if not (x `elem` nums || x == '.' || x == 'e' || x == '-') 
         then isNum' xs False
         else isNum' xs isNum
 
@@ -703,10 +704,14 @@ isNum "" = -1
 isNum numStr = 
     let containsValidChars = isNum' numStr True
         decimalPoints = decCount numStr
+        minusSigns = length $ filter (=='-') numStr
+        exponentCount = length $ filter (=='e') numStr
     in if containsValidChars 
-        then case decimalPoints of
-            0 -> 0
-            1 -> 1
+        then case (decimalPoints, minusSigns, exponentCount) of
+            (0, 0, 0) -> 0
+            (1, 0, 0) -> 1
+            (1, 0, 1) -> 1
+            (1, 1, 1) -> 1
             _ -> -1
         else -1 
 
