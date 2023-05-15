@@ -1,10 +1,10 @@
 --Jesse A. Jones
---Version: 2023-05-12.11
+--Version: 2023-05-15.85
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
-        -Array tokenization is still needed.
+        -List tokenization is still needed.
         -Casting is still needed.
         -IO needed.
 -}
@@ -295,6 +295,77 @@ doLessThanEqualTo state =
             then fsPush (Boolean True) state' 
             else fsPush (Boolean False) state'
 
+--Performs logical AND function on top two elements of stack.
+doAnd :: EDState -> EDState
+doAnd EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical AND operation requires two operands!"
+doAnd EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Logical AND operation requires two operands!"
+doAnd state = 
+    let (state', secondToTop, top) = fsPop2 state
+    in doAnd' state' top secondToTop
+
+--Performs logical AND function on two operands and returns an updated EDState.
+-- On failure, an error is thrown.
+doAnd' :: EDState -> Value -> Value -> EDState
+doAnd' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
+doAnd' state (Boolean False) (Boolean True) = fsPush (Boolean False) state
+doAnd' state (Boolean True) (Boolean False) = fsPush (Boolean False) state
+doAnd' state (Boolean True) (Boolean True) = fsPush (Boolean True) state
+doAnd' _ _ _ = error "Operator (and) error. Logical AND requires two boolean types."
+
+--Performs logical OR function on top two elements of stack.
+doOr :: EDState -> EDState
+doOr EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical OR operation requires two operands!"
+doOr EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Logical OR operation requires two operands!"
+doOr state = 
+    let (state', secondToTop, top) = fsPop2 state
+    in doOr' state' top secondToTop
+
+--Performs logical OR function on two operands and returns an updated EDState.
+-- On failure, an error is thrown.
+doOr' :: EDState -> Value -> Value -> EDState
+doOr' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
+doOr' state (Boolean False) (Boolean True) = fsPush (Boolean True) state
+doOr' state (Boolean True) (Boolean False) = fsPush (Boolean True) state
+doOr' state (Boolean True) (Boolean True) = fsPush (Boolean True) state
+doOr' _ _ _ = error "Operator (or) error. Logical OR requires two boolean types."
+
+--Performs logical XOR function on top two elements of stack.
+doXor :: EDState -> EDState
+doXor EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical XOR operation requires two operands!"
+doXor EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Logical XOR operation requires two operands!"
+doXor state = 
+    let (state', secondToTop, top) = fsPop2 state
+    in doXor' state' top secondToTop
+
+--Performs logical XOR function on two operands and returns an updated EDState.
+-- On failure, an error is thrown.
+doXor' :: EDState -> Value -> Value -> EDState
+doXor' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
+doXor' state (Boolean False) (Boolean True) = fsPush (Boolean True) state
+doXor' state (Boolean True) (Boolean False) = fsPush (Boolean True) state
+doXor' state (Boolean True) (Boolean True) = fsPush (Boolean False) state
+doXor' _ _ _ = error "Operator (xor) error. Logical XOR requires two boolean types."
+
+--Performs the logical NOT operator on given boolean 
+-- and throws errors when things go wrong.
+doNot :: EDState -> EDState
+doNot EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical NOT operation requires one operand!"
+doNot state = 
+    let (state', top) = fsPop state
+    in doNot' state' top
+
+--Performs negation if input value is of type boolean.
+doNot' :: EDState -> Value -> EDState
+doNot' state (Boolean False) = fsPush (Boolean True) state
+doNot' state (Boolean True) = fsPush (Boolean False) state
+doNot' _ _ = error "Operator (not) error. Logical NOT requires one boolean type operand."
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
@@ -317,6 +388,10 @@ doOp ">="  = doGreaterThanEqualTo
 doOp "<=" = doLessThanEqualTo 
 doOp "%" = doModulo
 doOp "++" = doConcat
+doOp "and" = doAnd 
+doOp "or" = doOr 
+doOp "xor" = doXor
+doOp "not" = doNot
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
