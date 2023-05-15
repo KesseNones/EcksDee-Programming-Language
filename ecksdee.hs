@@ -19,6 +19,7 @@ data Value =
         BigInteger Integer
     |   Integer Int
     |   Float Float
+    |   Double Double
     |   String String
     |   Char Char
     |   Boolean Bool
@@ -67,6 +68,7 @@ data EDState = EDState {
 addVals :: Value -> Value -> Value
 addVals (BigInteger a) (BigInteger b) = BigInteger (a + b)
 addVals (Integer a) (Integer b) = Integer (a + b)
+addVals (Double a) (Double b) = Double (a + b)
 addVals (Float a) (Float b) = Float (a + b)
 addVals (Boolean a) (Boolean b) = Boolean (a || b)
 addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
@@ -75,6 +77,7 @@ addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't
 subVals :: Value -> Value -> Value
 subVals (BigInteger a) (BigInteger b) = BigInteger (b - a)
 subVals (Integer a) (Integer b) = Integer (b - a)
+subVals (Double a) (Double b) = Double (b - a)
 subVals (Float a) (Float b) = Float (b - a)
 subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match."
 
@@ -82,14 +85,16 @@ subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't Big
 multVals :: Value -> Value -> Value
 multVals (BigInteger a) (BigInteger b) = BigInteger (a * b)
 multVals (Integer a) (Integer b) = Integer (a * b)
+multVals (Double a) (Double b) = Double (a * b)
 multVals (Float a) (Float b) = Float (a * b)
 multVals (Boolean a) (Boolean b) = Boolean (a && b)
-multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, Doubles, or Booleans. \n Data types also need to match."
 
 -- Divides two values. If the types can't be divided, throw an error.
 divideVals :: Value -> Value -> Value
 divideVals (BigInteger a) (BigInteger b) = BigInteger (b `div` a)
 divideVals (Integer a) (Integer b) = Integer (b `div` a)
+divideVals (Double a) (Double b) = Double (b / a)
 divideVals (Float a) (Float b) = Float (b / a)
 divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
 
@@ -413,6 +418,7 @@ compareTypesForMut :: Value -> Value -> Bool
 compareTypesForMut (Boolean _) (Boolean _) = True
 compareTypesForMut (BigInteger _) (BigInteger _) = True
 compareTypesForMut (Integer _) (Integer _) = True
+compareTypesForMut (Double _) (Double _) = True
 compareTypesForMut (Float _) (Float _) = True
 compareTypesForMut (String _) (String _) = True
 compareTypesForMut (Char _) (Char _) = True
@@ -707,13 +713,14 @@ isNum numStr =
 -- Used to turn the strings into values and other tokens.
 lexToken :: String -> Token
 lexToken t
-    | t == "true" = Val $ Boolean True
-    | t == "false" = Val $ Boolean False
+    | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
+    | t == "false" || t == "False" = Val $ Boolean False
     | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
     | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
-    | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInt case
+    | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
+    | (last t == 'd') && ((isNum (if head t == '-' then tail $ init t else init t)) == 1) = Val $ Double (read (init t) :: Double) -- Double case
     | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
-    | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case.
+    | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case
     | otherwise = Word t                             
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
