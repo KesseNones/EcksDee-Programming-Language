@@ -4,7 +4,7 @@
 
 {-
     ISSUES:
-        -List tokenization is still needed.
+        -List tokenization is still needed. Sort of.
         -Casting is still needed.
         -IO needed.
 -}
@@ -23,7 +23,7 @@ data Value =
     |   String String
     |   Char Char
     |   Boolean Bool
-    |   Array [Value]
+    |   List [Value]
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -372,6 +372,56 @@ doNot' state (Boolean False) = fsPush (Boolean True) state
 doNot' state (Boolean True) = fsPush (Boolean False) state
 doNot' _ _ = error "Operator (not) error. Logical NOT requires one boolean type operand."
 
+--Pushes an item into a list.
+doPush :: EDState -> EDState
+doPush EDState{stack = [], fns = fs, vars = vs} =
+    error "List push operation requires two operands!"
+doPush EDState{stack = [x], fns = fs, vars = vs} =
+    error "List push operation requires two operands!"
+doPush state = 
+    let (state', list, val) = fsPop2 state
+    in doPush' state' list val
+
+--Pushes item to list.
+doPush' :: EDState -> Value -> Value -> EDState
+doPush' state (List l) valToPush = fsPush (List (l ++ [valToPush])) state
+doPush' _ _ _ = error "Operator (push) error. Push operator needs a list and a value to be pushed."
+
+--Pops an item from the list and pushes it to the stack.
+doPop :: EDState -> EDState
+doPop EDState{stack = [], fns = fs, vars = vs} =
+    error "List pop operation needs an operand!"
+doPop state = 
+    let (state', list) = fsPop state
+    in doPop' state' list
+
+--Pops item from list and pushes it to stack.
+doPop' :: EDState -> Value -> EDState
+--Nothing happens if list is empty.
+doPop' state (List []) = fsPush (List []) state
+doPop' state (List ls) = 
+    let state' = fsPush (List $ init ls) state
+    in fsPush (last ls) state'
+doPop' _ _ = error "Operator (pop) error. Pop operator needs a list to pop items from."
+
+--Finds item in list of input index.
+doIndex :: EDState -> EDState
+doIndex EDState{stack = [], fns = fs, vars = vs} =
+    error "List index operation requires two operands!"
+doIndex EDState{stack = [x], fns = fs, vars = vs} =
+    error "List index operation requires two operands!"
+doIndex state = 
+    let (state', list, index) = fsPop2 state
+    in doIndex' state' list index
+
+--Retrieves item at index in list.
+doIndex' :: EDState -> Value -> Value -> EDState
+doIndex' state (List []) _ = error "Can't index into empty list."
+doIndex' state (List l) (Integer index) = 
+    let state' = fsPush (List l) state
+    in fsPush (l !! index) state'
+doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list and an index value. \n Index must use type Integer to perform an index"
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -397,6 +447,11 @@ doOp "and" = doAnd
 doOp "or" = doOr 
 doOp "xor" = doXor
 doOp "not" = doNot
+--List operations
+doOp "push" = doPush
+doOp "pop" = doPop
+doOp "index" = doIndex
+--ADD MORE LIST OPERATORS LATER!!!
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
@@ -422,6 +477,7 @@ compareTypesForMut (Double _) (Double _) = True
 compareTypesForMut (Float _) (Float _) = True
 compareTypesForMut (String _) (String _) = True
 compareTypesForMut (Char _) (Char _) = True
+compareTypesForMut (List _) (List _) = True
 compareTypesForMut _ _ = False
 
 mutateVar :: EDState -> String -> EDState
@@ -720,6 +776,7 @@ lexToken :: String -> Token
 lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
+    | t == "[]" = Val $ List []  --Empty list case.
     | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
     | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
     | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
