@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-05-15.91
+--Version: 2023-05-16.11
 --Toy Programming Language Named EcksDee
 
 {-
@@ -841,6 +841,13 @@ removeComments False nonComments ( Word ("/'"):xs ) = removeComments True nonCom
 -- If we're not in a comment, add the token to the nonComment tokens 
 removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments) xs
 
+--Prints the end stack in a way that's more formal and nice looking.
+--Each element of the stack is printed on a seperate line growing downwards. 
+--If the stack is empty, nothing is printed.
+printStack :: [Value] -> IO ()
+printStack [] = return ()
+printStack (x:xs) = print x >> printStack xs
+
 main :: IO ()
 main = do
     -- get all the code passed to STDIN as a giant string 
@@ -854,4 +861,4 @@ main = do
 
     --print ast
 
-    print $ reverse $ stack $ doNode ast fsNew 
+    printStack $ reverse $ stack $ doNode ast fsNew 
