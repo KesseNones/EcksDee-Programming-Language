@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-05-16.11
+--Version: 2023-05-28.97
 --Toy Programming Language Named EcksDee
 
 {-
@@ -422,6 +422,32 @@ doIndex' state (List l) (Integer index) =
     in fsPush (l !! index) state'
 doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list and an index value. \n Index must use type Integer to perform an index"
 
+--Takes the length of a list or string at the top 
+-- of the stack and pushes resulting length to top of stack.
+doLength :: EDState -> EDState
+doLength EDState{stack = [], fns = fs, vars = vs} =
+    error "Length operation requires one operand!"
+doLength state = doLength' state (fsTop state)
+
+--Performs actual length function.
+doLength' :: EDState -> Value -> EDState
+doLength' state (List ls) = fsPush (Integer $ length ls) state
+doLength' state (String st) = fsPush (Integer $ length st) state
+doLength' state _ = error "Operator (length) error. List or string type is needed for length function to work."
+
+--Determines if the list or string at the top
+-- of the stack is empty or not.
+doIsEmpty :: EDState -> EDState
+doIsEmpty EDState{stack = [], fns = fs, vars = vs} =
+    error "isEmpty operation requires one operand!"
+doIsEmpty state = doIsEmpty' state (fsTop state)
+
+--Performs actual length function.
+doIsEmpty' :: EDState -> Value -> EDState
+doIsEmpty' state (List ls) = fsPush (Boolean $ null ls) state
+doIsEmpty' state (String st) = fsPush (Boolean $ null st) state
+doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -451,7 +477,9 @@ doOp "not" = doNot
 doOp "push" = doPush
 doOp "pop" = doPop
 doOp "index" = doIndex
---ADD MORE LIST OPERATORS LATER!!!
+doOp "length" = doLength
+doOp "isEmpty" = doIsEmpty
+--doOp "clear" = doClear --Empties out a list or string
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
