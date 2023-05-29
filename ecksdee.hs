@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-05-29.18
+--Version: 2023-05-29.20
 --Toy Programming Language Named EcksDee
 
 {-
@@ -449,20 +449,25 @@ doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop ite
 --Finds item in list of input index.
 doIndex :: EDState -> EDState
 doIndex EDState{stack = [], fns = fs, vars = vs} =
-    error "List index operation requires two operands!"
+    error "index operation requires two operands!"
 doIndex EDState{stack = [x], fns = fs, vars = vs} =
-    error "List index operation requires two operands!"
+    error "index operation requires two operands!"
 doIndex state = 
     let (state', list, index) = fsPop2 state
     in doIndex' state' list index
 
---Retrieves item at index in list.
+--Retrieves item at index in list or string.
 doIndex' :: EDState -> Value -> Value -> EDState
 doIndex' state (List []) _ = error "Can't index into empty list."
-doIndex' state (List l) (Integer index) = 
-    let state' = fsPush (List l) state
-    in fsPush (l !! index) state'
-doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list and an index value. \n Index must use type Integer to perform an index"
+doIndex' state (String "") _ = error "Can't index into empty string."
+doIndex' state (List ls) (Integer index) = 
+    let state' = fsPush (List ls) state
+    in fsPush (ls !! index) state'
+--String case.
+doIndex' state (String st) (Integer index) = 
+    let state' = fsPush (String st) state
+    in fsPush (Char $ st !! index) state'
+doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/string and an index value. \n Index must use type Integer to perform an index"
 
 --Takes the length of a list or string at the top 
 -- of the stack and pushes resulting length to top of stack.
