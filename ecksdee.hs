@@ -1,10 +1,11 @@
 --Jesse A. Jones
---Version: 2023-05-29.17
+--Version: 2023-05-29.18
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
         -List tokenization is still needed. Sort of.
+        -Whitespace characters need to be tozenized properly.
         -Casting is still needed.
         -IO needed.
 -}
@@ -388,10 +389,10 @@ doPush' state (List ls) valToPush = fsPush (List (ls ++ [valToPush])) state
 doPush' state (String st) (Char c) = fsPush (String (st ++ [c])) state
 doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed."
 
---Pops an item from the list and pushes it to the stack.
+--Pops an item from the list or string and pushes it to the stack.
 doPop :: EDState -> EDState
 doPop EDState{stack = [], fns = fs, vars = vs} =
-    error "List pop operation needs an operand!"
+    error "pop operation needs an operand!"
 doPop state = 
     let (state', list) = fsPop state
     in doPop' state' list
@@ -403,7 +404,10 @@ doPop' state (List []) = fsPush (List []) state
 doPop' state (List ls) = 
     let state' = fsPush (List $ init ls) state
     in fsPush (last ls) state'
-doPop' _ _ = error "Operator (pop) error. Pop operator needs a list to pop items from."
+doPop' state (String st) = 
+    let state' = fsPush (String $ init st) state
+    in fsPush (Char $ last st) state'
+doPop' _ _ = error "Operator (pop) error. Pop operator needs a list or string to pop items from."
 
 --Pushes an item into a list from the front.
 doFpush :: EDState -> EDState
@@ -418,7 +422,8 @@ doFpush state =
 --Pushes item to list.
 doFpush' :: EDState -> Value -> Value -> EDState
 doFpush' state (List ls) valToPush = fsPush (List (valToPush : ls)) state
-doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list and a value to be pushed to front."
+doFpush' state (String st) (Char c) = fsPush (String (c : st)) state
+doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
 
 --Pops an item from the front of the list and pushes it to the stack.
 doFpop :: EDState -> EDState
@@ -435,6 +440,10 @@ doFpop' state (List []) = fsPush (List []) state
 doFpop' state (List ls) = 
     let state' = fsPush (List $ tail ls) state
     in fsPush (head ls) state'
+--String case.
+doFpop' state (String st) = 
+    let state' = fsPush (String $ tail st) state
+    in fsPush (Char $ head st) state'
 doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
 
 --Finds item in list of input index.
