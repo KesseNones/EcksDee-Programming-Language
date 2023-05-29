@@ -532,13 +532,18 @@ doOp "and" = doAnd
 doOp "or" = doOr 
 doOp "xor" = doXor
 doOp "not" = doNot
---List operations (make sure all these work on strings too)
+--List operations
 doOp "push" = doPush
+doOp "p" = doPush --Alias for push
 doOp "pop" = doPop
+doOp "po" = doPop --Alias for pop
 doOp "fpush" = doFpush
+doOp "fp" = doFpush --Alias for fpush
 doOp "fpop" = doFpop
+doOp "fpo" = doFpop --Alias for fpop
 doOp "index" = doIndex
 doOp "length" = doLength
+doOp "len" = doLength --Alias for length
 doOp "isEmpty" = doIsEmpty
 doOp "clear" = doClear
 
