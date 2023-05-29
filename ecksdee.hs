@@ -1,11 +1,9 @@
 --Jesse A. Jones
---Version: 2023-05-29.20
+--Version: 2023-05-29.97
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
-        -List tokenization is still needed. Sort of.
-        -Whitespace characters need to be tozenized properly.
         -Casting is still needed.
         -IO needed.
 -}
@@ -892,7 +890,7 @@ tokenize'' "" _ _ False True = error "Parse Error: Code ended without array bein
 tokenize'' "" _ _ True False = error "Parse Error: Code ended without string being closed." --Error case for non closed string.         
 tokenize'' "" currStr strs False False = strs ++ (if null currStr then [] else [currStr]) --Parsing is complete case.
 
-tokenize'' (('\''):(' '):('\''):xs) currStr strs False False = tokenize'' xs currStr (strs ++ ["\' \'"]) False False --Space character case.
+tokenize'' (('\''):c:('\''):xs) currStr strs False False = tokenize'' xs currStr (strs ++ [ "\'" ++ [c] ++ "\'" ] ) False False --Character case.
 
 tokenize'' (('\"'):xs) currStr strs False False = tokenize'' xs (currStr ++ ['\"']) strs True False --String enter case.
 tokenize'' (('\"'):xs) currStr strs True False = tokenize'' xs [] (strs ++ [currStr ++ ['\"']]) False False --Exiting string case.
