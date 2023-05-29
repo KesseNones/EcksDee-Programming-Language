@@ -1,10 +1,11 @@
 --Jesse A. Jones
---Version: 2023-05-12.11
+--Version: 2023-05-29.20
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
-        -Array tokenization is still needed.
+        -List tokenization is still needed. Sort of.
+        -Whitespace characters need to be tozenized properly.
         -Casting is still needed.
         -IO needed.
 -}
@@ -19,10 +20,11 @@ data Value =
         BigInteger Integer
     |   Integer Int
     |   Float Float
+    |   Double Double
     |   String String
     |   Char Char
     |   Boolean Bool
-    |   Array [Value]
+    |   List [Value]
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -67,6 +69,7 @@ data EDState = EDState {
 addVals :: Value -> Value -> Value
 addVals (BigInteger a) (BigInteger b) = BigInteger (a + b)
 addVals (Integer a) (Integer b) = Integer (a + b)
+addVals (Double a) (Double b) = Double (a + b)
 addVals (Float a) (Float b) = Float (a + b)
 addVals (Boolean a) (Boolean b) = Boolean (a || b)
 addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
@@ -75,6 +78,7 @@ addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't
 subVals :: Value -> Value -> Value
 subVals (BigInteger a) (BigInteger b) = BigInteger (b - a)
 subVals (Integer a) (Integer b) = Integer (b - a)
+subVals (Double a) (Double b) = Double (b - a)
 subVals (Float a) (Float b) = Float (b - a)
 subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match."
 
@@ -82,14 +86,16 @@ subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't Big
 multVals :: Value -> Value -> Value
 multVals (BigInteger a) (BigInteger b) = BigInteger (a * b)
 multVals (Integer a) (Integer b) = Integer (a * b)
+multVals (Double a) (Double b) = Double (a * b)
 multVals (Float a) (Float b) = Float (a * b)
 multVals (Boolean a) (Boolean b) = Boolean (a && b)
-multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, Doubles, or Booleans. \n Data types also need to match."
 
 -- Divides two values. If the types can't be divided, throw an error.
 divideVals :: Value -> Value -> Value
 divideVals (BigInteger a) (BigInteger b) = BigInteger (b `div` a)
 divideVals (Integer a) (Integer b) = Integer (b `div` a)
+divideVals (Double a) (Double b) = Double (b / a)
 divideVals (Float a) (Float b) = Float (b / a)
 divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
 
@@ -295,6 +301,213 @@ doLessThanEqualTo state =
             then fsPush (Boolean True) state' 
             else fsPush (Boolean False) state'
 
+--Performs logical AND function on top two elements of stack.
+doAnd :: EDState -> EDState
+doAnd EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical AND operation requires two operands!"
+doAnd EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Logical AND operation requires two operands!"
+doAnd state = 
+    let (state', secondToTop, top) = fsPop2 state
+    in doAnd' state' top secondToTop
+
+--Performs logical AND function on two operands and returns an updated EDState.
+-- On failure, an error is thrown.
+doAnd' :: EDState -> Value -> Value -> EDState
+doAnd' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
+doAnd' state (Boolean False) (Boolean True) = fsPush (Boolean False) state
+doAnd' state (Boolean True) (Boolean False) = fsPush (Boolean False) state
+doAnd' state (Boolean True) (Boolean True) = fsPush (Boolean True) state
+doAnd' _ _ _ = error "Operator (and) error. Logical AND requires two boolean types."
+
+--Performs logical OR function on top two elements of stack.
+doOr :: EDState -> EDState
+doOr EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical OR operation requires two operands!"
+doOr EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Logical OR operation requires two operands!"
+doOr state = 
+    let (state', secondToTop, top) = fsPop2 state
+    in doOr' state' top secondToTop
+
+--Performs logical OR function on two operands and returns an updated EDState.
+-- On failure, an error is thrown.
+doOr' :: EDState -> Value -> Value -> EDState
+doOr' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
+doOr' state (Boolean False) (Boolean True) = fsPush (Boolean True) state
+doOr' state (Boolean True) (Boolean False) = fsPush (Boolean True) state
+doOr' state (Boolean True) (Boolean True) = fsPush (Boolean True) state
+doOr' _ _ _ = error "Operator (or) error. Logical OR requires two boolean types."
+
+--Performs logical XOR function on top two elements of stack.
+doXor :: EDState -> EDState
+doXor EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical XOR operation requires two operands!"
+doXor EDState{stack = [x], fns = fs, vars = vs} = 
+    error "Logical XOR operation requires two operands!"
+doXor state = 
+    let (state', secondToTop, top) = fsPop2 state
+    in doXor' state' top secondToTop
+
+--Performs logical XOR function on two operands and returns an updated EDState.
+-- On failure, an error is thrown.
+doXor' :: EDState -> Value -> Value -> EDState
+doXor' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
+doXor' state (Boolean False) (Boolean True) = fsPush (Boolean True) state
+doXor' state (Boolean True) (Boolean False) = fsPush (Boolean True) state
+doXor' state (Boolean True) (Boolean True) = fsPush (Boolean False) state
+doXor' _ _ _ = error "Operator (xor) error. Logical XOR requires two boolean types."
+
+--Performs the logical NOT operator on given boolean 
+-- and throws errors when things go wrong.
+doNot :: EDState -> EDState
+doNot EDState{stack = [], fns = fs, vars = vs} = 
+    error "Logical NOT operation requires one operand!"
+doNot state = 
+    let (state', top) = fsPop state
+    in doNot' state' top
+
+--Performs negation if input value is of type boolean.
+doNot' :: EDState -> Value -> EDState
+doNot' state (Boolean False) = fsPush (Boolean True) state
+doNot' state (Boolean True) = fsPush (Boolean False) state
+doNot' _ _ = error "Operator (not) error. Logical NOT requires one boolean type operand."
+
+--Pushes an item into a list.
+doPush :: EDState -> EDState
+doPush EDState{stack = [], fns = fs, vars = vs} =
+    error "List push operation requires two operands!"
+doPush EDState{stack = [x], fns = fs, vars = vs} =
+    error "List push operation requires two operands!"
+doPush state = 
+    let (state', list, val) = fsPop2 state
+    in doPush' state' list val
+
+--Pushes item to list or string.
+doPush' :: EDState -> Value -> Value -> EDState
+doPush' state (List ls) valToPush = fsPush (List (ls ++ [valToPush])) state
+doPush' state (String st) (Char c) = fsPush (String (st ++ [c])) state
+doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed."
+
+--Pops an item from the list or string and pushes it to the stack.
+doPop :: EDState -> EDState
+doPop EDState{stack = [], fns = fs, vars = vs} =
+    error "pop operation needs an operand!"
+doPop state = 
+    let (state', list) = fsPop state
+    in doPop' state' list
+
+--Pops item from list and pushes it to stack.
+doPop' :: EDState -> Value -> EDState
+--Nothing happens if list is empty.
+doPop' state (List []) = fsPush (List []) state
+doPop' state (List ls) = 
+    let state' = fsPush (List $ init ls) state
+    in fsPush (last ls) state'
+doPop' state (String st) = 
+    let state' = fsPush (String $ init st) state
+    in fsPush (Char $ last st) state'
+doPop' _ _ = error "Operator (pop) error. Pop operator needs a list or string to pop items from."
+
+--Pushes an item into a list from the front.
+doFpush :: EDState -> EDState
+doFpush EDState{stack = [], fns = fs, vars = vs} =
+    error "fpush operation requires two operands!"
+doFpush EDState{stack = [x], fns = fs, vars = vs} =
+    error "fpush operation requires two operands!"
+doFpush state = 
+    let (state', list, val) = fsPop2 state
+    in doFpush' state' list val
+
+--Pushes item to list.
+doFpush' :: EDState -> Value -> Value -> EDState
+doFpush' state (List ls) valToPush = fsPush (List (valToPush : ls)) state
+doFpush' state (String st) (Char c) = fsPush (String (c : st)) state
+doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
+
+--Pops an item from the front of the list and pushes it to the stack.
+doFpop :: EDState -> EDState
+doFpop EDState{stack = [], fns = fs, vars = vs} =
+    error "List fpop operation needs an operand!"
+doFpop state = 
+    let (state', list) = fsPop state
+    in doFpop' state' list
+
+--Pops item from list and pushes it to stack.
+doFpop' :: EDState -> Value -> EDState
+--Nothing happens if list is empty.
+doFpop' state (List []) = fsPush (List []) state
+doFpop' state (List ls) = 
+    let state' = fsPush (List $ tail ls) state
+    in fsPush (head ls) state'
+--String case.
+doFpop' state (String st) = 
+    let state' = fsPush (String $ tail st) state
+    in fsPush (Char $ head st) state'
+doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
+
+--Finds item in list of input index.
+doIndex :: EDState -> EDState
+doIndex EDState{stack = [], fns = fs, vars = vs} =
+    error "index operation requires two operands!"
+doIndex EDState{stack = [x], fns = fs, vars = vs} =
+    error "index operation requires two operands!"
+doIndex state = 
+    let (state', list, index) = fsPop2 state
+    in doIndex' state' list index
+
+--Retrieves item at index in list or string.
+doIndex' :: EDState -> Value -> Value -> EDState
+doIndex' state (List []) _ = error "Can't index into empty list."
+doIndex' state (String "") _ = error "Can't index into empty string."
+doIndex' state (List ls) (Integer index) = 
+    let state' = fsPush (List ls) state
+    in fsPush (ls !! index) state'
+--String case.
+doIndex' state (String st) (Integer index) = 
+    let state' = fsPush (String st) state
+    in fsPush (Char $ st !! index) state'
+doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/string and an index value. \n Index must use type Integer to perform an index"
+
+--Takes the length of a list or string at the top 
+-- of the stack and pushes resulting length to top of stack.
+doLength :: EDState -> EDState
+doLength EDState{stack = [], fns = fs, vars = vs} =
+    error "Length operation requires one operand!"
+doLength state = doLength' state (fsTop state)
+
+--Performs actual length function.
+doLength' :: EDState -> Value -> EDState
+doLength' state (List ls) = fsPush (Integer $ length ls) state
+doLength' state (String st) = fsPush (Integer $ length st) state
+doLength' state _ = error "Operator (length) error. List or string type is needed for length function to work."
+
+--Determines if the list or string at the top
+-- of the stack is empty or not.
+doIsEmpty :: EDState -> EDState
+doIsEmpty EDState{stack = [], fns = fs, vars = vs} =
+    error "isEmpty operation requires one operand!"
+doIsEmpty state = doIsEmpty' state (fsTop state)
+
+--Performs actual length function.
+doIsEmpty' :: EDState -> Value -> EDState
+doIsEmpty' state (List ls) = fsPush (Boolean $ null ls) state
+doIsEmpty' state (String st) = fsPush (Boolean $ null st) state
+doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
+
+--Sets the string or list at the top of the stack to empty.
+doClear :: EDState -> EDState
+doClear EDState{stack = [], fns = fs, vars = vs} =
+    error "Clear operation requires one operand!"
+doClear state = 
+    let (state', list) = fsPop state
+    in doClear' state' list
+
+--Performs clear operation.
+doClear' :: EDState -> Value -> EDState
+doClear' state (List ls) = fsPush (List []) state
+doClear' state (String st) = fsPush (String "") state
+doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
@@ -317,6 +530,19 @@ doOp ">="  = doGreaterThanEqualTo
 doOp "<=" = doLessThanEqualTo 
 doOp "%" = doModulo
 doOp "++" = doConcat
+doOp "and" = doAnd 
+doOp "or" = doOr 
+doOp "xor" = doXor
+doOp "not" = doNot
+--List operations (make sure all these work on strings too)
+doOp "push" = doPush
+doOp "pop" = doPop
+doOp "fpush" = doFpush
+doOp "fpop" = doFpop
+doOp "index" = doIndex
+doOp "length" = doLength
+doOp "isEmpty" = doIsEmpty
+doOp "clear" = doClear
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
@@ -338,9 +564,11 @@ compareTypesForMut :: Value -> Value -> Bool
 compareTypesForMut (Boolean _) (Boolean _) = True
 compareTypesForMut (BigInteger _) (BigInteger _) = True
 compareTypesForMut (Integer _) (Integer _) = True
+compareTypesForMut (Double _) (Double _) = True
 compareTypesForMut (Float _) (Float _) = True
 compareTypesForMut (String _) (String _) = True
 compareTypesForMut (Char _) (Char _) = True
+compareTypesForMut (List _) (List _) = True
 compareTypesForMut _ _ = False
 
 mutateVar :: EDState -> String -> EDState
@@ -604,6 +832,7 @@ fsPop3 state =
 fsTop :: EDState -> Value 
 fsTop state = head $ stack state 
 
+--Counts the number of decimal points in a string.
 decCount :: String -> Int
 decCount "" = 0
 decCount (x:xs) = if x == '.' then 1 + decCount xs else decCount xs
@@ -612,7 +841,7 @@ isNum' :: String -> Bool -> Bool
 isNum' "" isNum  = isNum  
 isNum' (x:xs) isNum =
     let nums = "0123456789"
-    in if not (x `elem` nums || x == '.') 
+    in if not (x `elem` nums || x == '.' || x == 'e' || x == '-') 
         then isNum' xs False
         else isNum' xs isNum
 
@@ -622,23 +851,29 @@ isNum "" = -1
 isNum numStr = 
     let containsValidChars = isNum' numStr True
         decimalPoints = decCount numStr
+        minusSigns = length $ filter (=='-') numStr
+        exponentCount = length $ filter (=='e') numStr
     in if containsValidChars 
-        then case decimalPoints of
-            0 -> 0
-            1 -> 1
+        then case (decimalPoints, minusSigns, exponentCount) of
+            (0, 0, 0) -> 0
+            (1, 0, 0) -> 1
+            (1, 0, 1) -> 1
+            (1, 1, 1) -> 1
             _ -> -1
         else -1 
 
 -- Used to turn the strings into values and other tokens.
 lexToken :: String -> Token
 lexToken t
-    | t == "true" = Val $ Boolean True
-    | t == "false" = Val $ Boolean False
+    | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
+    | t == "false" || t == "False" = Val $ Boolean False
+    | t == "[]" = Val $ List []  --Empty list case.
     | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
     | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
-    | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInt case
+    | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
+    | (last t == 'd') && ((isNum (if head t == '-' then tail $ init t else init t)) == 1) = Val $ Double (read (init t) :: Double) -- Double case
     | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
-    | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case.
+    | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case
     | otherwise = Word t                             
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
@@ -656,6 +891,8 @@ tokenize'' :: String -> String -> [String] -> Bool -> Bool -> [String]
 tokenize'' "" _ _ False True = error "Parse Error: Code ended without array being closed." --Error case if array isn't closed.          
 tokenize'' "" _ _ True False = error "Parse Error: Code ended without string being closed." --Error case for non closed string.         
 tokenize'' "" currStr strs False False = strs ++ (if null currStr then [] else [currStr]) --Parsing is complete case.
+
+tokenize'' (('\''):(' '):('\''):xs) currStr strs False False = tokenize'' xs currStr (strs ++ ["\' \'"]) False False --Space character case.
 
 tokenize'' (('\"'):xs) currStr strs False False = tokenize'' xs (currStr ++ ['\"']) strs True False --String enter case.
 tokenize'' (('\"'):xs) currStr strs True False = tokenize'' xs [] (strs ++ [currStr ++ ['\"']]) False False --Exiting string case.
@@ -697,6 +934,13 @@ removeComments False nonComments ( Word ("/'"):xs ) = removeComments True nonCom
 -- If we're not in a comment, add the token to the nonComment tokens 
 removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments) xs
 
+--Prints the end stack in a way that's more formal and nice looking.
+--Each element of the stack is printed on a seperate line growing downwards. 
+--If the stack is empty, nothing is printed.
+printStack :: [Value] -> IO ()
+printStack [] = return ()
+printStack (x:xs) = print x >> printStack xs
+
 main :: IO ()
 main = do
     -- get all the code passed to STDIN as a giant string 
@@ -710,4 +954,4 @@ main = do
 
     --print ast
 
-    print $ reverse $ stack $ doNode ast fsNew 
+    printStack $ reverse $ stack $ doNode ast fsNew 
