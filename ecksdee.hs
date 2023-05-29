@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-05-28.97
+--Version: 2023-05-29.15
 --Toy Programming Language Named EcksDee
 
 {-
@@ -404,6 +404,38 @@ doPop' state (List ls) =
     in fsPush (last ls) state'
 doPop' _ _ = error "Operator (pop) error. Pop operator needs a list to pop items from."
 
+--Pushes an item into a list from the front.
+doFpush :: EDState -> EDState
+doFpush EDState{stack = [], fns = fs, vars = vs} =
+    error "fpush operation requires two operands!"
+doFpush EDState{stack = [x], fns = fs, vars = vs} =
+    error "fpush operation requires two operands!"
+doFpush state = 
+    let (state', list, val) = fsPop2 state
+    in doFpush' state' list val
+
+--Pushes item to list.
+doFpush' :: EDState -> Value -> Value -> EDState
+doFpush' state (List ls) valToPush = fsPush (List (valToPush : ls)) state
+doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list and a value to be pushed to front."
+
+--Pops an item from the front of the list and pushes it to the stack.
+doFpop :: EDState -> EDState
+doFpop EDState{stack = [], fns = fs, vars = vs} =
+    error "List fpop operation needs an operand!"
+doFpop state = 
+    let (state', list) = fsPop state
+    in doFpop' state' list
+
+--Pops item from list and pushes it to stack.
+doFpop' :: EDState -> Value -> EDState
+--Nothing happens if list is empty.
+doFpop' state (List []) = fsPush (List []) state
+doFpop' state (List ls) = 
+    let state' = fsPush (List $ tail ls) state
+    in fsPush (head ls) state'
+doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
+
 --Finds item in list of input index.
 doIndex :: EDState -> EDState
 doIndex EDState{stack = [], fns = fs, vars = vs} =
@@ -490,6 +522,8 @@ doOp "not" = doNot
 --List operations (make sure all these work on strings too)
 doOp "push" = doPush
 doOp "pop" = doPop
+doOp "fpush" = doFpush
+doOp "fpop" = doFpop
 doOp "index" = doIndex
 doOp "length" = doLength
 doOp "isEmpty" = doIsEmpty
