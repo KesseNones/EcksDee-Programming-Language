@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-05-29.15
+--Version: 2023-05-29.17
 --Toy Programming Language Named EcksDee
 
 {-
@@ -382,10 +382,11 @@ doPush state =
     let (state', list, val) = fsPop2 state
     in doPush' state' list val
 
---Pushes item to list.
+--Pushes item to list or string.
 doPush' :: EDState -> Value -> Value -> EDState
-doPush' state (List l) valToPush = fsPush (List (l ++ [valToPush])) state
-doPush' _ _ _ = error "Operator (push) error. Push operator needs a list and a value to be pushed."
+doPush' state (List ls) valToPush = fsPush (List (ls ++ [valToPush])) state
+doPush' state (String st) (Char c) = fsPush (String (st ++ [c])) state
+doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed."
 
 --Pops an item from the list and pushes it to the stack.
 doPop :: EDState -> EDState
@@ -876,6 +877,8 @@ tokenize'' :: String -> String -> [String] -> Bool -> Bool -> [String]
 tokenize'' "" _ _ False True = error "Parse Error: Code ended without array being closed." --Error case if array isn't closed.          
 tokenize'' "" _ _ True False = error "Parse Error: Code ended without string being closed." --Error case for non closed string.         
 tokenize'' "" currStr strs False False = strs ++ (if null currStr then [] else [currStr]) --Parsing is complete case.
+
+tokenize'' (('\''):(' '):('\''):xs) currStr strs False False = tokenize'' xs currStr (strs ++ ["\' \'"]) False False --Space character case.
 
 tokenize'' (('\"'):xs) currStr strs False False = tokenize'' xs (currStr ++ ['\"']) strs True False --String enter case.
 tokenize'' (('\"'):xs) currStr strs True False = tokenize'' xs [] (strs ++ [currStr ++ ['\"']]) False False --Exiting string case.
