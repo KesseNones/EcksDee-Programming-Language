@@ -448,6 +448,20 @@ doIsEmpty' state (List ls) = fsPush (Boolean $ null ls) state
 doIsEmpty' state (String st) = fsPush (Boolean $ null st) state
 doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
 
+--Sets the string or list at the top of the stack to empty.
+doClear :: EDState -> EDState
+doClear EDState{stack = [], fns = fs, vars = vs} =
+    error "Clear operation requires one operand!"
+doClear state = 
+    let (state', list) = fsPop state
+    in doClear' state' list
+
+--Performs clear operation.
+doClear' :: EDState -> Value -> EDState
+doClear' state (List ls) = fsPush (List []) state
+doClear' state (String st) = fsPush (String "") state
+doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -473,13 +487,13 @@ doOp "and" = doAnd
 doOp "or" = doOr 
 doOp "xor" = doXor
 doOp "not" = doNot
---List operations
+--List operations (make sure all these work on strings too)
 doOp "push" = doPush
 doOp "pop" = doPop
 doOp "index" = doIndex
 doOp "length" = doLength
 doOp "isEmpty" = doIsEmpty
---doOp "clear" = doClear --Empties out a list or string
+doOp "clear" = doClear
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
