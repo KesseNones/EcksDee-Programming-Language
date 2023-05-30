@@ -4,7 +4,10 @@
 
 {-
     ISSUES:
-        -Casting is still needed.
+        -Extra error checking for casting is a good idea.
+        -Maybe have errors show line number 
+            of code file where error happened, somehow. 
+            It would make user debugging much less ass.
         -IO needed.
 -}
 
@@ -550,11 +553,35 @@ doCast' state (Double n) (String "BigInteger") = fsPush (BigInteger (floor n :: 
 doCast' state (Double n) (String "Float") = fsPush (Float (realToFrac n :: Float)) state
 doCast' state (Double n) (String "Double") = fsPush (Double n) state --Do nothing case.
 
--- doCast' state (String s) (String "String") = fsPush (String s) state --Do nothing case.
--- doCast' state (String s) (String "Integer") = fsPush (Integer (fromIntegral n :: Int)) state
--- doCast' state (String s) (String "BigInteger") = fsPush (BigInteger (fromIntegral n :: Integer)) state 
--- doCast' state (String s) (String "Float") = fsPush (Float n) state
--- doCast' state (String s) (String "Double") = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (String s) (String "String") = fsPush (String s) state --Do nothing case.
+
+doCast' state (String s) (String "Integer") = 
+    let mbyInt = readMaybe s :: Maybe Int
+        parsed = case mbyInt of 
+                    Just val -> val 
+                    Nothing -> error "Operator (cast) error. Failed to convert String to type Integer."
+    in fsPush (Integer parsed) state
+
+doCast' state (String s) (String "BigInteger") = 
+    let mbyBigInt = readMaybe s :: Maybe Integer
+        parsed = case mbyBigInt of 
+                    Just val -> val 
+                    Nothing -> error "Operator (cast) error. Failed to convert String to type BigInteger."
+    in fsPush (BigInteger parsed) state
+
+doCast' state (String s) (String "Float") = 
+    let mbyFlt = readMaybe s :: Maybe Float
+        parsed = case mbyFlt of 
+                    Just val -> val 
+                    Nothing -> error "Operator (cast) error. Failed to convert String to type Float."
+    in fsPush (Float parsed) state
+
+doCast' state (String s) (String "Double") = 
+    let mbyDbl = readMaybe s :: Maybe Double
+        parsed = case mbyDbl of 
+                    Just val -> val 
+                    Nothing -> error "Operator (cast) error. Failed to convert String to type Double."
+    in fsPush (Double parsed) state
 
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
 
