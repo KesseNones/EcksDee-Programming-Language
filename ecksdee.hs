@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-05-29.97
+--Version: 2023-05-30.12
 --Toy Programming Language Named EcksDee
 
 {-
@@ -12,6 +12,7 @@ import Data.List
 import Data.Char
 import Data.Maybe 
 import Debug.Trace
+import Text.Read (readMaybe)
 import qualified Data.Map.Strict as M
 
 data Value =                                         
@@ -507,6 +508,57 @@ doClear' state (List ls) = fsPush (List []) state
 doClear' state (String st) = fsPush (String "") state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
+--Used to turn a value of one type into another.
+doCast :: EDState -> EDState
+doCast EDState{stack = [], fns = _, vars = _} =
+    error "Operation cast requires two operands!"
+doCast EDState{stack = [x], fns = _, vars = _} =
+    error "Operation cast requires two operands!"
+doCast state =
+    let (state', val, castType) = fsPop2 state
+    in doCast' state' val castType
+
+--Performs the actual cast operation.
+doCast' :: EDState -> Value -> Value -> EDState
+
+doCast' state (Boolean b) (String "Integer") = fsPush (Integer (if b then 1 else 0)) state
+doCast' state (Boolean b) (String "BigInteger") = fsPush (BigInteger (if b then 1 else 0)) state
+doCast' state (Boolean b) (String "String") = fsPush (String $ show b) state
+doCast' state (Boolean b) (String "Boolean") = fsPush (Boolean b) state --Do nothing case.
+
+doCast' state (BigInteger n) (String "String") = fsPush (String $ show n) state
+doCast' state (BigInteger n) (String "Integer") = fsPush (Integer (fromIntegral n :: Int)) state
+doCast' state (BigInteger n) (String "BigInteger") = fsPush (BigInteger n) state --Do nothing case.
+doCast' state (BigInteger n) (String "Float") = fsPush (Float (fromIntegral n :: Float)) state
+doCast' state (BigInteger n) (String "Double") = fsPush (Double (fromIntegral n :: Double)) state
+
+doCast' state (Integer n) (String "String") = fsPush (String $ show n) state
+doCast' state (Integer n) (String "Integer") = fsPush (Integer n) state --Do nothing case
+doCast' state (Integer n) (String "BigInteger") = fsPush (BigInteger (fromIntegral n :: Integer)) state 
+doCast' state (Integer n) (String "Float") = fsPush (Float (fromIntegral n :: Float)) state
+doCast' state (Integer n) (String "Double") = fsPush (Double (fromIntegral n :: Double)) state
+
+doCast' state (Float n) (String "String") = fsPush (String $ show n) state
+doCast' state (Float n) (String "Integer") = fsPush (Integer (truncate n)) state
+doCast' state (Float n) (String "BigInteger") = fsPush (BigInteger (floor n :: Integer)) state 
+doCast' state (Float n) (String "Float") = fsPush (Float n) state --Do nothing case.
+doCast' state (Float n) (String "Double") = fsPush (Double (realToFrac n :: Double)) state
+
+doCast' state (Double n) (String "String") = fsPush (String $ show n) state
+doCast' state (Double n) (String "Integer") = fsPush (Integer (truncate n)) state
+doCast' state (Double n) (String "BigInteger") = fsPush (BigInteger (floor n :: Integer)) state 
+doCast' state (Double n) (String "Float") = fsPush (Float (realToFrac n :: Float)) state
+doCast' state (Double n) (String "Double") = fsPush (Double n) state --Do nothing case.
+
+-- doCast' state (String s) (String "String") = fsPush (String s) state --Do nothing case.
+-- doCast' state (String s) (String "Integer") = fsPush (Integer (fromIntegral n :: Int)) state
+-- doCast' state (String s) (String "BigInteger") = fsPush (BigInteger (fromIntegral n :: Integer)) state 
+-- doCast' state (String s) (String "Float") = fsPush (Float n) state
+-- doCast' state (String s) (String "Double") = fsPush (Double (fromIntegral n :: Double)) state
+
+doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
+
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -546,6 +598,8 @@ doOp "length" = doLength
 doOp "len" = doLength --Alias for length
 doOp "isEmpty" = doIsEmpty
 doOp "clear" = doClear
+--Type stuff
+doOp "cast" = doCast
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
