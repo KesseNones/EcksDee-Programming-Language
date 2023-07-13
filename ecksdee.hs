@@ -4,12 +4,13 @@
 
 {-
     ISSUES:
-        -It's kinda borked
+        -Runs super slowly when doing looping/recursion on large scales.
         -Extra error checking for casting is a good idea.
         -Maybe have errors show line number 
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
         -IO needed.
+        -Standardize errors.
 -}
 
 import Data.List
@@ -669,6 +670,17 @@ doCast' state (String s) (String "Double") =
 
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
 
+--Prints top element of stack. This element must be a string or it freaks out.
+doPrint :: EDState -> IO EDState
+doPrint state = do 
+    stack <- (stack state)
+    if (null stack) 
+        then error "Operator (print) error. Can't print from empty stack!"
+        else case (head stack) of 
+            String s -> putStrLn s 
+            _ -> error "Operator (print) error. Top of stack must be a string to be printed!"
+    return state
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -710,8 +722,8 @@ doOp "isEmpty" = doIsEmpty
 doOp "clear" = doClear
 --Type stuff
 doOp "cast" = doCast
---IO shit BY THE EMPEROR THIS IS GOING TO SUCK!!!
---doOp "print" = doPrint
+--IO stuff
+doOp "print" = doPrint
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
