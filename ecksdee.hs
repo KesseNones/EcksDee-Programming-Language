@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-13.87
+--Version: 2023-07-14.06
 --Toy Programming Language Named EcksDee
 
 {-
@@ -18,6 +18,8 @@ import Data.Char
 import Data.Maybe 
 import Debug.Trace
 import Text.Read (readMaybe)
+import System.IO
+import System.Environment
 import qualified Data.Map.Strict as M
 
 data Value =                                         
@@ -681,6 +683,13 @@ doPrint state = do
             _ -> error "Operator (print) error. Top of stack must be a string to be printed!"
     return state
 
+--Reads a line from stdin, and pushes it onto stack.
+doRead :: EDState -> IO EDState
+doRead state = do 
+    stack <- (stack state)
+    input <- getLine
+    return (EDState{stack = return ((String input) : stack), fns = (fns state), vars = (vars state)})
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -724,6 +733,7 @@ doOp "clear" = doClear
 doOp "cast" = doCast
 --IO stuff
 doOp "print" = doPrint
+doOp "read" = doRead
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
@@ -1133,8 +1143,12 @@ printStack (x:xs) = print x >> printStack xs
 
 main :: IO ()
 main = do
+    args <- getArgs
+
+    inputFile <- openFile (args !! 0) ReadMode
+
     -- get all the code passed to STDIN as a giant string 
-    code <- getContents
+    code <- hGetContents inputFile
 
     -- convert it into a list of tokens
     let tokens = removeComments False [] ( tokenize code )
@@ -1145,3 +1159,5 @@ main = do
     finalState <- (doNode ast stateInit)
     finalStack <- (stack finalState)
     printStack $ reverse $ finalStack 
+
+    hClose inputFile
