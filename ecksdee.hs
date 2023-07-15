@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-14.06
+--Version: 2023-07-15.98
 --Toy Programming Language Named EcksDee
 
 {-
@@ -641,6 +641,8 @@ doCast' state (Double n) (String "Float") = fsPush (Float (realToFrac n :: Float
 doCast' state (Double n) (String "Double") = fsPush (Double n) state --Do nothing case.
 
 doCast' state (String s) (String "String") = fsPush (String s) state --Do nothing case.
+
+doCast' state (Char c) (String "String") = fsPush (String ("" ++ [c])) state --Char to string cast.
 
 doCast' state (String s) (String "Integer") = 
     let mbyInt = readMaybe s :: Maybe Int
