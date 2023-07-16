@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-15.98
+--Version: 2023-07-16.07
 --Toy Programming Language Named EcksDee
 
 {-
@@ -692,6 +692,18 @@ doRead state = do
     input <- getLine
     return (EDState{stack = return ((String input) : stack), fns = (fns state), vars = (vars state)})
 
+--Determines if a character at the top 
+-- of the stack is a whitespace character, 
+-- pushes true if yes and false if no.
+doIsWhite :: EDState -> IO EDState
+doIsWhite state = do 
+    stack <- (stack state)
+    case stack of 
+        [] -> error "Operator (isWhitespace) error. Operand on stack needed!"
+        vals -> case (head vals) of 
+            Char c -> return (fsPush (Boolean (isSpace c)) state)
+            _ -> error "Operator (isWhitespace) error. Type to be analyzed needs to be type Char!"
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -731,6 +743,7 @@ doOp "length" = doLength
 doOp "len" = doLength --Alias for length
 doOp "isEmpty" = doIsEmpty
 doOp "clear" = doClear
+doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
 --Type stuff
 doOp "cast" = doCast
 --IO stuff
