@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-16.98
+--Version: 2023-07-18.07
 --Toy Programming Language Named EcksDee
 
 {-
@@ -675,19 +675,19 @@ doCast' state (String s) (String "Double") =
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
 
 --Prints top element of stack. This element must be a string or it freaks out.
-doPrint :: EDState -> IO EDState
-doPrint state = do 
+doPrintLine :: EDState -> IO EDState
+doPrintLine state = do 
     stack <- (stack state)
     if (null stack) 
-        then error "Operator (print) error. Can't print from empty stack!"
+        then error "Operator (printLine) error. Can't print from empty stack!"
         else case (head stack) of 
             String s -> putStrLn s 
-            _ -> error "Operator (print) error. Top of stack must be a string to be printed!"
+            _ -> error "Operator (printLine) error. Top of stack must be a string to be printed!"
     return state
 
 --Reads a line from stdin, and pushes it onto stack.
-doRead :: EDState -> IO EDState
-doRead state = do 
+doReadLine :: EDState -> IO EDState
+doReadLine state = do 
     stack <- (stack state)
     input <- getLine
     return (EDState{stack = return ((String input) : stack), fns = (fns state), vars = (vars state)})
@@ -763,8 +763,8 @@ doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
 --Type stuff
 doOp "cast" = doCast
 --IO stuff
-doOp "print" = doPrint
-doOp "read" = doRead
+doOp "printLine" = doPrintLine
+doOp "readLine" = doReadLine
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
