@@ -9,7 +9,6 @@
         -Maybe have errors show line number 
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
-        -IO needed.
         -Standardize errors.
 -}
 
