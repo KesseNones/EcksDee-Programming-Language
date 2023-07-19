@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-18.07
+--Version: 2023-07-19.13
 --Toy Programming Language Named EcksDee
 
 {-
@@ -718,6 +718,31 @@ doContains state = do
                                 (_, _) -> error "Operator (contains) error. List or string needed to asses if item is contained within."
             return (fsPush (Boolean contains) state)
 
+--Changes an item at a given index in a list to a new item on the stack.
+doChangeItemAt :: EDState -> IO EDState
+doChangeItemAt state = do 
+    stack <- (stack state)
+    case stack of 
+        [] -> error "Operator (changeItemAt) error. Three operands needed!"
+        [x] -> error "Operator (changeItemAt) error. Three operands needed!"
+        [x, y] -> error "Operator (changeItemAt) error. Three operands needed!"
+        vals -> do 
+            let (state', thirdToTop, secondToTop, top) = fsPop3 state
+            chngLs <- thirdToTop
+            chngItem <- secondToTop
+            index <- top
+            case (chngLs, chngItem, index) of 
+                (List l, v, Integer i) -> return (fsPush (List (changeItem [] l 0 i v)) state')
+                (_, _, _) -> error "Operator (changeItemAt) error. List, value, and Integer type in that order needed on stack."
+
+--Rebuilds list with altered item if possible. 
+--THIS IS POORLY OPTIMIZED AND WILL SUCK ON A LARGE LIST SO MAKE IT BETTER LATER!
+changeItem :: [Value] -> [Value] -> Int -> Int -> Value -> [Value]
+changeItem acc [] curr desiredIndex insVal = acc
+changeItem acc (x:xs) curr desiredIndex insVal
+    |    curr == desiredIndex = (acc ++ [insVal] ++ xs)
+    |    otherwise = changeItem (acc ++ [x]) (xs) (curr + 1) desiredIndex insVal
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -758,6 +783,7 @@ doOp "len" = doLength --Alias for length
 doOp "isEmpty" = doIsEmpty
 doOp "clear" = doClear
 doOp "contains" = doContains
+doOp "changeItemAt" = doChangeItemAt --Changes item in list at a specified index.
 doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
 --Type stuff
 doOp "cast" = doCast
