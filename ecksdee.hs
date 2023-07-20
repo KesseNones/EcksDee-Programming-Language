@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-19.13
+--Version: 2023-07-20.15
 --Toy Programming Language Named EcksDee
 
 {-
@@ -743,6 +743,23 @@ changeItem acc (x:xs) curr desiredIndex insVal
     |    curr == desiredIndex = (acc ++ [insVal] ++ xs)
     |    otherwise = changeItem (acc ++ [x]) (xs) (curr + 1) desiredIndex insVal
 
+--Raises one Float or Double to another Float or Double 
+--and returns as such, consuming the original two numbers.
+doPow :: EDState -> IO EDState
+doPow state = do 
+    stack <- (stack state)
+    case stack of 
+        [] -> error "Operator (pow) error. Two operands needed!"
+        [x] -> error "Operator (pow) error. Two operands needed!"
+        vals -> do 
+            let (state', b, e) = fsPop2 state
+            base <- b 
+            expnt <- e
+            case (base, expnt) of 
+                (Float bs, Float ex) -> return (fsPush (Float (bs ** ex)) state')
+                (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
+                (_, _) -> error "Operator (pow) error.\nOperands need to be type Float Float or Double Double!\nCan't mix types and only Float or Double types are valid!"
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -768,6 +785,7 @@ doOp "and" = doAnd
 doOp "or" = doOr 
 doOp "xor" = doXor
 doOp "not" = doNot
+doOp "pow" = doPow --Exponential operation
 --List operations
 doOp "push" = doPush
 doOp "p" = doPush --Alias for push
