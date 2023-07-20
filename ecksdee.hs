@@ -1219,7 +1219,9 @@ main :: IO ()
 main = do
     args <- getArgs
 
-    inputFile <- openFile (args !! 0) ReadMode
+    inputFile <- if (not $ null args) 
+        then openFile (args !! 0) ReadMode 
+        else error "Please provide an EcksDee code file to parse!"
 
     -- get all the code passed to STDIN as a giant string 
     code <- hGetContents inputFile
