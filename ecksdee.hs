@@ -1,10 +1,9 @@
 --Jesse A. Jones
---Version: 2023-07-20.15
+--Version: 2023-07-25.06
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
-        -Runs super slowly when doing looping/recursion on large scales.
         -Extra error checking for casting is a good idea.
         -Maybe have errors show line number 
             of code file where error happened, somehow. 
@@ -64,7 +63,7 @@ data AstNode =
 -- This is the state of the interpreter. 
 -- Currently it stores the stack, which is where all of the data lives. 
 data EDState = EDState { 
-    stack :: IO [Value], 
+    stack :: [Value], 
     fns :: M.Map String AstNode,
     vars :: M.Map String Value
 }
@@ -117,101 +116,87 @@ doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on ty
 --Concatentates two strings together.
 doConcat :: EDState -> IO EDState
 doConcat state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (++) error. Concatenation requires two operands!"
         [x] -> error "Operator (++) error. Concatenation requires two operands!"
         vals -> do 
             let (state', a, b) = fsPop2 state
-            a' <- a 
-            b' <- b
-            return (fsPush (doConcat' a' b') state')
+            return (fsPush (doConcat' a b) state')
 
 --Adds two values on stack if they can be added.
 doAdd :: EDState -> IO EDState
 doAdd state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (+) error. Addition requires two operands!"
         [x] -> error "Operator (+) error. Addition requires two operands!"
         vals -> do 
             let (state', a, b) = fsPop2 state
-            a' <- a 
-            b' <- b
-            return (fsPush (addVals a' b') state')
+            return (fsPush (addVals a b) state')
 
 --Subtracts two values on stack if they can be subtracted.
 doSub :: EDState -> IO EDState
 doSub state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (-) error. Subtraction requires two operands!"
         [x] -> error "Operator (-) error. Subtraction requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b
-            return (fsPush (subVals a' b') state')
+            return (fsPush (subVals a b) state')
 
 --Multiplies two values on top of stack if they can be multiplied.
 doMul :: EDState -> IO EDState
 doMul state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (*) error. Multiplication requires two operands!"
         [x] -> error "Operator (*) error. Multiplication requires two operands!"
         vals -> do 
             let (state', a, b) = fsPop2 state
-            a' <- a 
-            b' <- b
-            return (fsPush (multVals a' b') state')
+            return (fsPush (multVals a b) state')
 
 --Divides two values on top of stack if they can be divided.
 --Errors out if problem happens.
 doDiv :: EDState -> IO EDState
 doDiv state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (/) error. Division requires two operands!"
         [x] -> error "Operator (/) error. Division requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b
-            return (fsPush (divideVals a' b') state') 
+            return (fsPush (divideVals a b) state') 
 
 --Mods two values on top of stack if they can be modded.
 --Errors out if problem happens.
 doModulo :: EDState -> IO EDState
 doModulo state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (%) error. Modulo requires two operands!"
         [x] -> error "Operator (%) error. Modulo requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b
-            return (fsPush (modVals a' b') state')
+            return (fsPush (modVals a b) state')
 
 --Swaps the top two values at the top of the stack.
 doSwap :: EDState -> IO EDState
 doSwap state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = (return []), fns = (fns state), vars = (vars state)} )
-        [x] -> return ( EDState{stack = (return [x]), fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state)} )
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            let state'' = fsPush a' state' 
-            return (fsPush b' state'')
+            let state'' = fsPush a state' 
+            return (fsPush b state'')
 
 --Removes top value from stack.
 doDrop :: EDState -> IO EDState
 doDrop state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     if null stck then return (state)
     else 
         let (state', a) = fsPop state
@@ -223,45 +208,39 @@ doDrop state = do
 --3 items performs the rotation.
 doRot :: EDState -> IO EDState
 doRot state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = (return []), fns = (fns state), vars = (vars state)} )
-        [x] -> return ( EDState{stack = (return [x]), fns = (fns state), vars = (vars state)} )
-        [x, y] -> return ( EDState{stack = (return [y, x]), fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state)} )
+        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state)} )
         vals -> do 
             let (state', c, b, a) = fsPop3 state
-            a' <- a
-            let state'' = fsPush a' state'
-            c' <- c
-            let state''' = fsPush c' state''
-            b' <- b
-            return (fsPush b' state''') 
+            let state'' = fsPush a state'
+            let state''' = fsPush c state''
+            return (fsPush b state''') 
 
 --Duplicates top element of stack or does nothing.
 doDup :: EDState -> IO EDState
 doDup state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = (return []), fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
         vals -> do 
             let (state', top) = fsPop state
-            top' <- top
-            let state'' = fsPush top' state'
-            return (fsPush top' state'')
+            let state'' = fsPush top state'
+            return (fsPush top state'')
 
 --Checks equality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
 doEqual :: EDState -> IO EDState
 doEqual state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (==) error. Eqality comparison requires two operands!"
         [x] -> error "Operator (==) error. Eqality comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            if (a' == b')
+            if (a == b)
                 then return (fsPush (Boolean True) state')
                 else return (fsPush (Boolean False) state') 
 
@@ -269,15 +248,13 @@ doEqual state = do
 --Pushes true if they are equal and False if not.
 doNotEqual :: EDState -> IO EDState
 doNotEqual state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (/=) error. Ineqality comparison requires two operands!"
         [x] -> error "Operator (/=) error. Ineqality comparison requires two operands!"
         vals -> do 
-            let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            if (a' /= b')
+            let (state', b, a) = fsPop2 state 
+            if (a /= b)
                 then return (fsPush (Boolean True) state')
                 else return (fsPush (Boolean False) state')
 
@@ -285,15 +262,13 @@ doNotEqual state = do
 --Pushes True if true and false if not.
 doGreaterThan :: EDState -> IO EDState
 doGreaterThan state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (>) error. Greater than comparison requires two operands!"
         [x] -> error "Operator (>) error. Greater than comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            if (b' > a')
+            if (b > a)
                 then return (fsPush (Boolean True) state')
                 else return (fsPush (Boolean False) state') 
 
@@ -301,15 +276,13 @@ doGreaterThan state = do
 --Pushes True if true and false if not.
 doLessThan :: EDState -> IO EDState
 doLessThan state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (<) error. Less than comparison requires two operands!"
         [x] -> error "Operator (<) error. Less than comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            if (b' < a')
+            if (b < a)
                 then return (fsPush (Boolean True) state')
                 else return (fsPush (Boolean False) state') 
 
@@ -317,15 +290,13 @@ doLessThan state = do
 --Pushes True if true and false if not.
 doGreaterThanEqualTo :: EDState -> IO EDState
 doGreaterThanEqualTo state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
         [x] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
         vals -> do 
-            let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            if (b' >= a')
+            let (state', b, a) = fsPop2 state 
+            if (b >= a)
                 then return (fsPush (Boolean True) state')
                 else return (fsPush (Boolean False) state') 
 
@@ -333,15 +304,13 @@ doGreaterThanEqualTo state = do
 --Pushes True if true and false if not.
 doLessThanEqualTo :: EDState -> IO EDState
 doLessThanEqualTo state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (<=) error. Less than comparison requires two operands!"
         [x] -> error "Operator (<=) error. Less than comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            if (b' <= a')
+            if (b <= a)
                 then return (fsPush (Boolean True) state')
                 else return (fsPush (Boolean False) state')
 
@@ -349,15 +318,13 @@ doLessThanEqualTo state = do
 --If the operands are booleans, then AND is performed.
 doAnd :: EDState -> IO EDState
 doAnd state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (and) error. Logical AND requires two operands!" 
         [x] -> error "Operator (and) error. Logical AND requires two operands!"
         vals -> do 
-            let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            return (doAnd' state' a' b')
+            let (state', b, a) = fsPop2 state 
+            return (doAnd' state' a b)
 
 --Performs logical AND function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -372,15 +339,13 @@ doAnd' _ _ _ = error "Operator (and) error. Logical AND requires two boolean typ
 --If the operands are booleans, then OR is performed.
 doOr :: EDState -> IO EDState
 doOr state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (or) error. Logical OR requires two operands!" 
         [x] -> error "Operator (or) error. Logical OR requires two operands!"
         vals -> do 
-            let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            return (doOr' state' a' b') 
+            let (state', b, a) = fsPop2 state 
+            return (doOr' state' a b) 
 
 --Performs logical OR function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -395,15 +360,13 @@ doOr' _ _ _ = error "Operator (or) error. Logical OR requires two boolean types.
 --If the operands are booleans, then XOR is performed.
 doXor :: EDState -> IO EDState
 doXor state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (xor) error. Logical XOR requires two operands!" 
         [x] -> error "Operator (xor) error. Logical XOR requires two operands!"
         vals -> do 
-            let (state', b, a) = fsPop2 state
-            a' <- a 
-            b' <- b 
-            return (doXor' state' a' b') 
+            let (state', b, a) = fsPop2 state 
+            return (doXor' state' a b) 
 
 --Performs logical XOR function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -418,13 +381,12 @@ doXor' _ _ _ = error "Operator (xor) error. Logical XOR requires two boolean typ
 -- and throws errors when things go wrong.
 doNot :: EDState -> IO EDState
 doNot state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (not) error. Logical NOT operation requires one operand!"
         vals -> do 
             let (state', top) = fsPop state
-            top' <- top
-            return (doNot' state' top') 
+            return (doNot' state' top) 
 
 --Performs negation if input value is of type boolean.
 doNot' :: EDState -> Value -> EDState
@@ -435,15 +397,13 @@ doNot' _ _ = error "Operator (not) error. Logical NOT requires one boolean type 
 --Pushes an item to the end of a list on the stack.
 doPush :: EDState -> IO EDState
 doPush state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (push) error. Two operands required for push!"
         [x] -> error "Operator (push) error. Two operands required for push!"
         vals -> do 
-            let (state', list, val) = fsPop2 state
-            list' <- list
-            val' <- val 
-            return (doPush' state' list' val') 
+            let (state', list, val) = fsPop2 state 
+            return (doPush' state' list val) 
 
 --Pushes item to list or string.
 doPush' :: EDState -> Value -> Value -> EDState
@@ -454,13 +414,12 @@ doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or stri
 --Pops an item from the list or string and pushes it to the stack.
 doPop :: EDState -> IO EDState
 doPop state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (pop) error. Pop operator needs a list to pop from!"
         vals -> do 
             let (state', list) = fsPop state
-            list' <- list
-            return (doPop' state' list') 
+            return (doPop' state' list) 
 
 --Pops item from list and pushes it to stack.
 doPop' :: EDState -> Value -> EDState
@@ -477,15 +436,13 @@ doPop' _ _ = error "Operator (pop) error. Pop operator needs a list or string to
 --Pushes an item to the front of a list on the stack.
 doFpush :: EDState -> IO EDState
 doFpush state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (fpush) error. Two operands required for fpush!"
         [x] -> error "Operator (fpush) error. Two operands required for fpush!"
         vals -> do 
-            let (state', list, val) = fsPop2 state
-            list' <- list
-            val' <- val 
-            return (doFpush' state' list' val') 
+            let (state', list, val) = fsPop2 state 
+            return (doFpush' state' list val) 
 
 --Pushes item to list front.
 doFpush' :: EDState -> Value -> Value -> EDState
@@ -496,13 +453,12 @@ doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/stri
 --Pops an item from the front of the list and pushes it to the stack.
 doFpop :: EDState -> IO EDState
 doFpop state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (fpop) error. List needed!"
         vals -> do 
             let (state', list) = fsPop state
-            list' <- list
-            return (doFpop' state' list')
+            return (doFpop' state' list)
 
 --Pops item from list and pushes it to stack.
 doFpop' :: EDState -> Value -> EDState
@@ -520,15 +476,13 @@ doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop ite
 --Fetches an item from a list of a specific index.
 doIndex :: EDState -> IO EDState
 doIndex state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (index) error. Two operands required for index!"
         [x] -> error "Operator (index) error. Two operands required for index!"
         vals -> do 
             let (state', list, index) = fsPop2 state 
-            list' <- list
-            index' <- index
-            return (doIndex' state' list' index')
+            return (doIndex' state' list index)
 
 --Retrieves item at index in list or string.
 doIndex' :: EDState -> Value -> Value -> EDState
@@ -547,11 +501,11 @@ doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/stri
 -- of the stack and pushes resulting length to top of stack.
 doLength :: EDState -> IO EDState
 doLength state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (length) error. Operand needed for length!"
         vals -> do 
-            top <- (fsTop state)
+            let top = (fsTop state)
             return (doLength' state top)
 
 --Performs actual length function.
@@ -564,11 +518,11 @@ doLength' state _ = error "Operator (length) error. List or string type is neede
 -- of the stack is empty or not.
 doIsEmpty :: EDState -> IO EDState
 doIsEmpty state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (isEmpty) error. One operand needed!"
         vals -> do 
-            top <- (fsTop state)
+            let top = (fsTop state)
             return (doIsEmpty' state top) 
 
 --Performs actual length function.
@@ -580,12 +534,11 @@ doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is nee
 --Sets the string or list at the top of the stack to empty.
 doClear :: EDState -> IO EDState
 doClear state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (clear) error. One operand needed!"
         vals -> do 
-            let (state', ls) = fsPop state
-            list <- ls 
+            let (state', list) = fsPop state
             return (doClear' state' list) 
 
 --Performs clear operation.
@@ -597,14 +550,12 @@ doClear' state _ = error "Operator (clear) error. List or string is needed for c
 --Used to turn a value of one type into another.
 doCast :: EDState -> IO EDState
 doCast state = do 
-    stck <- (stack state)
+    let stck = (stack state)
     case stck of 
         [] -> error "Operator (cast) error. Two operands required for cast!"
         [x] -> error "Operator (cast) error. Two operands required for cast!"
         vals -> do 
-            let (state', v, cst) = fsPop2 state
-            val <- v 
-            castType <- cst
+            let (state', val, castType) = fsPop2 state
             return (doCast' state' val castType) 
 
 --Performs the actual cast operation.
@@ -676,10 +627,10 @@ doCast' state val _ = error "Operator (cast) error. Second argument of cast need
 --Prints top element of stack. This element must be a string or it freaks out.
 doPrintLine :: EDState -> IO EDState
 doPrintLine state = do 
-    stack <- (stack state)
-    if (null stack) 
+    let stck = (stack state)
+    if (null stck) 
         then error "Operator (printLine) error. Can't print from empty stack!"
-        else case (head stack) of 
+        else case (head stck) of 
             String s -> putStrLn s 
             _ -> error "Operator (printLine) error. Top of stack must be a string to be printed!"
     return state
@@ -687,17 +638,17 @@ doPrintLine state = do
 --Reads a line from stdin, and pushes it onto stack.
 doReadLine :: EDState -> IO EDState
 doReadLine state = do 
-    stack <- (stack state)
+    let stck = (stack state)
     input <- getLine
-    return (EDState{stack = return ((String input) : stack), fns = (fns state), vars = (vars state)})
+    return (EDState{stack = ((String input) : stck), fns = (fns state), vars = (vars state)})
 
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
 -- pushes true if yes and false if no.
 doIsWhite :: EDState -> IO EDState
 doIsWhite state = do 
-    stack <- (stack state)
-    case stack of 
+    let stck = (stack state)
+    case stck of 
         [] -> error "Operator (isWhitespace) error. Operand on stack needed!"
         vals -> case (head vals) of 
             Char c -> return (fsPush (Boolean (isSpace c)) state)
@@ -706,12 +657,12 @@ doIsWhite state = do
 --Determines if a list contains a member.
 doContains :: EDState -> IO EDState
 doContains state = do 
-    stack <- (stack state)
-    case stack of 
+    let stck = (stack state)
+    case stck of 
         [] -> error "Operator (contains) error. Two operands on stack needed!"
         [x] -> error "Operator (contains) error. Two operands on stack needed!"
         vals -> do 
-            let (top, secondToTop) = ((head stack), (head $ tail stack))
+            let (top, secondToTop) = ((head stck), (head $ tail stck))
             let contains = case (top, secondToTop) of 
                                 (v, List l) -> v `elem` l
                                 (Char c, String s) -> c `elem` s
@@ -721,16 +672,13 @@ doContains state = do
 --Changes an item at a given index in a list to a new item on the stack.
 doChangeItemAt :: EDState -> IO EDState
 doChangeItemAt state = do 
-    stack <- (stack state)
-    case stack of 
+    let stck = (stack state)
+    case stck of 
         [] -> error "Operator (changeItemAt) error. Three operands needed!"
         [x] -> error "Operator (changeItemAt) error. Three operands needed!"
         [x, y] -> error "Operator (changeItemAt) error. Three operands needed!"
         vals -> do 
-            let (state', thirdToTop, secondToTop, top) = fsPop3 state
-            chngLs <- thirdToTop
-            chngItem <- secondToTop
-            index <- top
+            let (state', chngLs, chngItem, index) = fsPop3 state
             case (chngLs, chngItem, index) of 
                 (List l, v, Integer i) -> return (fsPush (List (changeItem [] l 0 i v)) state')
                 (_, _, _) -> error "Operator (changeItemAt) error. List, value, and Integer type in that order needed on stack."
@@ -747,14 +695,12 @@ changeItem acc (x:xs) curr desiredIndex insVal
 --and returns as such, consuming the original two numbers.
 doPow :: EDState -> IO EDState
 doPow state = do 
-    stack <- (stack state)
-    case stack of 
+    let stck = (stack state)
+    case stck of 
         [] -> error "Operator (pow) error. Two operands needed!"
         [x] -> error "Operator (pow) error. Two operands needed!"
         vals -> do 
-            let (state', b, e) = fsPop2 state
-            base <- b 
-            expnt <- e
+            let (state', base, expnt) = fsPop2 state
             case (base, expnt) of 
                 (Float bs, Float ex) -> return (fsPush (Float (bs ** ex)) state')
                 (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
@@ -822,7 +768,7 @@ makeVar state varName =
     in case lkup of
         Just _ -> error "Variable Mak Error: Variable already exists."
         Nothing -> do 
-            top <- fsTop state
+            let top = fsTop state
             let vars' = M.insert varName top (vars state)
             return (EDState{stack = (stack state), fns = (fns state), vars = vars'})
 
@@ -842,7 +788,7 @@ compareTypesForMut _ _ = False
 mutateVar :: EDState -> String -> IO EDState
 mutateVar state varName = do 
     let lkupVal = M.lookup varName (vars state)
-    newVal <- fsTop state
+    let newVal = fsTop state
     
     --If variable exists it can be mutated. Otherwise, an error is thrown.
     case lkupVal of
@@ -873,8 +819,8 @@ doNode :: AstNode -> EDState -> IO EDState
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
-    isStackEmpty <- (null <$> (stack state))
-    top <- if isStackEmpty 
+    let isStackEmpty = (null (stack state))
+    let top = if isStackEmpty 
         then error "If statement error: \nNo boolean value for if to check because stack is empty." 
         else fsTop state
     if (top == (Boolean True)) then 
@@ -895,7 +841,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
         "mak" -> do 
-            stackIsEmpty <- null <$> (stack state)
+            let stackIsEmpty = null (stack state)
             if stackIsEmpty
                 then error "Variable Mak Error: Can't create variable when stack is empty."
                 else do
@@ -915,7 +861,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                     Nothing -> error "Variable Del Error: Variable doesn't exist" 
 
         "mut" -> do 
-            stackIsEmpty <- null <$> (stack state)
+            let stackIsEmpty = null (stack state)
             if stackIsEmpty
                 then error "Variable Mut Error: Can't mutate variable when stack is empty."
                 else do 
@@ -926,8 +872,8 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 
 --Runs while loop.                                                                                                                      
 doNode ( While loopBody ) state = do
-    stackIsEmpty <- null <$> (stack state)
-    top <- if stackIsEmpty 
+    let stackIsEmpty = null (stack state)
+    let top = if stackIsEmpty 
         then error "While Loop error: \nNo boolean value for while loop to check because stack is empty." 
         else fsTop state
 
@@ -939,7 +885,7 @@ doNode ( While loopBody ) state = do
 
     --If loop ran and can run again, it's run again, 
     -- otherwise, state is returned.
-    newTop <- (fsTop newState)
+    let newTop = (fsTop newState)
     if (newTop == (Boolean True)) 
         then doNode ( While loopBody ) newState 
         else return newState
@@ -1070,32 +1016,28 @@ parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] t
     
 -- create a new interpreter
 fsNew :: IO EDState
-fsNew = return EDState { stack = return [], fns = M.empty, vars = M.empty }
+fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty }
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
-fsPush val state = EDState { stack = ((val :) <$> (stack state)), fns = (fns state), vars = (vars state)}
-
--- -- push a new value onto the stack IN CASE OF OUCH!
--- fsPush :: IO Value -> EDState -> EDState
--- fsPush val state = EDState { stack = (stack state) >>= (\st -> (val >>= (\v -> return (v : st)))), fns = (fns state), vars = (vars state)}
+fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state)}
 
 --Removes value from top of stack, returning it.
-fsPop :: EDState -> ( EDState, IO Value )
+fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
-    let top = head <$> (stack state) 
-        newStack = tail <$> (stack state)  
+    let top = head (stack state) 
+        newStack = tail (stack state)  
     in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state) }, top )
 
 --Removes the top two elements from the stack, returning them.
-fsPop2 :: EDState -> ( EDState, IO Value, IO Value )
+fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
     in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state)}, secondToTop, top)
 
 --Removes top three elements from stack.
-fsPop3 :: EDState -> ( EDState, IO Value, IO Value, IO Value )
+fsPop3 :: EDState -> ( EDState, Value, Value, Value )
 fsPop3 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
@@ -1103,8 +1045,8 @@ fsPop3 state =
     in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state)}, thirdToTop, secondToTop, top)
 
 --Returns value at top of stack. 
-fsTop :: EDState -> IO Value 
-fsTop state = head <$> (stack state) 
+fsTop :: EDState -> Value 
+fsTop state = head (stack state) 
 
 --Counts the number of decimal points in a string.
 decCount :: String -> Int
@@ -1233,7 +1175,6 @@ main = do
     let ast = parseExpression tokens
     stateInit <- fsNew
     finalState <- (doNode ast stateInit)
-    finalStack <- (stack finalState)
-    printStack $ reverse $ finalStack 
+    printStack $ reverse $ (stack finalState) 
 
     hClose inputFile
