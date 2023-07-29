@@ -15,7 +15,24 @@
 
 ## Mechanics:
 ### Data Types:
-		X
+		This language contains multiple data types that are pushed onto the stack. 
+	The data types currently are:
+		
+		-Integer: An integer value that depends on system architecture for size. On most modern machines it'll range from -2^63 to 2^63 - 1 as a signed 64 bit integer. Pushing values onto the stack that are of type Integer is easy: just push a whole number, i.e. 42, 666, 2319, etc.  
+
+		-BigInteger: This is like the previous data type except it has no upper or lower bound limits. It can keep growing in either direction for as much space as is able to be allocated to it. Pushing values onto the stack of type BigInteger is very similar to type Integer as one would expect except that XXX
+		
+		-Float: This is a type capable of expressing floating point values with 32 bits of precission. 
+		
+		-Double: X
+		
+		-Char: X
+		
+		-String: X
+		
+		-Boolean: X
+		
+		-List: X
 ### Operators:
 		X
 ### Functions:
