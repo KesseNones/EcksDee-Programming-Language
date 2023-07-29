@@ -13,7 +13,15 @@
 
 ## Mechanics:
 ### Stack Based Approach:
-	-Foo bar baz
+	-Since EcksDee is based on Forth, it's stack based. This means that the language is generally composed 
+	of things pushed to the stack, and things that operate on those things pushed 
+	onto the stack known as operators. For instance, to add two numbers, 
+	one pushes a number, another number, and then uses the add operator, like so: a b + 
+	This means that a is pushed onto the stack and then b is pushed onto the stack, 
+	yielding a stack, displayed top being the rightmost item, like this: a b.
+	The operator + then pops b and a and adds them together and pushes the result, 
+	yielding a stack with just result c.
+	-Following this explanation is a section on the different types of data that can be pushed to the stack.
 ### Data Types:
 	-This language contains multiple data types that are pushed onto the stack. 
 	The data types currently are:
@@ -71,7 +79,91 @@
 	stack like so: []. From there values can be added to this empty list 
 	using the push or fpush operator which will be discussed later.
 ### Operators:
-	X
+	-Now that all the types of data have been covered that can be pushed onto the stack, 
+	now it's time to cover all the basic operators that can be used on the data.
+	When displaying the result of an example program or usage of the operator, 
+	the stack will be displayed in a left to right format 
+	where the top of the stack is the right-most item. 
+	In the actual language when a program finishes running, the stack is printed vertically 
+	in a top-down order with the top item of the stack being at the bottom of the print. 
+
+	-At present, the current operators are: 
+
+	- +: Adds the top two elements of a stack together. 
+	For example, given a stack of numbers: b a, it pops b and a 
+	and adds them together and pushes number c, leaving stack: c. In the case of numbers a and b, 
+	their types have to match and the valid types for + are: Integer, BigInteger, Float, Double, and Boolean.
+	For the first four types mentioned, + works as an adder as expected. For type Boolean, 
+	the + works like a logical OR, which means the result of adding two Booleans is true 
+	as long as at least one is True.
+	Example Program: 
+		2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +
+	Finishes with stack: Integer 4, BigInteger 5, Float 10.0, Double 42.2, Boolean True
+
+	- -: Subtracts a number at the top of the stack from a number at the second to top of the stack. 
+	The valid types for the subtraction operator - are: Integer, BigInteger, Float, and Double. 
+	As with the + operator, the two operand types need to match.
+	Example Program:
+		5 3 - 44b 2b - 3.28 0.14 - 2.71828d 0.7d - 
+	Which yields stack: Integer 2, BigInteger 42, Float 3.1399999, Double 2.01828
+
+	- *: Multiplies the top two elements of the stack together. As with + and - , 
+	the types must match and the valid types for * are: Integer, BigInteger, Float, Double, and Boolean.
+	For the first four types * acts as multiplication. For Booleans it acts as a logical AND.
+	Example Program: 
+		2 2 * 2b 3b * 3.0 7.0 * 21.0d 21.2d * False True *
+	Ending Stack: Integer 4, BigInteger 6, Float 21.0, Double 445.2, Boolean False
+
+	- /: Divides second to top element of stack by top element. As stated before, 
+	the types have to match for both operands. The valid types for the division operator / are:
+	Integer, BigInteger, Float, and Double.
+	Example Program:
+		2 2 / 3b 2b / 3.0 2.0 / 355.0d 113.0d / 
+	Final Stack: Integer 1, BigInteger 1, Float 1.5, Double 3.1415929203539825
+
+	- swap: Swaps the top two items on top of the stack. If the stack is empty 
+	or only one item is on the stack, nothing happens. In terms of types, any two items 
+	of any data type can be swapped on the stack. Generally, given stack: x, y, 
+	the resulting stack from using swap is: y x.
+	Example Program:
+		"foo" "bar" swap
+	Final Stack: String "bar", String "foo"
+
+	- drop: Easily the most common operator. Given stack x y z, drop removes the top item from the stack. 
+	In this case, applying drop to the stack gives x y, removing z.
+	Example Program:
+		"foo" 42 1.414 666 drop
+	Final Stack: String "foo", Integer 42, Float 1.414
+
+	- rot: Rotates the top three items of the stack to the right. 
+	If only two operands are on stack it acts like swap operator, 
+	and if only one or no items exist, nothing happens. The operator rot can work with any types involved.
+	Generally, given stack: x, y, z, using rot makes it z, x, y because it gets rotated to the right.
+	Example Program:
+		"foo" "bar" "baz" rot
+	Final Stack: String "baz", String "foo", String "bar"
+
+	- dup: Pushes a duplicate of the top element of the stack or does nothing if stack is empty. 
+	Like swap, drop, and rot, dup works with any type on the stack. In general, given a stack: x, 
+	using dup results in the stack: x x' where x' is the same as x.
+	Example Program:
+		1 2 3 dup
+	Final Stack: Integer 1, Integer 2, Integer 3, Integer 3
+
+	- ==: Determines if the top two elements of a stack are equal to each other. 
+	Pops top two items and pushes a Boolean based on equality. 
+	For example, given stack: x, y, x and y are popped and checked if x == y. 
+	If so, True is pushed and False otherwise.
+	Example Program:
+		1 1 == false true == 2.0 2.1 == 1.0 1 == "foo" "bar" == "foo" "foo" ==
+	Final Stack: Boolean True, Boolean False, Boolean False, Boolean False, Boolean False, Boolean True
+
+	- /=: Exactly the same as == except it pushes the opposite Boolean to the stack.
+	Example Program:
+		1 1 /= false true /= 2.0 2.1 /= 1.0 1 /= "foo" "bar" /= "foo" "foo" /=
+	Final Stack: Boolean False, Boolean True, Boolean True, Boolean True, Boolean True, Boolean False
+
+	- >: X
 ### While Loops:
 	X
 ### Conditionals:
@@ -79,6 +171,8 @@
 ### Functions:
 	X
 ### Variables:
+	X
+### Comments:
 	X
 
 ## Conclusion:
