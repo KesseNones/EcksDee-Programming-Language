@@ -1,24 +1,22 @@
 # The EcksDee Programming Language
-	Created by Jesse A. Jones (KesseNones)
-	Inspired by Forth
+	-Created by Jesse A. Jones (KesseNones)
+	-Inspired by Forth
 
 ## Introduction:
-	The EcksDee programming language started as an interpretor 
+	-The EcksDee programming language started as an interpretor 
 	for a really simple Forth dialect in Programming Language Design. 
-	From there, I decided to make my own programming language 
-	once I learned the basics. From there I added variables, 
-	and changed function syntax lightly, 
-	making it officially its own programming language. 
-	Ever since more features have been added 
+	From there, I decided to make my own programming language once I learned the basics. 
+	From there I added variables, and changed function syntax lightly, 
+	making it officially its own programming language. Ever since more features have been added 
 	to make it even more its own language. The main features 
 	of the language are detailed below.
 
 ## Mechanics:
 ### Stack Based Approach:
-	Foo bar baz
+	-Foo bar baz
 ### Data Types:
-	This language contains multiple data types that are pushed onto the stack. 
-The data types currently are:
+	-This language contains multiple data types that are pushed onto the stack. 
+	The data types currently are:
 	
 	-Integer: An integer value that depends on system architecture for size. 
 	On most modern machines it'll range from -2^63 to 2^63 - 1 as a signed 64 bit integer. 
