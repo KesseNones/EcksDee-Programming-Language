@@ -1,9 +1,10 @@
 --Jesse A. Jones
---Version: 2023-07-25.06
+--Version: 2023-07-30.94
 --Toy Programming Language Named EcksDee
 
 {-
     ISSUES:
+        -ENFORCE STATIC TYPING ON COMPARISON OPERATORS
         -Extra error checking for casting is a good idea.
         -Maybe have errors show line number 
             of code file where error happened, somehow. 
