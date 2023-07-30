@@ -152,18 +152,49 @@
 
 	- ==: Determines if the top two elements of a stack are equal to each other. 
 	Pops top two items and pushes a Boolean based on equality. 
-	For example, given stack: x, y, x and y are popped and checked if x == y. 
-	If so, True is pushed and False otherwise.
+	For example, given stack: x y, x and y are popped and checked if x == y. 
+	If so, True is pushed and False otherwise. 
+	For a valid comparison to be made, the types of x and y must match, otherwise an error is thrown.
 	Example Program:
-		1 1 == false true == 2.0 2.1 == 1.0 1 == "foo" "bar" == "foo" "foo" ==
+		1 1 == false true == 2.0 2.1 == 1.0d 1.42d == "foo" "bar" == "foo" "foo" ==
 	Final Stack: Boolean True, Boolean False, Boolean False, Boolean False, Boolean False, Boolean True
 
 	- /=: Exactly the same as == except it pushes the opposite Boolean to the stack.
+	The types of the operands also need to match for this to work.
 	Example Program:
-		1 1 /= false true /= 2.0 2.1 /= 1.0 1 /= "foo" "bar" /= "foo" "foo" /=
+		1 1 /= false true /= 2.0 2.1 /= 1.0d 1.42d /= "foo" "bar" /= "foo" "foo" /=
 	Final Stack: Boolean False, Boolean True, Boolean True, Boolean True, Boolean True, Boolean False
 
-	- >: X
+	- >: Determines if the second to top element is greater than the top element of the stack. 
+	Pushes Boolean based on the truth value of the expression. If the types don't match, an error occurs.
+	Generally, given stack: x y, it pops x and y to see if x > y.
+	Example Program:
+		6 9 > 9.9 9.5 > 148494484948484b -485b > 3.141592653589793d 2.71828d > "foo" "bar" > "bar" "baz" >
+	Final Stack: Boolean False, Boolean True, Boolean True, Boolean True, Boolean True, Boolean False
+
+	- <: Acts like the greater than (>) operator but checks to see 
+	if the second to top is LESS than the top, rather than greater.
+	Types of the two comparison operands need to match.
+	Example Program:
+		6 9 < 9.9 9.5 < 148494484948484b -485b < 3.141592653589793d 2.71828d < "foo" "bar" < "bar" "baz" <
+	Final Stack: Boolean True, Boolean False, Boolean False, Boolean False, Boolean False, Boolean True
+
+	- >=: Examines if second to top element is greater than or equal to the top element of the stack.
+	Types need to match. Given stack: x y, operation x >= y is performed. 
+	Example Program:
+		"foo" "foo" >= 99 100 >= 3.14 2.718 >= 69.420d 420.69d >= 'c' 'a' >= true true >= 
+	Final Stack: Boolean True, Boolean False, Boolean True, Boolean False, Foolean True, Boolean True
+
+	- <=: Acts like the greater than equal to operator (>=) but has generally opposite results 
+	by checking if the second to top of the stack is LESS than or equal to the top.
+	Types of operands need to match.
+	Example Program:
+		"foo" "foo" <= 99 100 <= 3.14 2.718 <= 69.420d 420.69d <= 'c' 'a' <= true true <= 
+	Final Stack: Boolean True, Boolean True, Boolean False, Boolean True, Boolean False, Boolean True 
+
+	- %: X
+
+
 ### While Loops:
 	X
 ### Conditionals:
@@ -172,7 +203,7 @@
 	X
 ### Variables:
 	X
-### Comments:
+### Comments and Whitespace Information:
 	X
 
 ## Conclusion:
