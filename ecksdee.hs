@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-30.97
+--Version: 2023-07-30.99
 --Toy Programming Language Named EcksDee
 
 {-
@@ -108,12 +108,13 @@ modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
 modVals (Integer a) (Integer b) = Integer (b `mod` a)
 modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
 
---Concatenates two strings.
+--Concatenates two Strings or Lists.
 doConcat' :: Value -> Value -> Value
 doConcat' (String a) (String b) = String (a ++ b)
-doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings."
+doConcat' (List a) (List b) = List (a ++ b)
+doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
 
---Concatentates two strings together.
+--Concatentates two Strings/Lists together.
 doConcat :: EDState -> IO EDState
 doConcat state = do 
     let stck = (stack state)
