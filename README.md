@@ -433,12 +433,24 @@
 ### While Loops:
 	-While loops are a form of operator known as a fancy operator 
 	because more is required to use it than just having some stuff 
-	on a stack and then using one word to operate on the stack. 
-	A while loop runs specified code inside it if the top of the stack is a Boolean True.
+	on a stack and then using one word to operate on the stack.
+
+	-The general syntax of a while loop in EcksDee is: 
+	while [CODE] ;
+	The semicolon at the end is absolutely necessary due to how EcksDee parses while loops.
+	The [CODE] block can be any code, ranging from nothing to a gigantic program.
+	
+	-Also note that the semi-colon has to be free floating, it can't be attached to other chunks of code.
+	This is because EcksDee tokenizes largely on whitespace, so as long as you have at least one whitespace
+	character on each side of the semi-colon you're good.
+
+	-A while loop runs the specified code inside it if the top of the stack is a Boolean True.
 	If the top of the stack is a Boolean False it stops running.
-	While loops error if the stack is empty when it comes time to have them run or run again. 
+	
+	-While loops error if the stack is empty when it comes time to have them run or run again. 
 	They also error out if the top of the stack isn't a Boolean type when it comes time to run them
 	or run them again. To make a loop run well, the drop operator is necessary.
+	
 	-Example Program:
 		/' Basically just counts from 1 to 10, pushing each number onto the stack. '/
 		1 
