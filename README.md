@@ -192,7 +192,16 @@
 		"foo" "foo" <= 99 100 <= 3.14 2.718 <= 69.420d 420.69d <= 'c' 'a' <= true true <= 
 	Final Stack: Boolean True, Boolean True, Boolean False, Boolean True, Boolean False, Boolean True 
 
-	- %: X
+	- %: Given stack: x y, x and y are popped and x % y is performed with the result pushed on the stack. 
+	In other words, the second to top item of the stack is modded by the top item of the stack.
+	The types of x and y have to match and the valid types are BigInteger and Integer. 
+	Using non-matching types or types that aren't the two valid ones, an error is trown.
+	Example Program:
+		23 2 % 16 2 % 2023b 4b % 2020b 4b % 1969b 100b % 22b 10b % 40999 400 %
+	Ending Stack: Integer 1, Integer 0, BigInteger 3, BigInteger 0, BigInteger 69, BigInteger 2, 
+	Integer 199
+
+	- ++: X
 
 
 ### While Loops:
