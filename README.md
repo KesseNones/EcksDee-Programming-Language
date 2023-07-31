@@ -436,9 +436,9 @@
 	on a stack and then using one word to operate on the stack.
 
 	-The general syntax of a while loop in EcksDee is: 
-	while [CODE] ;
+	while CODE ;
 	The semicolon at the end is absolutely necessary due to how EcksDee parses while loops.
-	The [CODE] block can be any code, ranging from nothing to a gigantic program.
+	The CODE block can be any code, ranging from nothing to a gigantic program.
 	
 	-Also note that the semi-colon has to be free floating, it can't be attached to other chunks of code.
 	This is because EcksDee tokenizes largely on whitespace, so as long as you have at least one whitespace
@@ -489,8 +489,54 @@
 	This means that the stack is empty when the loop starts trying to run or tries to run again.
 	To fix this, have a Boolean type on the stack before the loop starts and before it ends.
 
-### Conditionals:
-	X
+### If Statements:
+	-This fancy operator is used in branching code and conditional statements. 
+	These are useful for determining program flow and a series of other things.
+
+	-The general syntax for an if statement comes in two forms:
+		if CODE_IF_TRUE ;
+		if CODE_IF_TRUE else CODE_IF_FALSE ;
+	In both cases, the if statement runs the CODE_IF_TRUE when the top of the stack is a Boolean True.
+	Optionally one can also include code to run if the top of the stack is Boolean False, which is what
+	the else chunk is about that contains CODE_IF_FALSE. 
+
+	-Like the while loop, if statements require the top of the stack to be a Boolean type to properly
+	branch. If the top of the stack isn't of that type, an error is thrown. 
+
+	-Also like with the while loop, the semi-colon is necessary to end an if statement. 
+	If it's a lone if statement, then put the semi-colon after the CODE_IF_TRUE.
+	If there is an else chunk, put the semi-colon after the CODE_IF_FALSE.
+
+	-One error that can occur with if statements is the error: 
+	"If statement error:
+	No boolean value for if to check because stack is empty."
+	Which means that the stack is empty and therefore can't be used in branching.
+	To fix this, have some kind of Boolean at the top of the stack.
+
+	-The other kind of error that can occur with if statements is error: 
+	"If statement error:
+	If statement requires top of stack to be type Boolean to perform valid branching!"
+	This error means that the stack isn't empty but the top isn't of type Boolean.
+	To fix this, have a Boolean type at the top of the stack for branching to occur.
+
+	-Example Program:
+		true 
+		if
+			"I only push if I'm true!"
+		;
+
+		42 69 >
+		if
+			42 69 *
+		else
+			"Forty two isn't bigger than sixty nine!"
+		;
+	-Final Stack:
+		Boolean True
+		String "I only push if I'm true!"
+		Boolean False
+		String "Forty two isn't bigger than sixty nine!"
+
 ### Functions:
 	X
 ### Variables:
