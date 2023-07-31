@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-31.94
+--Version: 2023-07-31.96
 --Toy Programming Language Named EcksDee
 
 {-
@@ -888,11 +888,14 @@ doNode :: AstNode -> EDState -> IO EDState
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
     let isStackEmpty = (null (stack state))
     let top = if isStackEmpty 
-        then error "If statement error: \nNo boolean value for if to check because stack is empty." 
+        then error "If statement error:\nNo boolean value for if to check because stack is empty." 
         else fsTop state
-    if (top == (Boolean True)) then 
-        doNode trueBranch state 
-    else doNode falseBranch state
+
+    --Runs true branch if top is true, false if false, and errors out otherwise.
+    case top of 
+        (Boolean True) -> doNode trueBranch state
+        (Boolean False) -> doNode falseBranch state
+        _ -> error "If statement error:\nIf statement requires top of stack to be type Boolean to perform valid branching!"
 
 --Patterm matches function definition.
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
