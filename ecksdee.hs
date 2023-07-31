@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-30.99
+--Version: 2023-07-31.94
 --Toy Programming Language Named EcksDee
 
 {-
@@ -941,21 +941,28 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 doNode ( While loopBody ) state = do
     let stackIsEmpty = null (stack state)
     let top = if stackIsEmpty 
-        then error "While Loop error: \nNo boolean value for while loop to check because stack is empty." 
+        then error "While Loop error:\nNo boolean value for while loop to check because stack is empty." 
         else fsTop state
 
     --Creates new stack if loop body runs.
     -- Otherwise newState is same as state.
-    newState <- if top == (Boolean True) 
-        then doNode (loopBody) state
-        else return (state)
+    -- Errors out if top of stack isn't a boolean type.
+    newState <- case top of 
+        (Boolean True) -> doNode (loopBody) state
+        (Boolean False) -> return (state)
+        _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
+
+    let stackIsEmpty' = null (stack newState)
+    let top' = if stackIsEmpty'
+        then error "While Loop error:\nNo boolean value for while loop to check because stack is empty."
+        else fsTop newState
 
     --If loop ran and can run again, it's run again, 
-    -- otherwise, state is returned.
-    let newTop = (fsTop newState)
-    if (newTop == (Boolean True)) 
-        then doNode ( While loopBody ) newState 
-        else return newState
+    -- otherwise, newState is returned.
+    case top' of 
+        (Boolean True) -> doNode (While loopBody) newState
+        (Boolean False) -> return newState
+        _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
