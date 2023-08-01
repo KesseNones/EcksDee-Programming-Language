@@ -16,15 +16,19 @@
 
 ## Mechanics:
 ### Stack Based Approach:
-	-Since EcksDee is based on Forth, it's stack based. This means that the language is generally composed 
-	of things pushed to the stack, and things that operate on those things pushed 
-	onto the stack known as operators. For instance, to add two numbers, 
-	one pushes a number, another number, and then uses the add operator, like so: a b + 
-	This means that a is pushed onto the stack and then b is pushed onto the stack, 
+	-Since EcksDee is based on Forth, it's stack based. 
+	This means that the language is generally composed of things pushed to the stack, 
+	and things that operate on those things pushed onto the stack known as operators. 
+	
+	-For instance, to add two numbers, one pushes a number, another number, 
+	and then uses the add operator, like so: a b + This means that a 
+	is pushed onto the stack and then b is pushed onto the stack, 
 	yielding a stack, displayed top being the rightmost item, like this: a b.
 	The operator + then pops b and a and adds them together and pushes the result, 
 	yielding a stack with just result c.
-	-Following this explanation is a section on the different types of data that can be pushed to the stack.
+	
+	-Following this explanation is a section on the different types 
+	of data that can be pushed to the stack.
 ### Data Types:
 	-This language contains multiple data types that are pushed onto the stack. 
 	The data types currently are:
