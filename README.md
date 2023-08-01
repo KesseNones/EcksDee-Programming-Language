@@ -625,7 +625,135 @@
 		Integer 81
 
 ### Variables:
-	X
+	-Variables are incredibly useful in programming. 
+	They act as a way of generalizing programs and can make things much easier.
+
+	-In the case of EcksDee not everything has to be on the stack or a function, 
+	variables exist to make programming easier as is the case in most languages.
+	However, EcksDee being stack based results in an interesting take on variables.
+
+	-Generally, variable syntax has some similarities with function syntax.
+	The super generalized variable syntax looks like this:
+	var CMD_KEYWORD VAR_NAME ;
+
+	-The CMD_KEYWORD has four valid potential values: mak, get, mut, and del.
+
+	- mak: Short for "make", makes a variable. The mak keyword causes 
+	the top value of the stack to be read and associated with the desired VAR_NAME given. 
+	If the stack is empty, an error is thrown because there's no value to assign to VAR_NAME.
+	Once the value is read from the top of the stack, its type is analyzed and read in as well.
+	If the variable with VAR_NAME was previously made, an error is thrown 
+	because a variable can't be made more than once without extra measures.
+	The general syntax for this keyword is:
+	var mak VAR_NAME ; 
+	Which saves top value x from the stack as VAR_NAME.
+	The original stack is unchanged.
+
+	- get: The second most common CMD_KEYWORD, this keyword gets the value held 
+	in a variable and pushes it to the stack. 
+	If the variable with VAR_NAME hasn't been made using mak yet, 
+	an error will be thrown because VAR_NAME isn't defined.
+	The general syntax for the get keyword is:
+	var get VAR_NAME ;
+	Which pushes the value x held by VAR_NAME onto the stack.
+
+	- mut: Short for mutate, commands VAR_NAME to hold a new value, effectively mutating it.
+	If VAR_NAME hasn't been made with the mak keyword yet, 
+	then an error is thrown because VAR_NAME isn't a variable yet and therefore can't be mutated.
+	If you try to change VAR_NAME to a value of a different type, 
+	an error is thrown because of static typing. 
+	Once a variable is made it stays the type of the value it holds.
+	Given stack: x and VAR_NAME with value y of type t. If x and y are both type t, then the command:
+	var mut VAR_NAME ; will change the value of VAR_NAME from x to y. 
+	The stack remains unchanged but the variable has been sucessfully mutated.
+
+	- del: Short for delete, deletes a variable from existence. 
+	Since variables are global in scope by default, 
+	the del keyword allows some manual scoping to occur, allowing the existence of more local variables.
+	This keyword is also necessary in functions with variables 
+	that get called more than once since variables can only be made once by default. 
+	This allows variables to be made multiple times.
+	This keyword isn't necessary in functions that are only called once 
+	or for global variables because it all gets garbage collected by the interpreter in the end.
+	The general syntax for the del keyword is:
+	var del VAR_NAME ;
+	Which removes VAR_NAME from existence as a variable, allowing VAR_NAME to be remade potentially.
+
+	-Example Program Using All Four Keywords:
+		40
+		var mak foo ;
+		var get foo ;
+		1 +
+		var mut foo ;
+		var get foo ;
+		1 + 
+		var mut foo ;
+
+		/' Not necessary for a program like this but just showing it's a valid action here. '/
+		var del foo ;
+	-Final Stack:
+		Integer 40
+		Integer 41
+		Integer 42
+
+	-Example Program With Functions and Variables:
+		/' This program is like the last one demo'd in the functions section but there's variables now. '/
+
+		/' Squares the number at the top of the stack while preserving the original number 
+		Throws error if stack is empty due to * operator. '/
+		func def square
+			/' Saves input square number at top of stack to num variable. '/
+			var mak num ;
+			/' Makes two copies of num and multiples them, effectively squaring num. '/
+			var get num ;
+			var get num ;
+			*
+
+			/' Error would be thrown without this line once function square is called again. '/
+			var del num ;
+		;
+
+		/' Computes the first 10 squares starting at 0. '/
+		func def firstTenSquares 
+			0
+			var mak count ;
+			10 < 
+			while
+				drop
+
+				var get count ;
+				func call square ;
+				swap
+				1 +
+				var mut count ;
+
+				10 <
+			;
+			drop
+
+			/' Variable count doesn't have to be deleted here since firstTenSquares 
+			is only called once but it's best practice to do this 
+			to keep the scope of count to the firstTenSquares function 
+			and the square function. '/
+			var del count ;
+		;
+
+		func call firstTenSquares ;
+	-Final Stack:
+		Integer 0
+		Integer 1
+		Integer 4
+		Integer 9
+		Integer 16
+		Integer 25
+		Integer 36
+		Integer 49
+		Integer 64
+		Integer 81
+
+	-Overall variables aren't strictly necessary but they can be very useful 
+	in making some code more readable and generalizable.
+
 ### Comments and Whitespace Information:
 	X
 
