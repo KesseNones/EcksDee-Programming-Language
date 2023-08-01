@@ -11,6 +11,9 @@
 	to make it even more distinct. The main features 
 	of the language are detailed below in the Mechanics section.
 
+	-THIS DOCUMENTATION IS STILL A WORK IN PROGRESS SO IGNORE ANY BAD GRAMMAR OR SPELLING IF YOU SEE IT. 
+	IT WILL LIKELY GET FIXED LATER.
+
 ## Mechanics:
 ### Stack Based Approach:
 	-Since EcksDee is based on Forth, it's stack based. This means that the language is generally composed 
