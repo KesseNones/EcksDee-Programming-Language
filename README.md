@@ -6,10 +6,10 @@
 	-The EcksDee programming language started as an interpretor 
 	for a really simple Forth dialect in Programming Language Design. 
 	From there, I decided to make my own programming language once I learned the basics. 
-	From there I added variables, and changed function syntax lightly, 
+	I added variables, and changed function syntax lightly, 
 	making it officially its own programming language. Ever since more features have been added 
-	to make it even more its own language. The main features 
-	of the language are detailed below.
+	to make it even more distinct. The main features 
+	of the language are detailed below in the Mechanics section.
 
 ## Mechanics:
 ### Stack Based Approach:
@@ -783,7 +783,32 @@
 	as desired. When done correctly, comments are ignored by the EcksDee interpreter.
 
 ## How to Run:
-	X
+	-Running EcksDee isn't too difficult but does require some doing.
+
+	-The first big thing needed is a Haskell compiler since EcksDee is interpreted via a Haskell program.
+	Ideally get GHC (Glasgow Haskell Compiler) since that's what I've used to develop the interpreter.
+	Likely other Haskell compilers would also work but it's not known for sure.
+
+	-With a Haskell compiler, compile the ecksdee.hs file to turn it into an executable. 
+
+	-Once the interpreter executable has been made, then you just have to have some code file,
+	conventionally with the .xd extension though not required. 
+
+	-On unix based systems in the terminal run it like so: 
+	./ecksdee DIR_TO_PROGRAM
+	Where DIR_TO_PROGRAM is the EcksDee program you want to run.
+
+	-For example say you have a classic hello world program. The command series would look like this:
+	ghc ecksdee
+	./ecksdee helloWorld.xd
+	Hello, World!
+
+	-That's an example of running it in bash on a unix based system. 
+	It's likely running it on windows is trickier because windows can be annoying 
+	for this kind of thing. More information on how to run it 
+	in windows will be gathered and shared here later.
+
+	-There you have it. If you have a unix based system, a Haskell compiler, and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
 
 ## Conclusion:
 	X
