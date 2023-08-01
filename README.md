@@ -755,7 +755,32 @@
 	in making some code more readable and generalizable.
 
 ### Comments and Whitespace Information:
-	X
+	-The way EcksDee largely tokenizes its code is by whitespace. 
+	Meaning that almost every token, with the exception of pushing Chars and Strings, 
+	should all be separated between each other by at least one whitespace character.
+
+	-Comments in programming languages are super useful because they describe what a chunk of code is doing or can contain other misc information for the user or programmer(s) involved.
+	The general syntax for comments is: 
+	/' COMMENT_TEXT '/
+
+	-Where COMMENT_TEXT is any text you want in this comment.
+	BE SURE TO HAVE /' AND '/ BE THEIR OWN SEPARATE TOKENS.
+	If you have one of the comment start/end tokens attached to another word, 
+	the interpreter will error out as if it were a gibberish word or a comment wasn't ended properly.
+	-Examples:
+		Correct comment: /' This is a valid comment! '/
+		Incorrect comments: 
+			/'This is a bad comment!'/ 
+			/'So is this! '/ 
+			/' Or this!'/
+			drop/' Also this is bad too '/
+			/' AS well as this '/42
+		All of these incorrect comments will cause an "unrecognized word" or
+		"ended comment while it's still open. need closing '/" error to be thrown.
+
+	-Despite some pickyness with comment endings and beginnings, 
+	whatever text is put as COMMENT_TEXT can be in any format with as many whitespace characters 
+	as desired. When done correctly, comments are ignored by the EcksDee interpreter.
 
 ## How to Run:
 	X
