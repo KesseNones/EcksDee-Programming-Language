@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-25.06
+--Version: 2023-07-31.96
 --Toy Programming Language Named EcksDee
 
 {-
@@ -108,12 +108,13 @@ modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
 modVals (Integer a) (Integer b) = Integer (b `mod` a)
 modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
 
---Concatenates two strings.
+--Concatenates two Strings or Lists.
 doConcat' :: Value -> Value -> Value
 doConcat' (String a) (String b) = String (a ++ b)
-doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings."
+doConcat' (List a) (List b) = List (a ++ b)
+doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
 
---Concatentates two strings together.
+--Concatentates two Strings/Lists together.
 doConcat :: EDState -> IO EDState
 doConcat state = do 
     let stck = (stack state)
@@ -236,13 +237,24 @@ doEqual :: EDState -> IO EDState
 doEqual state = do 
     let stck = (stack state)
     case stck of 
-        [] -> error "Operator (==) error. Eqality comparison requires two operands!"
-        [x] -> error "Operator (==) error. Eqality comparison requires two operands!"
+        [] -> error "Operator (==) error. Equality comparison requires two operands!"
+        [x] -> error "Operator (==) error. Equality comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            if (a == b)
-                then return (fsPush (Boolean True) state')
-                else return (fsPush (Boolean False) state') 
+            return (fsPush (doEqual' a b) state') 
+
+--Makes sure the types match and then performs the equality operation if so, 
+-- otherwise errors out.
+doEqual' :: Value -> Value -> Value
+doEqual' (BigInteger a) (BigInteger b) = Boolean (a == b)
+doEqual' (Integer a) (Integer b) = Boolean (a == b)
+doEqual' (Float a) (Float b) = Boolean (a == b)
+doEqual' (Double a) (Double b) = Boolean (a == b)
+doEqual' (String a) (String b) = Boolean (a == b)
+doEqual' (Char a) (Char b) = Boolean (a == b)
+doEqual' (Boolean a) (Boolean b) = Boolean (a == b)
+doEqual' (List a) (List b) = Boolean (a == b)
+doEqual' _ _ = error "Operator (==) error. Operand types must match for valid comparison!"
 
 --Checks inequality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
@@ -250,13 +262,24 @@ doNotEqual :: EDState -> IO EDState
 doNotEqual state = do 
     let stck = (stack state)
     case stck of 
-        [] -> error "Operator (/=) error. Ineqality comparison requires two operands!"
-        [x] -> error "Operator (/=) error. Ineqality comparison requires two operands!"
+        [] -> error "Operator (/=) error. Inequality comparison requires two operands!"
+        [x] -> error "Operator (/=) error. Inequality comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state 
-            if (a /= b)
-                then return (fsPush (Boolean True) state')
-                else return (fsPush (Boolean False) state')
+            return (fsPush (doNotEqual' a b) state')
+
+--Makes sure the types match and then performs the inequality operation if so, 
+-- otherwise errors out.
+doNotEqual' :: Value -> Value -> Value
+doNotEqual' (BigInteger a) (BigInteger b) = Boolean (a /= b)
+doNotEqual' (Integer a) (Integer b) = Boolean (a /= b)
+doNotEqual' (Float a) (Float b) = Boolean (a /= b)
+doNotEqual' (Double a) (Double b) = Boolean (a /= b)
+doNotEqual' (String a) (String b) = Boolean (a /= b)
+doNotEqual' (Char a) (Char b) = Boolean (a /= b)
+doNotEqual' (Boolean a) (Boolean b) = Boolean (a /= b)
+doNotEqual' (List a) (List b) = Boolean (a /= b)
+doNotEqual' _ _ = error "Operator (/=) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is greater than top element of stack.
 --Pushes True if true and false if not.
@@ -268,9 +291,20 @@ doGreaterThan state = do
         [x] -> error "Operator (>) error. Greater than comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            if (b > a)
-                then return (fsPush (Boolean True) state')
-                else return (fsPush (Boolean False) state') 
+            return (fsPush (doGreaterThan' b a) state')
+                
+--Makes sure the types match and then performs the > operation if so, 
+-- otherwise errors out.
+doGreaterThan' :: Value -> Value -> Value
+doGreaterThan' (BigInteger a) (BigInteger b) = Boolean (a > b)
+doGreaterThan' (Integer a) (Integer b) = Boolean (a > b)
+doGreaterThan' (Float a) (Float b) = Boolean (a > b)
+doGreaterThan' (Double a) (Double b) = Boolean (a > b)
+doGreaterThan' (String a) (String b) = Boolean (a > b)
+doGreaterThan' (Char a) (Char b) = Boolean (a > b)
+doGreaterThan' (Boolean a) (Boolean b) = Boolean (a > b)
+doGreaterThan' (List a) (List b) = Boolean (a > b)
+doGreaterThan' _ _ = error "Operator (>) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is less than top element of stack.
 --Pushes True if true and false if not.
@@ -282,9 +316,20 @@ doLessThan state = do
         [x] -> error "Operator (<) error. Less than comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            if (b < a)
-                then return (fsPush (Boolean True) state')
-                else return (fsPush (Boolean False) state') 
+            return (fsPush (doLessThan' b a) state') 
+
+--Makes sure the types match and then performs the < operation if so, 
+-- otherwise errors out.
+doLessThan' :: Value -> Value -> Value
+doLessThan' (BigInteger a) (BigInteger b) = Boolean (a < b)
+doLessThan' (Integer a) (Integer b) = Boolean (a < b)
+doLessThan' (Float a) (Float b) = Boolean (a < b)
+doLessThan' (Double a) (Double b) = Boolean (a < b)
+doLessThan' (String a) (String b) = Boolean (a < b)
+doLessThan' (Char a) (Char b) = Boolean (a < b)
+doLessThan' (Boolean a) (Boolean b) = Boolean (a < b)
+doLessThan' (List a) (List b) = Boolean (a < b)
+doLessThan' _ _ = error "Operator (<) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is greater than equal to the top element of stack.
 --Pushes True if true and false if not.
@@ -296,9 +341,20 @@ doGreaterThanEqualTo state = do
         [x] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state 
-            if (b >= a)
-                then return (fsPush (Boolean True) state')
-                else return (fsPush (Boolean False) state') 
+            return (fsPush (doGreaterThanEqualTo' b a) state')
+
+--Makes sure the types match and then performs the >= operation if so, 
+-- otherwise errors out.
+doGreaterThanEqualTo' :: Value -> Value -> Value
+doGreaterThanEqualTo' (BigInteger a) (BigInteger b) = Boolean (a >= b)
+doGreaterThanEqualTo' (Integer a) (Integer b) = Boolean (a >= b)
+doGreaterThanEqualTo' (Float a) (Float b) = Boolean (a >= b)
+doGreaterThanEqualTo' (Double a) (Double b) = Boolean (a >= b)
+doGreaterThanEqualTo' (String a) (String b) = Boolean (a >= b)
+doGreaterThanEqualTo' (Char a) (Char b) = Boolean (a >= b)
+doGreaterThanEqualTo' (Boolean a) (Boolean b) = Boolean (a >= b)
+doGreaterThanEqualTo' (List a) (List b) = Boolean (a >= b)
+doGreaterThanEqualTo' _ _ = error "Operator (>=) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is less than equal to top element of stack.
 --Pushes True if true and false if not.
@@ -310,9 +366,20 @@ doLessThanEqualTo state = do
         [x] -> error "Operator (<=) error. Less than comparison requires two operands!"
         vals -> do 
             let (state', b, a) = fsPop2 state
-            if (b <= a)
-                then return (fsPush (Boolean True) state')
-                else return (fsPush (Boolean False) state')
+            return (fsPush (doLessThanEqualTo' b a) state')
+
+--Makes sure the types match and then performs the <= operation if so, 
+-- otherwise errors out.
+doLessThanEqualTo' :: Value -> Value -> Value
+doLessThanEqualTo' (BigInteger a) (BigInteger b) = Boolean (a <= b)
+doLessThanEqualTo' (Integer a) (Integer b) = Boolean (a <= b)
+doLessThanEqualTo' (Float a) (Float b) = Boolean (a <= b)
+doLessThanEqualTo' (Double a) (Double b) = Boolean (a <= b)
+doLessThanEqualTo' (String a) (String b) = Boolean (a <= b)
+doLessThanEqualTo' (Char a) (Char b) = Boolean (a <= b)
+doLessThanEqualTo' (Boolean a) (Boolean b) = Boolean (a <= b)
+doLessThanEqualTo' (List a) (List b) = Boolean (a <= b)
+doLessThanEqualTo' _ _ = error "Operator (<=) error. Operand types must match for valid comparison!"
 
 --Performs logical AND function on top two elements of stack.
 --If the operands are booleans, then AND is performed.
@@ -821,11 +888,14 @@ doNode :: AstNode -> EDState -> IO EDState
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
     let isStackEmpty = (null (stack state))
     let top = if isStackEmpty 
-        then error "If statement error: \nNo boolean value for if to check because stack is empty." 
+        then error "If statement error:\nNo boolean value for if to check because stack is empty." 
         else fsTop state
-    if (top == (Boolean True)) then 
-        doNode trueBranch state 
-    else doNode falseBranch state
+
+    --Runs true branch if top is true, false if false, and errors out otherwise.
+    case top of 
+        (Boolean True) -> doNode trueBranch state
+        (Boolean False) -> doNode falseBranch state
+        _ -> error "If statement error:\nIf statement requires top of stack to be type Boolean to perform valid branching!"
 
 --Patterm matches function definition.
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
@@ -874,21 +944,28 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 doNode ( While loopBody ) state = do
     let stackIsEmpty = null (stack state)
     let top = if stackIsEmpty 
-        then error "While Loop error: \nNo boolean value for while loop to check because stack is empty." 
+        then error "While Loop error:\nNo boolean value for while loop to check because stack is empty." 
         else fsTop state
 
     --Creates new stack if loop body runs.
     -- Otherwise newState is same as state.
-    newState <- if top == (Boolean True) 
-        then doNode (loopBody) state
-        else return (state)
+    -- Errors out if top of stack isn't a boolean type.
+    newState <- case top of 
+        (Boolean True) -> doNode (loopBody) state
+        (Boolean False) -> return (state)
+        _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
+
+    let stackIsEmpty' = null (stack newState)
+    let top' = if stackIsEmpty'
+        then error "While Loop error:\nNo boolean value for while loop to check because stack is empty."
+        else fsTop newState
 
     --If loop ran and can run again, it's run again, 
-    -- otherwise, state is returned.
-    let newTop = (fsTop newState)
-    if (newTop == (Boolean True)) 
-        then doNode ( While loopBody ) newState 
-        else return newState
+    -- otherwise, newState is returned.
+    case top' of 
+        (Boolean True) -> doNode (While loopBody) newState
+        (Boolean False) -> return newState
+        _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
