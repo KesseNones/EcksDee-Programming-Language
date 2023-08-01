@@ -814,7 +814,8 @@
 	for this kind of thing. More information on how to run it 
 	in windows will be gathered and shared here later.
 
-	-There you have it. If you have a unix based system, a Haskell compiler, and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
+	-There you have it. If you have a unix based system, a Haskell compiler, 
+	and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
 
 ## Conclusion:
 	-EcksDee has been a fun programming language to develop 
