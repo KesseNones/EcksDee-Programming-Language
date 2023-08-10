@@ -113,7 +113,7 @@ their types have to match and the valid types for ```+``` are: Integer, BigInteg
 For the first four types mentioned, ```+``` works as an adder as expected. For type Boolean, 
 the ```+``` works like a logical OR, which means the result of adding two Booleans is true 
 as long as at least one is True.
-Example Program: \\
+Example Program: <br>
 	```2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +```
 Final Stack: 
 ```
