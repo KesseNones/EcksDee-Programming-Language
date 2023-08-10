@@ -113,15 +113,15 @@ their types have to match and the valid types for ```+``` are: Integer, BigInteg
 For the first four types mentioned, ```+``` works as an adder as expected. For type Boolean, 
 the ```+``` works like a logical OR, which means the result of adding two Booleans is true 
 as long as at least one is True.
-Example Program: 
+Example Program: \\
 	```2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +```
 Final Stack: 
 ```
-	Integer 4
-	BigInteger 5 
-	Float 10.0 
-	Double 42.2 
-	Boolean True
+Integer 4
+BigInteger 5 
+Float 10.0 
+Double 42.2 
+Boolean True
 ```
 
 	- -: Subtracts a number at the top of the stack from a number at the second to top of the stack. 
