@@ -114,7 +114,7 @@ For the first four types mentioned, ```+``` works as an adder as expected. For t
 the ```+``` works like a logical OR, which means the result of adding two Booleans is true 
 as long as at least one is True.
 Example Program: <br>
-	```2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +```
+	```2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +``` <br>
 Final Stack: 
 ```
 Integer 4
