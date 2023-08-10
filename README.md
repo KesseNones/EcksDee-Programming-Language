@@ -1,9 +1,9 @@
 # The EcksDee Programming Language
-	-Created by Jesse A. Jones (KesseNones)
-	-Inspired by Forth
+	Created by Jesse A. Jones (KesseNones)
+	Inspired by Forth
 
 ## Introduction:
-	-The EcksDee programming language started as an interpretor 
+	The EcksDee programming language started as an interpretor 
 	for a really simple Forth dialect in Programming Language Design. 
 	From there, I decided to make my own programming language once I learned the basics. 
 	I added variables, and changed function syntax lightly, 
@@ -11,7 +11,7 @@
 	to make it even more distinct. The main features 
 	of the language are detailed below in the Mechanics section.
 
-	-THIS DOCUMENTATION IS STILL A WORK IN PROGRESS SO IGNORE ANY BAD GRAMMAR OR SPELLING IF YOU SEE IT. 
+	THIS DOCUMENTATION IS STILL A WORK IN PROGRESS SO IGNORE ANY BAD GRAMMAR OR SPELLING IF YOU SEE IT. 
 	IT WILL LIKELY GET FIXED LATER.
 
 ## Mechanics:
