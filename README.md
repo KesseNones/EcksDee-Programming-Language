@@ -115,7 +115,8 @@ the ```+``` works like a logical OR, which means the result of adding two Boolea
 as long as at least one is True.
 Example Program: 
 	```2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +```
-Final Stack: ```
+Final Stack: 
+```
 	Integer 4
 	BigInteger 5 
 	Float 10.0 
