@@ -95,26 +95,33 @@ All one has to do is to push the empty list to the
 stack like so: ```[]```. From there values can be added to this empty list 
 using the push or fpush operator which will be discussed later.
 ### Operators:
-	-Now that all the types of data have been covered that can be pushed onto the stack, 
-	now it's time to cover all the basic operators that can be used on the data.
-	When displaying the result of an example program or usage of the operator, 
-	the stack will be displayed in a left to right format 
-	where the top of the stack is the right-most item. 
-	In the actual language when a program finishes running, the stack is printed vertically 
-	in a top-down order with the top item of the stack being at the bottom of the print. 
+Now that all the types of data have been covered that can be pushed onto the stack, 
+now it's time to cover all the basic operators that can be used on the data.
+When displaying the result of an example program or usage of the operator, 
+the stack will be displayed in a left to right format 
+where the top of the stack is the right-most item. 
+In the actual language when a program finishes running, the stack is printed vertically 
+in a top-down order with the top item of the stack being at the bottom of the print. 
 
-	-At present, the current operators are: 
+At present, the current operators are: 
 
-	- +: Adds the top two elements of a stack together. 
-	For example, given a stack of numbers: b a, it pops b and a 
-	and adds them together and pushes number c, leaving stack: c. In the case of numbers a and b, 
-	their types have to match and the valid types for + are: Integer, BigInteger, Float, Double, and Boolean.
-	For the first four types mentioned, + works as an adder as expected. For type Boolean, 
-	the + works like a logical OR, which means the result of adding two Booleans is true 
-	as long as at least one is True.
-	Example Program: 
-		2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +
-	Finishes with stack: Integer 4, BigInteger 5, Float 10.0, Double 42.2, Boolean True
+#### + 
+Adds the top two elements of a stack together. 
+For example, given a stack of numbers: ```b a```, it pops ```b``` and ```a``` 
+and adds them together and pushes number ```c```, leaving stack: ```c```. In the case of numbers ```a``` and ```b```, 
+their types have to match and the valid types for ```+``` are: Integer, BigInteger, Float, Double, and Boolean.
+For the first four types mentioned, ```+``` works as an adder as expected. For type Boolean, 
+the ```+``` works like a logical OR, which means the result of adding two Booleans is true 
+as long as at least one is True.
+Example Program: 
+	```2 2 + 2b 3b + 3.0 7.0 + 21.0d 21.2d + False True +```
+Final Stack: ```
+	Integer 4
+	BigInteger 5 
+	Float 10.0 
+	Double 42.2 
+	Boolean True
+```
 
 	- -: Subtracts a number at the top of the stack from a number at the second to top of the stack. 
 	The valid types for the subtraction operator - are: Integer, BigInteger, Float, and Double. 
