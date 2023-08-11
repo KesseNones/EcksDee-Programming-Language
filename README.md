@@ -142,7 +142,7 @@ the types must match and the valid types for ```*``` are: Integer, BigInteger, F
 For the first four types ```*``` acts as multiplication. For Booleans it acts as a logical AND. <br>
 Example Program:<br> 
 	```2 2 * 2b 3b * 3.0 7.0 * 21.0d 21.2d * False True *``` <br>
-Ending Stack: 
+Final Stack: 
 ```
 Integer 4 
 BigInteger 6 
@@ -426,6 +426,7 @@ Example Program: <br>
 [] "lists" p "can" p 2 p "have" p 'c' p "multiple" p "types" p
 ``` 
 <br>
+
 Final Stack: 
 ```
 	List [String "foo", String "bar", String "baz"] 
