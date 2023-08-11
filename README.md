@@ -141,7 +141,7 @@ Multiplies the top two elements of the stack together. As with ```+``` and ```-`
 the types must match and the valid types for ```*``` are: Integer, BigInteger, Float, Double, and Boolean.
 For the first four types ```*``` acts as multiplication. For Booleans it acts as a logical AND. <br>
 Example Program:<br> 
-	```2 2 * 2b 3b * 3.0 7.0 * 21.0d 21.2d * False True *```
+	```2 2 * 2b 3b * 3.0 7.0 * 21.0d 21.2d * False True *``` <br>
 Ending Stack: 
 ```
 Integer 4 
@@ -156,7 +156,7 @@ Divides second to top element of stack by top element. As stated before,
 the types have to match for both operands. The valid types for the division operator ```/``` are:
 Integer, BigInteger, Float, and Double. <br>
 Example Program: <br>
-	```2 2 / 3b 2b / 3.0 2.0 / 355.0d 113.0d /``` 
+	```2 2 / 3b 2b / 3.0 2.0 / 355.0d 113.0d /```  <br>
 Final Stack: 
 ```
 Integer 1
@@ -171,7 +171,7 @@ or only one item is on the stack, nothing happens. In terms of types, any two it
 of any data type can be swapped on the stack. Generally, given stack: ```x, y```, 
 the resulting stack from using swap is: ```y x```. <br>
 Example Program: <br>
-	```"foo" "bar" swap```
+	```"foo" "bar" swap``` <br>
 Final Stack: 
 ```
 String "bar" 
@@ -182,7 +182,7 @@ String "foo"
 Easily the most common operator. Given stack ```x y z```, drop removes the top item from the stack. 
 In this case, applying drop to the stack gives ```x y```, removing ```z```. <br>
 Example Program: <br>
-	```"foo" 42 1.414 666 drop```
+	```"foo" 42 1.414 666 drop``` <br>
 Final Stack: 
 ```
 String "foo" 
@@ -196,7 +196,7 @@ If only two operands are on stack it acts like the ```swap``` operator, and if o
 The operator ```rot``` can work with any types involved.
 Generally, given stack: ```x, y, z```, using rot makes it ```z, x, y``` because it gets rotated to the right. <br>
 Example Program: <br>
-	```"foo" "bar" "baz" rot```
+	```"foo" "bar" "baz" rot```<br>
 Final Stack: 
 ```
 String "baz" 
@@ -209,7 +209,7 @@ Pushes a duplicate of the top element of the stack or does nothing if stack is e
 Like ```swap```, ```drop```, and ```rot```, ```dup``` works with any type on the stack. In general, given a stack: ```x```, 
 using ```dup``` results in the stack: ```x x'``` where ```x'``` is the same as ```x```. <br>
 Example Program: <br>
-	```1 2 3 dup```
+	```1 2 3 dup```<br>
 Final Stack: 
 ```
 Integer 1 
@@ -225,7 +225,7 @@ For example, given stack: ```x y```, ```x``` and ```y``` are popped and checked 
 If so, ```True``` is pushed and ```False``` otherwise. 
 For a valid comparison to be made, the types of ```x``` and ```y``` must match, otherwise an error is thrown. <br>
 Example Program: <br>
-	```1 1 == false true == 2.0 2.1 == 1.0d 1.42d == "foo" "bar" == "foo" "foo" ==```
+	```1 1 == false true == 2.0 2.1 == 1.0d 1.42d == "foo" "bar" == "foo" "foo" ==```<br>
 Final Stack: 
 ```
 Boolean True 
@@ -240,7 +240,7 @@ Boolean True
 Exactly the same as ```==``` except it pushes the opposite Boolean to the stack.
 The types of the operands also need to match for this to work. <br>
 Example Program: <br>
-	```1 1 /= false true /= 2.0 2.1 /= 1.0d 1.42d /= "foo" "bar" /= "foo" "foo" /=```
+	```1 1 /= false true /= 2.0 2.1 /= 1.0d 1.42d /= "foo" "bar" /= "foo" "foo" /=```<br>
 Final Stack: 
 ```
 Boolean False 
@@ -256,7 +256,7 @@ Determines if the second to top element is greater than the top element of the s
 Pushes Boolean based on the truth value of the expression. If the types don't match, an error occurs.
 Generally, given stack: ```x y```, it pops ```x``` and ```y``` to see if ```x``` is greater than ```y```. <br>
 Example Program: <br>
-	```6 9 > 9.9 9.5 > 148494484948484b -485b > 3.141592653589793d 2.71828d > "foo" "bar" > "bar" "baz" >```
+	```6 9 > 9.9 9.5 > 148494484948484b -485b > 3.141592653589793d 2.71828d > "foo" "bar" > "bar" "baz" >```<br>
 Final Stack: 
 ```
 Boolean False 
@@ -272,7 +272,7 @@ Acts like the greater than (```>```) operator but checks to see
 if the second to top is LESS than the top, rather than greater.
 Types of the two comparison operands need to match. <br>
 Example Program: <br>
-	```6 9 < 9.9 9.5 < 148494484948484b -485b < 3.141592653589793d 2.71828d < "foo" "bar" < "bar" "baz" <```
+	```6 9 < 9.9 9.5 < 148494484948484b -485b < 3.141592653589793d 2.71828d < "foo" "bar" < "bar" "baz" <```<br>
 Final Stack: 
 ```
 Boolean True 
@@ -287,7 +287,7 @@ Boolean True
 Examines if second to top element is greater than or equal to the top element of the stack.
 Types need to match. Given stack: ```x y```, it is determined if ```x``` is greater than or equal to ```y```. <br>
 Example Program: <br>
-	```"foo" "foo" >= 99 100 >= 3.14 2.718 >= 69.420d 420.69d >= 'c' 'a' >= true true >=``` 
+	```"foo" "foo" >= 99 100 >= 3.14 2.718 >= 69.420d 420.69d >= 'c' 'a' >= true true >=``` <br>
 Final Stack: 
 ```
 Boolean True 
@@ -303,7 +303,7 @@ Acts like the greater than equal to operator (```>=```) but has generally opposi
 by checking if the second to top of the stack is LESS than or equal to the top.
 Types of operands need to match. <br>
 Example Program: <br>
-	```"foo" "foo" <= 99 100 <= 3.14 2.718 <= 69.420d 420.69d <= 'c' 'a' <= true true <=``` 
+	```"foo" "foo" <= 99 100 <= 3.14 2.718 <= 69.420d 420.69d <= 'c' 'a' <= true true <=``` <br>
 Final Stack: 
 ```
 Boolean True 
@@ -321,7 +321,7 @@ In other words, the second to top item of the stack is modded by the top item of
 The types of ```x``` and ```y``` have to match and the valid types are BigInteger and Integer. 
 Using non-matching types or types that aren't the two valid ones, an error is thrown. <br>
 Example Program: <br>
-	```23 2 % 16 2 % 2023b 4b % 2020b 4b % 1969b 100b % 22b 10b % 40999 400 %```
+	```23 2 % 16 2 % 2023b 4b % 2020b 4b % 1969b 100b % 22b 10b % 40999 400 %```<br>
 Ending Stack: 
 ```
 Integer 1 
@@ -338,7 +338,7 @@ Given stack: ```x y```, where ```x``` and ```y``` are of type Boolean, the opera
 and performs a logical AND operation on them, pushing the Boolean result to the stack. ```True``` is only
 pushed if ```x``` and ```y``` are both ```True```. <br>
 Example Program: <br>
-	```true true and true false and false true and false false and```
+	```true true and true false and false true and false false and```<br>
 Final Stack: 
 ```
 Boolean True 
@@ -352,7 +352,7 @@ Given stack: ```x y```, where ```x``` and ```y``` are of type Boolean, the opera
 and performs a logical OR operation on them, pushing the Boolean result to the stack.
 ```False``` is only pushed when ```x``` and ```y``` are both ```False```. <br>
 Example Program: <br>
-	```true true or true false or false true or false false or```
+	```true true or true false or false true or false false or```<br>
 Final Stack: 
 ```
 Boolean True 
@@ -367,7 +367,7 @@ and performs a logical XOR (Exclusive OR) operation on them,
 pushing the Boolean result to the stack. ```True``` is pushed when exactly ```x``` or ```y``` is ```True``` 
 and exactly ```y``` or ```x``` is ```False```. <br>
 Example Program: <br>
-	```true true xor true false xor false true xor false false xor```
+	```true true xor true false xor false true xor false false xor```<br>
 Final Stack: 
 ```
 Boolean False 
@@ -380,7 +380,7 @@ Boolean False
 Given stack: ```x```, where ```x``` is of type Boolean, the operator ```not``` pops ```x``` and peforms a logical NOT
 operation on ```x```, pushing the opposite Boolean to the stack. <br>
 Example Program: <br>
-	```false not true not``` 
+	```false not true not``` <br>
 Final Stack: 
 ```
 Boolean True 
@@ -391,7 +391,7 @@ Boolean False
 Given stack: ```x y```, where ```x``` and ```y``` have matching types of valid types: Float and Double, ```x``` and ```y```
 are popped and ```x``` is raised to the power of ```y```, yielding an exponent result that's pushed to the stack. <br>
 Example Program: <br>
-	```2.0 10.0 pow 2.71828d 3.14159265358979323d pow 2.0 0.5 pow 9.0 0.5 pow```
+	```2.0 10.0 pow 2.71828d 3.14159265358979323d pow 2.0 0.5 pow 9.0 0.5 pow```<br>
 Final Stack: 
 ```
 Float 1024.0 
@@ -404,7 +404,7 @@ Float 3.0
 Given stack: ```x y```, where ```x``` and ```y``` are of type String or List, ```x``` and ```y``` are popped and concatenated
 together, with the result being pushed onto the stack. <br> 
 Example Program: <br>
-	```"foo " "bar" ++ [] 1 p 2 p 3 p [] 4 p 5 p 6 p ++```
+	```"foo " "bar" ++ [] 1 p 2 p 3 p [] 4 p 5 p 6 p ++```<br>
 Final Stack: 
 ```
 String "foo bar"
@@ -424,7 +424,8 @@ Example Program: <br>
 ```
 [] "foo" push "bar" p "baz" p [] 2 push 4 push 6 push 8 push "Pushed Char: " 'c' push
 [] "lists" p "can" p 2 p "have" p 'c' p "multiple" p "types" p
-```
+``` 
+<br>
 Final Stack: 
 ```
 	List [String "foo", String "bar", String "baz"] 
@@ -440,7 +441,7 @@ with the altered String/List pushed back on with the Char/Value pushed also.
 If the String/List is empty, nothing happens except the empty String/List is pushed back to the stack.
 Operators ```pop``` and ```po``` are equivalent. <br>
 Example Program: <br>
-	```"Hello, Worldz" pop [] 1 p 2 p 3 p 77 p pop```
+	```"Hello, Worldz" pop [] 1 p 2 p 3 p 77 p pop```<br>
 Final Stack: 
 ```
 String "Hello, World" 
@@ -456,7 +457,7 @@ with the result being pushed back to the stack.
 Basically the same as ```push``` but acts at the front of a String/List instead of at the back.
 Operators ```fpush``` and ```fp``` are also synonymous just like with ```push``` and ```p```.  <br>
 Example Program: <br>
-	```[] "foo" fpush "bar" fpush "baz" fpush " is a front pushed Char" 'c' fp```
+	```[] "foo" fpush "bar" fpush "baz" fpush " is a front pushed Char" 'c' fp```<br>
 Final Stack: 
 ```
 List [String "baz", String "bar", String "foo"] 
@@ -472,7 +473,9 @@ Example Program: <br>
 "9There was a Char that doesn't belong at the start of this sentence." fpop
 [] 666 p 1 p 2 p 3 p fpo
 ```
+<br>
 Final Stack: 
+
 ```
 String "There was a Char that doesn't belong at the start of this sentence."
 Char '9'
@@ -486,7 +489,7 @@ Item ```y``` is popped and used as an index into ```x```. If the index is valid,
 then the Char/Value contained in ```x``` at index ```y``` is duplicated and pushed onto the stack. 
 The String/List remains unchanged. <br>
 Example Program:<br>
-	```[] 1 p 2 p 3 p 1 index "foo bar baz" 0 index```
+	```[] 1 p 2 p 3 p 1 index "foo bar baz" 0 index``` <br>
 Final Stack: 
 ```
 List [Integer 1, Integer 2, Integer 3] 
@@ -500,7 +503,7 @@ Given stack: ```x```, where ```x``` is of type String/List.
 The operator ```length``` or ```len```, determines the length of the String/List 
 and pushes the resulting length as an Integer to the stack. <br>
 Example Program:<br>
-	```"foo bar baz" length [] 1 p 2 p 3 p "wow!" p len```
+	```"foo bar baz" length [] 1 p 2 p 3 p "wow!" p len``` <br>
 Final Stack: 
 ```
 String "foo bar baz", 
@@ -514,7 +517,7 @@ Given stack: ```x```, where ```x``` is of type String/List.
 The operator ```isEmpty``` determines if ```x``` is an empty String/List 
 and pushes a Boolean to the stack based on that check. <br>
 Example Program: <br>
-	```"" isEmpty [] isEmpty [] 1 p isEmpty "foo" isEmpty```
+	```"" isEmpty [] isEmpty [] 1 p isEmpty "foo" isEmpty``` <br>
 Final Stack: 
 ```
 String "", 
@@ -531,7 +534,7 @@ Boolean False
 Given stack: ```x```, where ```x``` is of type String/List. 
 Pops ```x``` off the stack and pushes an empty String/List, effectively clearing ```x```. <br>
 Example program:  <br>
-	```"This string isn't empty!" clear [] 1 p 2 p clear```
+	```"This string isn't empty!" clear [] 1 p 2 p clear``` <br>
 Final Stack:
 ```
 String ""
@@ -547,6 +550,8 @@ Example Program:<br>
 "bar" 'z' contains
 [] 1 p 2 p 3 p 2 contains
 ```
+<br>
+
 Final Stack:
 ```
 String "foo"
@@ -574,6 +579,8 @@ dup
 
 'b' 0 changeItemAt
 ```
+<br>
+
 Final Stack:
 ```
 List [Char 'f',Char 'o',Char 'o']
@@ -588,6 +595,8 @@ Example Program: <br>
 ' ' isWhitespace
 'g' isWhitespace
 ```
+<br>
+
 Final Stack:
 ```
 Char ' '
@@ -615,6 +624,8 @@ Example Program:<br>
 dup
 "Integer" cast
 ```
+<br>
+
 Final Stack:
 ```
 String "Your number is: 150601872777831737268034534874546176"
@@ -635,9 +646,13 @@ drop /' Dropping the string leaves an empty stack.
 As a result, all you see when running this program 
 is the hello world string getting printed.  '/
 ```
+<br>
+
 Final Stack:
 ```
 ```
+<br>
+
 Stdout:
 ```
 Hello, World!
@@ -647,15 +662,18 @@ Hello, World!
 Reads a String ending in a newline of input and pushes the String to the stack. 
 The example input given for Stdin is an example, any input ending with a new line could've gone there.<br>
 Example Program: <br>
-	```readLine```
+	```readLine``` <br>
 Stdin:
 ```
 This is some input!
 ```
+<br>
+
 Final Stack:
 ```
 String "This is some input!"
 ```
+<br>
 
 Example using full IO to illustrate that it's indeed neat: <br>
 ```
@@ -668,12 +686,16 @@ swap ++
 printLine
 drop
 ```
+<br>
+
 TERMINAL:
 ```
 Enter your name:
 Joe
 Hello, Joe!
 ```
+<br>
+
 Final Stack:
 ```
 ```
