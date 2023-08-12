@@ -841,91 +841,107 @@ String "Forty two isn't bigger than sixty nine!"
 ```
 
 ### Functions:
-	-Functions are useful for repeating code without having to copy paste it. 
-	They make code more streamlined and overall more readable. 
-	Consequently, EcksDee has functions because they're very useful.
+Functions are useful for repeating code without having to copy paste it. 
+They make code more streamlined and overall more readable. 
+Consequently, EcksDee has functions because they're very useful.
 
-	-The function syntax is different from how while loops or if statements are structured. 
-	The basic syntax is: func OPP_KEYWORD FUNCTION_NAME POTENTIALLY_CODE ;
-	The OPP_KEYWORD is an operation keyword. For functions two such keywords exist: def and call.
+The function syntax is different from how while loops or if statements are structured. 
+The basic syntax is: ```func OPP_KEYWORD FUNCTION_NAME POTENTIALLY_CODE ;``` <br>
+The ```OPP_KEYWORD``` is an operation keyword. For functions two such keywords exist: ```def``` and ```call```.
 
-	- def: Defines a function which runs POTENTIALLY_CODE.
-	The general syntax looks like this:
-	func def FUNCTION_NAME CODE ; 
+#### def 
+Defines a function which runs ```POTENTIALLY_CODE```.
+The general syntax looks like this:
+```func def FUNCTION_NAME CODE ;``` <br> 
 
-	- call: Calls a function. If FUNCTION_NAME isn't defined, an error is thrown. 
-	If it is, the code given in the function definition is run.
-	EcksDee runs linearly top to bottom so if you call a function 
-	before you define it in the program flow, an error will be thrown 
-	as if the function isn't defined even though it is.
-	The general syntax for calling a function looks like this:
-	func call FUNCTION_NAME ;
+#### call 
+Calls a function. If ```FUNCTION_NAME``` isn't defined, an error is thrown. 
+If it is, the code given in the function definition is run.
+EcksDee runs linearly top to bottom so if you call a function 
+before you define it in the program flow, an error will be thrown 
+as if the function isn't defined even though it is.
+The general syntax for calling a function looks like this:
+```func call FUNCTION_NAME ;``` <br>
 
-	-Functions have no return functionality, they just run whatever code is given 
-	to them when defined which could even be nothing at all. 
-	To return something it's best practice to have some kind 
-	of return value variable that you get the value of at the end of the function. 
-	How you approach it is obviously up to you though.
+Functions have no return functionality, they just run whatever code is given 
+to them when defined which could even be nothing at all. 
+To return something it's best practice to have some kind 
+of return value variable that you get the value of at the end of the function. 
+How you approach it is obviously up to you though. <br>
 
-	-Example Program:
-		/' Calculates root 2, duplicates the value and then sees what root 2 times e times pi equals. '/
-		func def foo 
-			2.0d 0.5d pow
-			dup
-			2.71828d
-			*
-			3.14159d
-			*
-		;
+Example Program: <br>
+```
+/' Calculates root 2, duplicates the value and then sees what root 2 times e times pi equals. '/
+func def foo 
+	2.0d 0.5d pow
+	dup
+	2.71828d
+	*
+	3.14159d
+	*
+;
 
-		"First Run"
-		func call foo ;
-		"Second Run"
-		func call foo ;
-	-Final Stack:
-		String "First Run"
-		Double 1.4142135623730951
-		Double 12.076989632131767
-		String "Second Run"
-		Double 1.4142135623730951
-		Double 12.076989632131767
+"First Run"
+func call foo ;
+"Second Run"
+func call foo ;
+```
+<br>
 
-	-Nested Function Example Program:
-		/' Squares the number at the top of the stack while preserving the original number 
-		Throws error if stack is empty due to * operator. '/
-		func def square
-			dup dup *
-		;
+-Final Stack:
+```
+String "First Run"
+Double 1.4142135623730951
+Double 12.076989632131767
+String "Second Run"
+Double 1.4142135623730951
+Double 12.076989632131767
+```
+<br>
 
-		/' Computes the first 10 squares starting at 0. '/
-		func def firstTenSquares 
-			0
-			dup 10 < 
-			while
-				drop
+Nested Function Example Program: <br>
+```
+/' Squares the number at the top of the stack 
+while preserving the original number 
+Throws error if stack is empty due to * operator. '/
+func def square
+	dup dup *
+;
 
-				func call square ;
-				swap
-				1 +
+/' Computes the first 10 squares starting at 0. '/
+func def firstTenSquares 
+	0
+	dup 10 < 
+	while
+		drop
 
-				dup 10 <
-			;
-			drop
-			drop
-		;
+		func call square ;
+		swap
+		1 +
 
-		func call firstTenSquares ;
-	-Final Stack:
-		Integer 0
-		Integer 1
-		Integer 4
-		Integer 9
-		Integer 16
-		Integer 25
-		Integer 36
-		Integer 49
-		Integer 64
-		Integer 81
+		dup 10 <
+	;
+	drop
+	drop
+;
+
+func call firstTenSquares ;
+```
+<br>
+
+Final Stack: <br>
+```
+Integer 0
+Integer 1
+Integer 4
+Integer 9
+Integer 16
+Integer 25
+Integer 36
+Integer 49
+Integer 64
+Integer 81
+```
 
 ### Variables:
 	-Variables are incredibly useful in programming. 
