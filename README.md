@@ -1170,19 +1170,19 @@ There you have it. If you have a unix based system, a Haskell compiler,
 and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
 
 ## Conclusion:
-	-EcksDee has been a fun programming language to develop 
-	from the very simple Forth interpretor it started as. 
-	Adding data types and IO were both definitely challenges in their own right; Monads are freaky!
+EcksDee has been a fun programming language to develop 
+from the very simple Forth interpretor it started as. 
+Adding data types and IO were both definitely challenges in their own right; Monads are freaky!
 
-	-Is EcksDee a revolutionary language? No. Is it a fast language? No. 
-	Is it even that good of a language? Heck no! But was it fun to make and keep adding onto? 
-	Absolutely yes!
+Is EcksDee a revolutionary language? No. Is it a fast language? No. 
+Is it even that good of a language? Heck no! But was it fun to make and keep adding onto? 
+Absolutely yes!
 
-	-I have enjoyed the surreal sensation of making programs in my own programming language 
-	and seeing my expertise in my own goofy language grow 
-	and develop as well as see EcksDee itself grow in complexity with new features. 
+I have enjoyed the surreal sensation of making programs in my own programming language 
+and seeing my expertise in my own goofy language grow 
+and develop as well as see EcksDee itself grow in complexity with new features. 
 
-	-Wrapping up, this language isn't anything amazing or innovative 
-	but I'd say it's worth checking out if you're bored and a nerd like me. 
-	Plus, it's good Reverse Polish Notation practice! 
+Wrapping up, this language isn't anything amazing or innovative 
+but I'd say it's worth checking out if you're bored and a nerd like me. 
+Plus, it's good Reverse Polish Notation practice! 
 
