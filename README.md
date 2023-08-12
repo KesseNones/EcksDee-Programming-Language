@@ -1130,36 +1130,44 @@ whatever text is put as ```COMMENT_TEXT``` can be in any format with as many whi
 as desired. When done correctly, comments are ignored by the EcksDee interpreter.
 
 ## How to Run
-	-Running EcksDee isn't too difficult but does require some doing.
+Running EcksDee isn't too difficult but does require some doing.
 
-	-The first big thing needed is a Haskell compiler since EcksDee is interpreted via a Haskell program.
-	Ideally get GHC (Glasgow Haskell Compiler) since that's what I've used to develop the interpreter.
-	Likely other Haskell compilers would also work but it's not known for sure.
+The first big thing needed is a Haskell compiler since EcksDee is interpreted via a Haskell program.
+Ideally get GHC (Glasgow Haskell Compiler) since that's what I've used to develop the interpreter.
+Likely other Haskell compilers would also work but it's not known for sure.
 
-	-With a Haskell compiler, compile the ecksdee.hs file to turn it into an executable. 
+With a Haskell compiler, compile the ecksdee.hs file to turn it into an executable. 
 
-	-Once the interpreter executable has been made, then you just have to have some code file,
-	conventionally with the .xd extension though not required. 
+Once the interpreter executable has been made, then you just have to have some code file,
+conventionally with the .xd extension though not required. 
 
-	-On unix based systems in the terminal run it like so: 
-	./ecksdee DIR_TO_PROGRAM
-	Where DIR_TO_PROGRAM is the EcksDee program you want to run.
+On unix based systems in the terminal run it like so: <br> 
+```./ecksdee DIR_TO_PROGRAM``` <br>
+Where ```DIR_TO_PROGRAM``` is the EcksDee program you want to run.
 
-	-For example say you have a classic hello world program. The command series would look like this:
-	ghc ecksdee
-	./ecksdee helloWorld.xd
-	Hello, World!
-	Where helloWorld.xd looks like:
-		"Hello, World!"
-		printLine drop
+For example say you have a classic hello world program.  <br>
+The command series would look like this: <br>
+```
+ghc ecksdee
+./ecksdee helloWorld.xd
+Hello, World!
+``` 
+<br>
 
-	-That's an example of running it in bash on a unix based system. 
-	It's likely running it on windows is trickier because windows can be annoying 
-	for this kind of thing. More information on how to run it 
-	in windows will be gathered and shared here later.
+Where helloWorld.xd looks like: <br>
+```
+"Hello, World!"
+printLine drop
+```
+<br>
 
-	-There you have it. If you have a unix based system, a Haskell compiler, 
-	and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
+That's an example of running it in bash on a unix based system. 
+It's likely running it on windows is trickier because windows can be annoying 
+for this kind of thing. More information on how to run it 
+in windows will be gathered and shared here later.
+
+There you have it. If you have a unix based system, a Haskell compiler, 
+and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
 
 ## Conclusion:
 	-EcksDee has been a fun programming language to develop 
