@@ -1,13 +1,13 @@
 # The EcksDee Programming Language
-Created by Jesse A. Jones (KesseNones)
-Inspired by Forth
+Created by Jesse A. Jones (KesseNones) <br>
+Inspired by a Forth Dialect
 
 ## Introduction
 The EcksDee programming language started as an interpretor 
-for a really simple Forth dialect in Programming Language Design. 
+for a really simple Forth dialect in the Programming Language Design class I took at university. 
 From there, I decided to make my own programming language once I learned the basics. 
 I added variables, and changed function syntax lightly, 
-making it officially its own programming language. Ever since more features have been added 
+making it officially its own programming language. Ever since, more features have been added 
 to make it even more distinct. The main features 
 of the language are detailed below in the Mechanics section.
 
@@ -17,14 +17,14 @@ IT WILL LIKELY GET FIXED LATER.
 ## Mechanics
 ### Stack Based Approach
 Since EcksDee is based on Forth, it's stack based. 
-This means that the language is generally composed of things pushed to the stack, 
+This means that the language is generally composed of things pushed to the stack 
 and things that operate on those things pushed onto the stack known as operators. 
 
 For instance, to add two numbers, one pushes a number, another number, 
 and then uses the add operator, like so:
 ``` a b + ``` 
 This means that ```a``` is pushed onto the stack and then ```b``` is pushed onto the stack, 
-yielding a stack, displayed top being the rightmost item, like this: a b.
+yielding a stack, displayed top being the rightmost item, like this: ```a b```.
 The operator ```+``` then pops ```b``` and ```a``` and adds them together and pushes the result, 
 yielding a stack with just result c.
 
