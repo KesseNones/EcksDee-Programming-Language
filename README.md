@@ -878,37 +878,40 @@ String "Forty two isn't bigger than sixty nine!"
 ```
 
 ### Functions
-Functions are useful for repeating code without having to copy paste it. 
+Functions are useful for repeating code without having to copy-paste it. 
 They make code more streamlined and overall more readable. 
 Consequently, EcksDee has functions because they're very useful.
 
 The function syntax is different from how while loops or if statements are structured. 
-The basic syntax is: ```func OPP_KEYWORD FUNCTION_NAME POTENTIALLY_CODE ;``` <br>
-The ```OPP_KEYWORD``` is an operation keyword. For functions two such keywords exist: ```def``` and ```call```.
+The basic syntax is: <br> 
+```func OPP_KEYWORD FUNCTION_NAME POTENTIALLY_CODE ;``` <br>
+The ```OPP_KEYWORD``` is an operation keyword. <br>
+For functions two such keywords exist: ```def``` and ```call```.
 
 #### def 
-Defines a function which runs ```POTENTIALLY_CODE```.
-The general syntax looks like this:
-```func def FUNCTION_NAME CODE ;``` <br> 
+Defines a function which runs ```POTENTIALLY_CODE``` when called.
+The general syntax looks like this: <br>
+```func def FUNCTION_NAME CODE ;```
 
 #### call 
 Calls a function. If ```FUNCTION_NAME``` isn't defined, an error is thrown. 
-If it is, the code given in the function definition is run.
+If it is, the code given in the function definition (```CODE```) is run.
 EcksDee runs linearly top to bottom so if you call a function 
 before you define it in the program flow, an error will be thrown 
 as if the function isn't defined even though it is.
-The general syntax for calling a function looks like this:
-```func call FUNCTION_NAME ;``` <br>
+The general syntax for calling a function looks like this: <br>
+```func call FUNCTION_NAME ;``` 
 
 Functions have no return functionality, they just run whatever code is given 
 to them when defined which could even be nothing at all. 
 To return something it's best practice to have some kind 
 of return value variable that you get the value of at the end of the function. 
-How you approach it is obviously up to you though. <br>
+How you approach it is obviously up to you though.
 
-Example Program: <br>
+Example Program:
 ```
-/' Calculates root 2, duplicates the value and then sees what root 2 times e times pi equals. '/
+/' Calculates root 2, duplicates the value 
+and then sees what root 2 times e times pi equals. '/
 func def foo 
 	2.0d 0.5d pow
 	dup
@@ -923,7 +926,6 @@ func call foo ;
 "Second Run"
 func call foo ;
 ```
-<br>
 
 Final Stack:
 ```
@@ -934,9 +936,8 @@ String "Second Run"
 Double 1.4142135623730951
 Double 12.076989632131767
 ```
-<br>
 
-Nested Function Example Program: <br>
+Nested Function Example Program:
 ```
 /' Squares the number at the top of the stack 
 while preserving the original number 
@@ -964,9 +965,8 @@ func def firstTenSquares
 
 func call firstTenSquares ;
 ```
-<br>
 
-Final Stack: <br>
+Final Stack:
 ```
 Integer 0
 Integer 1
