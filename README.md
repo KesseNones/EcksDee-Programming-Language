@@ -1073,9 +1073,11 @@ in the functions section but there's variables now. '/
 while preserving the original number 
 Throws error if stack is empty due to * operator. '/
 func def square
-	/' Saves input square number at top of stack to num variable. '/
+	/' Saves input square number at top 
+	of stack to num variable. '/
 	var mak num ;
-	/' Makes two copies of num and multiples them, effectively squaring num. '/
+	/' Makes two copies of num and multiples them, 
+	effectively squaring num. '/
 	var get num ;
 	var get num ;
 	*
@@ -1103,9 +1105,10 @@ func def firstTenSquares
 	;
 	drop
 
-	/' Variable count doesn't have to be deleted here since firstTenSquares 
-	is only called once but it's best practice to do this 
-	to keep the scope of count to the firstTenSquares function 
+	/' Variable count doesn't have to be deleted here 
+	since firstTenSquares is only called once 
+	but it's best practice to do this to keep the scope 
+	of count to the firstTenSquares function 
 	and the square function. '/
 	var del count ;
 ;
