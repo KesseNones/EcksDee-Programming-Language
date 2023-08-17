@@ -1181,20 +1181,18 @@ On unix based systems in the terminal run it like so: <br>
 Where ```DIR_TO_PROGRAM``` is the EcksDee program you want to run.
 
 For example say you have a classic hello world program.  <br>
-The command series would look like this: <br>
+The command series would look like this:
 ```
 ghc ecksdee
 ./ecksdee helloWorld.xd
 Hello, World!
 ``` 
-<br>
 
-Where helloWorld.xd looks like: <br>
+Where helloWorld.xd looks like:
 ```
 "Hello, World!"
 printLine drop
 ```
-<br>
 
 That's an example of running it in bash on a unix based system. 
 It's likely running it on windows is trickier because windows can be annoying 
