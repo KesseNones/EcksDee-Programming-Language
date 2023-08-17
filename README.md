@@ -743,40 +743,42 @@ on a stack and then using one word to operate on the stack.
 The general syntax of a while loop in EcksDee is: <br> 
 ```while CODE ;```<br>
 The semicolon at the end is absolutely necessary due to how EcksDee parses while loops.
-The CODE block can be any code, ranging from nothing to a gigantic program. 
-<br>
-	
+The ```CODE``` block can be any code, ranging from nothing to a gigantic program. 
+
 Also note that the semi-colon has to be free floating, it can't be attached to other chunks of code.
 This is because EcksDee tokenizes largely on whitespace, so as long as you have at least one whitespace
 character on each side of the semi-colon you're good.
 
-A while loop runs the specified code inside it if the top of the stack is a Boolean True.
-If the top of the stack is a Boolean False it stops running.
+A while loop runs the specified code inside it if the top of the stack is a ```Boolean True```.
+If the top of the stack is a ```Boolean False``` it stops running.
 
 While loops error if the stack is empty when it comes time to have them run or run again. 
-They also error out if the top of the stack isn't a Boolean type when it comes time to run them
-or run them again. To make a loop run well, the drop operator is necessary. 
-<br>
+They also error out if the top of the stack isn't a ```Boolean``` type when it comes time to run them
+or run them again. To make a loop run properly, the drop operator is necessary. 
 	
-Example Program: <br>
+Example Program:
 ```
-/' Basically just counts from 1 to 10, pushing each number onto the stack. '/
+/' Basically just counts from 1 to 10, 
+pushing each number onto the stack. '/
 1 
 dup
 10 <
 while 
-	drop /' Removes true Boolean if loop decides to run. '/
+	/' Removes true Boolean 
+	if loop decides to run. '/
+	drop 
+	
 	dup
 	1 +
 	dup 
 	10 <
 ;
-drop /' Removes remaining false Boolean when loop finishes running. '/
+/' Removes remaining false Boolean 
+when loop finishes running. '/
+drop 
 ```
-<br>
 
-Final Stack: <br>
-
+Final Stack:
 ```
 Integer 1
 Integer 2
@@ -789,27 +791,27 @@ Integer 8
 Integer 9
 Integer 10
 ```
-<br>
 
 The most common error one will face dealing with while loops is the error: <br> 
 ```
 While Loop error: 
-Top of stack needs to be type Boolean for loop to see if it needs to run again!"
+Top of stack needs to be type Boolean for loop 
+to see if it needs to run again!"
 ``` 
-<br>
-This error means that the top of the stack isn't a Boolean type that the loop needs to determine 
-if it needs to run at all or again. To fix this, make sure 
-to push a Boolean type to the top of the stack or have it as a result of a logical expression.
 
-The other error likely is the error: <br>
+This error means that the top of the stack isn't a ```Boolean``` type that the loop needs to determine 
+if it needs to run at all or again. To fix this, make sure 
+to push a ```Boolean``` type to the top of the stack or have it as a result of a logical expression.
+
+The other error likely is the error:
 ```
 While Loop error: 
-No boolean value for while loop to check because stack is empty.
+No boolean value for while loop 
+to check because stack is empty.
 ```
-<br>
 
 This means that the stack is empty when the loop starts trying to run or tries to run again.
-To fix this, have a Boolean type on the stack before the loop starts and before it ends.
+To fix this, have a ```Boolean``` type on the stack before the loop starts and before it ends.
 
 ### If Statements
 This fancy operator is used in branching code and conditional statements. 
