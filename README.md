@@ -1205,7 +1205,7 @@ and these GitHub files, you absolutely can run your own EcksDee programs. Have f
 ## Conclusion:
 EcksDee has been a fun programming language to develop 
 from the very simple Forth interpretor it started as. 
-Adding data types and IO were both definitely challenges in their own right; Monads are freaky!
+Adding data types and IO were both definitely challenges in their own right; monads are freaky!
 
 Is EcksDee a revolutionary language? No. Is it a fast language? No. 
 Is it even that good of a language? Heck no! But was it fun to make and keep adding onto? 
