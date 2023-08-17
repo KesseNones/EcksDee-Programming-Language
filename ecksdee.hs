@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-07-31.96
+--Version: 2023-08-17.00
 --Toy Programming Language Named EcksDee
 
 {-
@@ -495,6 +495,7 @@ doPop' state (List []) = fsPush (List []) state
 doPop' state (List ls) = 
     let state' = fsPush (List $ init ls) state
     in fsPush (last ls) state'
+doPop' state (String "") = fsPush (String "") state
 doPop' state (String st) = 
     let state' = fsPush (String $ init st) state
     in fsPush (Char $ last st) state'
