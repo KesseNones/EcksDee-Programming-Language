@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-08-17.00
+--Version: 2023-12-18.00
 --Toy Programming Language Named EcksDee
 
 {-
@@ -28,7 +28,7 @@ data Value =
     |   String String
     |   Char Char
     |   Boolean Bool
-    |   List [Value]
+    |   List { items :: [Value], len :: Int}
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -111,7 +111,7 @@ modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that a
 --Concatenates two Strings or Lists.
 doConcat' :: Value -> Value -> Value
 doConcat' (String a) (String b) = String (a ++ b)
-doConcat' (List a) (List b) = List (a ++ b)
+doConcat' (List {items = as, len = al}) (List {items = bs, len = bl}) = List {items = as ++ bs, len = al + bl}
 doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
 
 --Concatentates two Strings/Lists together.
@@ -253,7 +253,7 @@ doEqual' (Double a) (Double b) = Boolean (a == b)
 doEqual' (String a) (String b) = Boolean (a == b)
 doEqual' (Char a) (Char b) = Boolean (a == b)
 doEqual' (Boolean a) (Boolean b) = Boolean (a == b)
-doEqual' (List a) (List b) = Boolean (a == b)
+doEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean ((al == bl) && (as == bs))
 doEqual' _ _ = error "Operator (==) error. Operand types must match for valid comparison!"
 
 --Checks inequality of two elements at the top of the stack.
@@ -278,7 +278,7 @@ doNotEqual' (Double a) (Double b) = Boolean (a /= b)
 doNotEqual' (String a) (String b) = Boolean (a /= b)
 doNotEqual' (Char a) (Char b) = Boolean (a /= b)
 doNotEqual' (Boolean a) (Boolean b) = Boolean (a /= b)
-doNotEqual' (List a) (List b) = Boolean (a /= b)
+doNotEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as /= bs)
 doNotEqual' _ _ = error "Operator (/=) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is greater than top element of stack.
@@ -303,7 +303,7 @@ doGreaterThan' (Double a) (Double b) = Boolean (a > b)
 doGreaterThan' (String a) (String b) = Boolean (a > b)
 doGreaterThan' (Char a) (Char b) = Boolean (a > b)
 doGreaterThan' (Boolean a) (Boolean b) = Boolean (a > b)
-doGreaterThan' (List a) (List b) = Boolean (a > b)
+doGreaterThan' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as > bs)
 doGreaterThan' _ _ = error "Operator (>) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is less than top element of stack.
@@ -328,7 +328,7 @@ doLessThan' (Double a) (Double b) = Boolean (a < b)
 doLessThan' (String a) (String b) = Boolean (a < b)
 doLessThan' (Char a) (Char b) = Boolean (a < b)
 doLessThan' (Boolean a) (Boolean b) = Boolean (a < b)
-doLessThan' (List a) (List b) = Boolean (a < b)
+doLessThan' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as < bs)
 doLessThan' _ _ = error "Operator (<) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is greater than equal to the top element of stack.
@@ -353,7 +353,7 @@ doGreaterThanEqualTo' (Double a) (Double b) = Boolean (a >= b)
 doGreaterThanEqualTo' (String a) (String b) = Boolean (a >= b)
 doGreaterThanEqualTo' (Char a) (Char b) = Boolean (a >= b)
 doGreaterThanEqualTo' (Boolean a) (Boolean b) = Boolean (a >= b)
-doGreaterThanEqualTo' (List a) (List b) = Boolean (a >= b)
+doGreaterThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as >= bs)
 doGreaterThanEqualTo' _ _ = error "Operator (>=) error. Operand types must match for valid comparison!"
 
 --Checks if second to top element is less than equal to top element of stack.
@@ -378,7 +378,7 @@ doLessThanEqualTo' (Double a) (Double b) = Boolean (a <= b)
 doLessThanEqualTo' (String a) (String b) = Boolean (a <= b)
 doLessThanEqualTo' (Char a) (Char b) = Boolean (a <= b)
 doLessThanEqualTo' (Boolean a) (Boolean b) = Boolean (a <= b)
-doLessThanEqualTo' (List a) (List b) = Boolean (a <= b)
+doLessThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as <= bs)
 doLessThanEqualTo' _ _ = error "Operator (<=) error. Operand types must match for valid comparison!"
 
 --Performs logical AND function on top two elements of stack.
@@ -474,7 +474,7 @@ doPush state = do
 
 --Pushes item to list or string.
 doPush' :: EDState -> Value -> Value -> EDState
-doPush' state (List ls) valToPush = fsPush (List (ls ++ [valToPush])) state
+doPush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (is ++ [valToPush]), len = l + 1} ) state
 doPush' state (String st) (Char c) = fsPush (String (st ++ [c])) state
 doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed!"
 
@@ -491,10 +491,10 @@ doPop state = do
 --Pops item from list and pushes it to stack.
 doPop' :: EDState -> Value -> EDState
 --Nothing happens if list is empty.
-doPop' state (List []) = fsPush (List []) state
-doPop' state (List ls) = 
-    let state' = fsPush (List $ init ls) state
-    in fsPush (last ls) state'
+doPop' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) state
+doPop' state (List {items = is, len = l}) = 
+    let state' = fsPush (  List {items = init is, len = l - 1} ) state
+    in fsPush (last is) state'
 doPop' state (String "") = fsPush (String "") state
 doPop' state (String st) = 
     let state' = fsPush (String $ init st) state
@@ -514,7 +514,7 @@ doFpush state = do
 
 --Pushes item to list front.
 doFpush' :: EDState -> Value -> Value -> EDState
-doFpush' state (List ls) valToPush = fsPush (List (valToPush : ls)) state
+doFpush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (valToPush : is), len = l + 1} ) state
 doFpush' state (String st) (Char c) = fsPush (String (c : st)) state
 doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
 
@@ -531,10 +531,10 @@ doFpop state = do
 --Pops item from list and pushes it to stack.
 doFpop' :: EDState -> Value -> EDState
 --Nothing happens if list is empty.
-doFpop' state (List []) = fsPush (List []) state
-doFpop' state (List ls) = 
-    let state' = fsPush (List $ tail ls) state
-    in fsPush (head ls) state'
+doFpop' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) state
+doFpop' state (List {items = is, len = l}) = 
+    let state' = fsPush ( List {items = tail is, len = l - 1} ) state
+    in fsPush (head is) state'
 --String case.
 doFpop' state (String st) = 
     let state' = fsPush (String $ tail st) state
@@ -554,11 +554,11 @@ doIndex state = do
 
 --Retrieves item at index in list or string.
 doIndex' :: EDState -> Value -> Value -> EDState
-doIndex' state (List []) _ = error "Can't index into empty list."
+doIndex' state (List {items = [], len = 0}) _ = error "Can't index into empty list."
 doIndex' state (String "") _ = error "Can't index into empty string."
-doIndex' state (List ls) (Integer index) = 
-    let state' = fsPush (List ls) state
-    in fsPush (ls !! index) state'
+doIndex' state (List {items = is, len = l}) (Integer index) = 
+    let state' = fsPush (List {items = is, len = l}) state
+    in fsPush (is !! index) state'
 --String case.
 doIndex' state (String st) (Integer index) = 
     let state' = fsPush (String st) state
@@ -578,7 +578,7 @@ doLength state = do
 
 --Performs actual length function.
 doLength' :: EDState -> Value -> EDState
-doLength' state (List ls) = fsPush (Integer $ length ls) state
+doLength' state (List {items = _, len = l}) = fsPush (Integer l) state
 doLength' state (String st) = fsPush (Integer $ length st) state
 doLength' state _ = error "Operator (length) error. List or string type is needed for length function to work."
 
@@ -595,7 +595,7 @@ doIsEmpty state = do
 
 --Performs actual length function.
 doIsEmpty' :: EDState -> Value -> EDState
-doIsEmpty' state (List ls) = fsPush (Boolean $ null ls) state
+doIsEmpty' state (List {items = is, len = l}) = fsPush (Boolean $ null is) state
 doIsEmpty' state (String st) = fsPush (Boolean $ null st) state
 doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
 
@@ -611,7 +611,7 @@ doClear state = do
 
 --Performs clear operation.
 doClear' :: EDState -> Value -> EDState
-doClear' state (List ls) = fsPush (List []) state
+doClear' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) state
 doClear' state (String st) = fsPush (String "") state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
@@ -732,7 +732,7 @@ doContains state = do
         vals -> do 
             let (top, secondToTop) = ((head stck), (head $ tail stck))
             let contains = case (top, secondToTop) of 
-                                (v, List l) -> v `elem` l
+                                (v, List {items = is, len = _}) -> v `elem` is
                                 (Char c, String s) -> c `elem` s
                                 (_, _) -> error "Operator (contains) error. List or string needed to asses if item is contained within."
             return (fsPush (Boolean contains) state)
@@ -748,7 +748,7 @@ doChangeItemAt state = do
         vals -> do 
             let (state', chngLs, chngItem, index) = fsPop3 state
             case (chngLs, chngItem, index) of 
-                (List l, v, Integer i) -> return (fsPush (List (changeItem [] l 0 i v)) state')
+                (List {items = is, len = l}, v, Integer i) -> return (fsPush ( List { items = (changeItem [] is 0 i v), len = l } ) state')
                 (_, _, _) -> error "Operator (changeItemAt) error. List, value, and Integer type in that order needed on stack."
 
 --Rebuilds list with altered item if possible. 
@@ -849,7 +849,7 @@ compareTypesForMut (Double _) (Double _) = True
 compareTypesForMut (Float _) (Float _) = True
 compareTypesForMut (String _) (String _) = True
 compareTypesForMut (Char _) (Char _) = True
-compareTypesForMut (List _) (List _) = True
+compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True
 compareTypesForMut _ _ = False
 
 --Changes variable to new value if it can be mutated.
@@ -1161,7 +1161,7 @@ lexToken :: String -> Token
 lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
-    | t == "[]" = Val $ List []  --Empty list case.
+    | t == "[]" = Val $ List {items = [], len = 0}  --Empty list case.
     | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
     | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
     | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
