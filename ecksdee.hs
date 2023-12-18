@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-18.00
+--Version: 2023-12-18.93
 --Toy Programming Language Named EcksDee
 
 {-
@@ -25,7 +25,7 @@ data Value =
     |   Integer Int
     |   Float Float
     |   Double Double
-    |   String String
+    |   String {chrs :: [Char], len :: Int}
     |   Char Char
     |   Boolean Bool
     |   List { items :: [Value], len :: Int}
@@ -110,7 +110,7 @@ modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that a
 
 --Concatenates two Strings or Lists.
 doConcat' :: Value -> Value -> Value
-doConcat' (String a) (String b) = String (a ++ b)
+doConcat' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = String {chrs = acs ++ bcs, len = al + bl}
 doConcat' (List {items = as, len = al}) (List {items = bs, len = bl}) = List {items = as ++ bs, len = al + bl}
 doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
 
@@ -250,7 +250,7 @@ doEqual' (BigInteger a) (BigInteger b) = Boolean (a == b)
 doEqual' (Integer a) (Integer b) = Boolean (a == b)
 doEqual' (Float a) (Float b) = Boolean (a == b)
 doEqual' (Double a) (Double b) = Boolean (a == b)
-doEqual' (String a) (String b) = Boolean (a == b)
+doEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean ((al == bl) && (acs == bcs))
 doEqual' (Char a) (Char b) = Boolean (a == b)
 doEqual' (Boolean a) (Boolean b) = Boolean (a == b)
 doEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean ((al == bl) && (as == bs))
@@ -275,7 +275,7 @@ doNotEqual' (BigInteger a) (BigInteger b) = Boolean (a /= b)
 doNotEqual' (Integer a) (Integer b) = Boolean (a /= b)
 doNotEqual' (Float a) (Float b) = Boolean (a /= b)
 doNotEqual' (Double a) (Double b) = Boolean (a /= b)
-doNotEqual' (String a) (String b) = Boolean (a /= b)
+doNotEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs /= bcs)
 doNotEqual' (Char a) (Char b) = Boolean (a /= b)
 doNotEqual' (Boolean a) (Boolean b) = Boolean (a /= b)
 doNotEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as /= bs)
@@ -300,7 +300,7 @@ doGreaterThan' (BigInteger a) (BigInteger b) = Boolean (a > b)
 doGreaterThan' (Integer a) (Integer b) = Boolean (a > b)
 doGreaterThan' (Float a) (Float b) = Boolean (a > b)
 doGreaterThan' (Double a) (Double b) = Boolean (a > b)
-doGreaterThan' (String a) (String b) = Boolean (a > b)
+doGreaterThan' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs > bcs)
 doGreaterThan' (Char a) (Char b) = Boolean (a > b)
 doGreaterThan' (Boolean a) (Boolean b) = Boolean (a > b)
 doGreaterThan' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as > bs)
@@ -325,7 +325,7 @@ doLessThan' (BigInteger a) (BigInteger b) = Boolean (a < b)
 doLessThan' (Integer a) (Integer b) = Boolean (a < b)
 doLessThan' (Float a) (Float b) = Boolean (a < b)
 doLessThan' (Double a) (Double b) = Boolean (a < b)
-doLessThan' (String a) (String b) = Boolean (a < b)
+doLessThan' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs < bcs)
 doLessThan' (Char a) (Char b) = Boolean (a < b)
 doLessThan' (Boolean a) (Boolean b) = Boolean (a < b)
 doLessThan' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as < bs)
@@ -350,7 +350,7 @@ doGreaterThanEqualTo' (BigInteger a) (BigInteger b) = Boolean (a >= b)
 doGreaterThanEqualTo' (Integer a) (Integer b) = Boolean (a >= b)
 doGreaterThanEqualTo' (Float a) (Float b) = Boolean (a >= b)
 doGreaterThanEqualTo' (Double a) (Double b) = Boolean (a >= b)
-doGreaterThanEqualTo' (String a) (String b) = Boolean (a >= b)
+doGreaterThanEqualTo' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs >= bcs)
 doGreaterThanEqualTo' (Char a) (Char b) = Boolean (a >= b)
 doGreaterThanEqualTo' (Boolean a) (Boolean b) = Boolean (a >= b)
 doGreaterThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as >= bs)
@@ -375,7 +375,7 @@ doLessThanEqualTo' (BigInteger a) (BigInteger b) = Boolean (a <= b)
 doLessThanEqualTo' (Integer a) (Integer b) = Boolean (a <= b)
 doLessThanEqualTo' (Float a) (Float b) = Boolean (a <= b)
 doLessThanEqualTo' (Double a) (Double b) = Boolean (a <= b)
-doLessThanEqualTo' (String a) (String b) = Boolean (a <= b)
+doLessThanEqualTo' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs <= bcs)
 doLessThanEqualTo' (Char a) (Char b) = Boolean (a <= b)
 doLessThanEqualTo' (Boolean a) (Boolean b) = Boolean (a <= b)
 doLessThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as <= bs)
@@ -475,7 +475,7 @@ doPush state = do
 --Pushes item to list or string.
 doPush' :: EDState -> Value -> Value -> EDState
 doPush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (is ++ [valToPush]), len = l + 1} ) state
-doPush' state (String st) (Char c) = fsPush (String (st ++ [c])) state
+doPush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = cs ++ [c], len = l + 1}) state
 doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed!"
 
 --Pops an item from the list or string and pushes it to the stack.
@@ -495,10 +495,10 @@ doPop' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) 
 doPop' state (List {items = is, len = l}) = 
     let state' = fsPush (  List {items = init is, len = l - 1} ) state
     in fsPush (last is) state'
-doPop' state (String "") = fsPush (String "") state
-doPop' state (String st) = 
-    let state' = fsPush (String $ init st) state
-    in fsPush (Char $ last st) state'
+doPop' state (String {chrs = "", len = 0}) = fsPush (String {chrs = "", len = 0}) state
+doPop' state (String {chrs = cs, len = l}) = 
+    let state' = fsPush (String {chrs = init cs, len = l - 1}) state
+    in fsPush (Char $ last cs) state'
 doPop' _ _ = error "Operator (pop) error. Pop operator needs a list or string to pop items from."
 
 --Pushes an item to the front of a list on the stack.
@@ -515,7 +515,7 @@ doFpush state = do
 --Pushes item to list front.
 doFpush' :: EDState -> Value -> Value -> EDState
 doFpush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (valToPush : is), len = l + 1} ) state
-doFpush' state (String st) (Char c) = fsPush (String (c : st)) state
+doFpush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = (c : cs), len = l + 1}) state
 doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
 
 --Pops an item from the front of the list and pushes it to the stack.
@@ -536,9 +536,9 @@ doFpop' state (List {items = is, len = l}) =
     let state' = fsPush ( List {items = tail is, len = l - 1} ) state
     in fsPush (head is) state'
 --String case.
-doFpop' state (String st) = 
-    let state' = fsPush (String $ tail st) state
-    in fsPush (Char $ head st) state'
+doFpop' state (String {chrs = cs, len = l}) = 
+    let state' = fsPush (String {chrs = tail cs, len = l - 1}) state
+    in fsPush (Char $ head cs) state'
 doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
 
 --Fetches an item from a list of a specific index.
@@ -555,14 +555,14 @@ doIndex state = do
 --Retrieves item at index in list or string.
 doIndex' :: EDState -> Value -> Value -> EDState
 doIndex' state (List {items = [], len = 0}) _ = error "Can't index into empty list."
-doIndex' state (String "") _ = error "Can't index into empty string."
+doIndex' state (String {chrs = "", len = 0}) _ = error "Can't index into empty string."
 doIndex' state (List {items = is, len = l}) (Integer index) = 
     let state' = fsPush (List {items = is, len = l}) state
     in fsPush (is !! index) state'
 --String case.
-doIndex' state (String st) (Integer index) = 
-    let state' = fsPush (String st) state
-    in fsPush (Char $ st !! index) state'
+doIndex' state (String {chrs = cs, len = l}) (Integer index) = 
+    let state' = fsPush (String {chrs = cs, len = l}) state
+    in fsPush (Char $ cs !! index) state'
 doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/string and an index value. \n Index must use type Integer to perform an index"
 
 --Takes the length of a list or string at the top 
@@ -579,7 +579,7 @@ doLength state = do
 --Performs actual length function.
 doLength' :: EDState -> Value -> EDState
 doLength' state (List {items = _, len = l}) = fsPush (Integer l) state
-doLength' state (String st) = fsPush (Integer $ length st) state
+doLength' state (String {chrs = _, len = l}) = fsPush (Integer l) state
 doLength' state _ = error "Operator (length) error. List or string type is needed for length function to work."
 
 --Determines if the list or string at the top
@@ -596,7 +596,7 @@ doIsEmpty state = do
 --Performs actual length function.
 doIsEmpty' :: EDState -> Value -> EDState
 doIsEmpty' state (List {items = is, len = l}) = fsPush (Boolean $ null is) state
-doIsEmpty' state (String st) = fsPush (Boolean $ null st) state
+doIsEmpty' state (String {chrs = cs, len = l}) = fsPush (Boolean $ null cs) state
 doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
 
 --Sets the string or list at the top of the stack to empty.
@@ -612,7 +612,7 @@ doClear state = do
 --Performs clear operation.
 doClear' :: EDState -> Value -> EDState
 doClear' state (List {items = _, len = _}) = fsPush (List {items = [], len = 0}) state
-doClear' state (String st) = fsPush (String "") state
+doClear' state (String {chrs = _, len = _}) = fsPush (String {chrs = "", len = 0}) state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
 --Used to turn a value of one type into another.
@@ -629,62 +629,62 @@ doCast state = do
 --Performs the actual cast operation.
 doCast' :: EDState -> Value -> Value -> EDState
 
-doCast' state (Boolean b) (String "Integer") = fsPush (Integer (if b then 1 else 0)) state
-doCast' state (Boolean b) (String "BigInteger") = fsPush (BigInteger (if b then 1 else 0)) state
-doCast' state (Boolean b) (String "String") = fsPush (String $ show b) state
-doCast' state (Boolean b) (String "Boolean") = fsPush (Boolean b) state --Do nothing case.
+doCast' state (Boolean b) (String {chrs = "Integer", len = _}) = fsPush (Integer (if b then 1 else 0)) state
+doCast' state (Boolean b) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (if b then 1 else 0)) state
+doCast' state (Boolean b) (String {chrs = "String", len = _}) = fsPush (String {chrs = show b, len = length $ show b}) state
+doCast' state (Boolean b) (String {chrs = "Boolean", len = _}) = fsPush (Boolean b) state --Do nothing case.
 
-doCast' state (BigInteger n) (String "String") = fsPush (String $ show n) state
-doCast' state (BigInteger n) (String "Integer") = fsPush (Integer (fromIntegral n :: Int)) state
-doCast' state (BigInteger n) (String "BigInteger") = fsPush (BigInteger n) state --Do nothing case.
-doCast' state (BigInteger n) (String "Float") = fsPush (Float (fromIntegral n :: Float)) state
-doCast' state (BigInteger n) (String "Double") = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (BigInteger n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
+doCast' state (BigInteger n) (String {chrs = "Integer", len = _}) = fsPush (Integer (fromIntegral n :: Int)) state
+doCast' state (BigInteger n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger n) state --Do nothing case.
+doCast' state (BigInteger n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
+doCast' state (BigInteger n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
 
-doCast' state (Integer n) (String "String") = fsPush (String $ show n) state
-doCast' state (Integer n) (String "Integer") = fsPush (Integer n) state --Do nothing case
-doCast' state (Integer n) (String "BigInteger") = fsPush (BigInteger (fromIntegral n :: Integer)) state 
-doCast' state (Integer n) (String "Float") = fsPush (Float (fromIntegral n :: Float)) state
-doCast' state (Integer n) (String "Double") = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (Integer n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
+doCast' state (Integer n) (String {chrs = "Integer", len = _}) = fsPush (Integer n) state --Do nothing case
+doCast' state (Integer n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (fromIntegral n :: Integer)) state 
+doCast' state (Integer n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
+doCast' state (Integer n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
 
-doCast' state (Float n) (String "String") = fsPush (String $ show n) state
-doCast' state (Float n) (String "Integer") = fsPush (Integer (truncate n)) state
-doCast' state (Float n) (String "BigInteger") = fsPush (BigInteger (floor n :: Integer)) state 
-doCast' state (Float n) (String "Float") = fsPush (Float n) state --Do nothing case.
-doCast' state (Float n) (String "Double") = fsPush (Double (realToFrac n :: Double)) state
+doCast' state (Float n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
+doCast' state (Float n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
+doCast' state (Float n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (floor n :: Integer)) state 
+doCast' state (Float n) (String {chrs = "Float", len = _}) = fsPush (Float n) state --Do nothing case.
+doCast' state (Float n) (String {chrs = "Double", len = _}) = fsPush (Double (realToFrac n :: Double)) state
 
-doCast' state (Double n) (String "String") = fsPush (String $ show n) state
-doCast' state (Double n) (String "Integer") = fsPush (Integer (truncate n)) state
-doCast' state (Double n) (String "BigInteger") = fsPush (BigInteger (floor n :: Integer)) state 
-doCast' state (Double n) (String "Float") = fsPush (Float (realToFrac n :: Float)) state
-doCast' state (Double n) (String "Double") = fsPush (Double n) state --Do nothing case.
+doCast' state (Double n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
+doCast' state (Double n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
+doCast' state (Double n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (floor n :: Integer)) state 
+doCast' state (Double n) (String {chrs = "Float", len = _}) = fsPush (Float (realToFrac n :: Float)) state
+doCast' state (Double n) (String {chrs = "Double", len = _}) = fsPush (Double n) state --Do nothing case.
 
-doCast' state (String s) (String "String") = fsPush (String s) state --Do nothing case.
+doCast' state (String {chrs = cs, len = l}) (String {chrs = "String", len = _}) = fsPush (String {chrs = cs, len = l}) state --Do nothing case.
 
-doCast' state (Char c) (String "String") = fsPush (String ("" ++ [c])) state --Char to string cast.
+doCast' state (Char c) (String {chrs = "String", len = _}) = fsPush ( String {chrs = ("" ++ [c]), len = length ("" ++ [c])} ) state --Char to string cast.
 
-doCast' state (String s) (String "Integer") = 
-    let mbyInt = readMaybe s :: Maybe Int
+doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _}) = 
+    let mbyInt = readMaybe cs :: Maybe Int
         parsed = case mbyInt of 
                     Just val -> val 
                     Nothing -> error "Operator (cast) error. Failed to convert String to type Integer."
     in fsPush (Integer parsed) state
 
-doCast' state (String s) (String "BigInteger") = 
-    let mbyBigInt = readMaybe s :: Maybe Integer
+doCast' state (String {chrs = cs, len = l}) (String {chrs = "BigInteger", len = _}) = 
+    let mbyBigInt = readMaybe cs :: Maybe Integer
         parsed = case mbyBigInt of 
                     Just val -> val 
                     Nothing -> error "Operator (cast) error. Failed to convert String to type BigInteger."
     in fsPush (BigInteger parsed) state
 
-doCast' state (String s) (String "Float") = 
-    let mbyFlt = readMaybe s :: Maybe Float
+doCast' state (String {chrs = cs, len = l}) (String {chrs = "Float", len = _}) = 
+    let mbyFlt = readMaybe cs :: Maybe Float
         parsed = case mbyFlt of 
                     Just val -> val 
                     Nothing -> error "Operator (cast) error. Failed to convert String to type Float."
     in fsPush (Float parsed) state
 
-doCast' state (String s) (String "Double") = 
-    let mbyDbl = readMaybe s :: Maybe Double
+doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) = 
+    let mbyDbl = readMaybe cs :: Maybe Double
         parsed = case mbyDbl of 
                     Just val -> val 
                     Nothing -> error "Operator (cast) error. Failed to convert String to type Double."
@@ -699,7 +699,7 @@ doPrintLine state = do
     if (null stck) 
         then error "Operator (printLine) error. Can't print from empty stack!"
         else case (head stck) of 
-            String s -> putStrLn s 
+            String {chrs = cs, len = l} -> putStrLn cs 
             _ -> error "Operator (printLine) error. Top of stack must be a string to be printed!"
     return state
 
@@ -708,7 +708,7 @@ doReadLine :: EDState -> IO EDState
 doReadLine state = do 
     let stck = (stack state)
     input <- getLine
-    return (EDState{stack = ((String input) : stck), fns = (fns state), vars = (vars state)})
+    return (EDState{stack = ((String {chrs = input, len = length input}) : stck), fns = (fns state), vars = (vars state)})
 
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
@@ -733,7 +733,7 @@ doContains state = do
             let (top, secondToTop) = ((head stck), (head $ tail stck))
             let contains = case (top, secondToTop) of 
                                 (v, List {items = is, len = _}) -> v `elem` is
-                                (Char c, String s) -> c `elem` s
+                                (Char c, String {chrs = cs, len = _}) -> c `elem` cs
                                 (_, _) -> error "Operator (contains) error. List or string needed to asses if item is contained within."
             return (fsPush (Boolean contains) state)
 
@@ -847,7 +847,7 @@ compareTypesForMut (BigInteger _) (BigInteger _) = True
 compareTypesForMut (Integer _) (Integer _) = True
 compareTypesForMut (Double _) (Double _) = True
 compareTypesForMut (Float _) (Float _) = True
-compareTypesForMut (String _) (String _) = True
+compareTypesForMut (String {chrs = _, len = _}) (String {chrs = _, len = _}) = True
 compareTypesForMut (Char _) (Char _) = True
 compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True
 compareTypesForMut _ _ = False
@@ -1162,7 +1162,9 @@ lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
     | t == "[]" = Val $ List {items = [], len = 0}  --Empty list case.
-    | (head t) == '"' && (last t) == '"' = Val $ String (read t :: String)  --String case                                                                  
+    | (head t) == '"' && (last t) == '"' =
+        let str = read t :: String
+        in Val $ String { chrs = str, len = length str }  --String case                                                                  
     | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
     | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
     | (last t == 'd') && ((isNum (if head t == '-' then tail $ init t else init t)) == 1) = Val $ Double (read (init t) :: Double) -- Double case
@@ -1236,6 +1238,9 @@ printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
     let prnt = if l < 16 then show is else (init $ show $! take 15 is) ++ ", ...]"
     in putStrLn prnt >> printStack xs
+printStack ((String {chrs = cs, len = l}):xs) =
+    let pr = if l < 256 then show cs else (init $ show $ take 255 cs) ++ "...\""
+    in putStrLn pr >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
 main :: IO ()
