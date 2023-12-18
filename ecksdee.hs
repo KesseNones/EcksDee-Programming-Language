@@ -1234,7 +1234,7 @@ removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments)
 printStack :: [Value] -> IO ()
 printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
-    let prnt = if l < 256 then show is else (init $ show $! take 255 is) ++ ", ...]"
+    let prnt = if l < 16 then show is else (init $ show $! take 15 is) ++ ", ...]"
     in putStrLn prnt >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
