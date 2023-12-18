@@ -1233,6 +1233,9 @@ removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments)
 --If the stack is empty, nothing is printed.
 printStack :: [Value] -> IO ()
 printStack [] = return ()
+printStack ((List {items = is, len = l}):xs) = 
+    let prnt = if l < 256 then show is else (init $ show $! take 255 is) ++ ", ...]"
+    in putStrLn prnt >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
 main :: IO ()
