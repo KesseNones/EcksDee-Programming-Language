@@ -611,7 +611,7 @@ doClear state = do
 
 --Performs clear operation.
 doClear' :: EDState -> Value -> EDState
-doClear' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) state
+doClear' state (List {items = _, len = _}) = fsPush (List {items = [], len = 0}) state
 doClear' state (String st) = fsPush (String "") state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
