@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-21.86
+--Version: 2023-12-21.91
 --Toy Programming Language Named EcksDee
 
 {-
@@ -518,9 +518,21 @@ doFpush state = do
 
 --Pushes item to list front.
 doFpush' :: EDState -> Value -> Value -> EDState
-doFpush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = is, len = l} ) state
+doFpush' state (List {items = is, len = l}) valToPush = fsPush ( doFpush'' List {items = is, len = l} 0 valToPush ) state
 doFpush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = (c : cs), len = l + 1}) state
 doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
+
+doFpush'' :: Value -> Int -> Value -> Value
+doFpush'' List{items = is, len = l} index insVal 
+    |    index < l = 
+            let old = case (M.lookup index is) of
+                    Just i -> i 
+                    Nothing -> error "Shouldn't ever get here!!!"
+                is' = M.insert index insVal is
+            in doFpush'' List{items = is', len = l} (index + 1) old
+    |    otherwise = 
+            let is' = M.insert index insVal is 
+            in List{items = is', len = l + 1}
 
 --Pops an item from the front of the list and pushes it to the stack.
 doFpop :: EDState -> IO EDState
