@@ -1241,19 +1241,7 @@ printStack ((String {chrs = cs, len = l}):xs) =
     in putStrLn pr >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
--- printList :: Value -> String -> Int
--- printList List {items = is, len = l} acc index 
---     |    ((index < l) && (index < 16)) = 
---             let curr = case (M.lookup index is)
---                     Just i -> i 
---                     Nothing -> error "SHOULD NEVER GET HERE!!!"
-                                          
---             acc' = case curr of 
---                     List {items = ls, len = listLength} -> acc ++ ", [" ++ (printList (List{items = ls, len = listLength}) "" 0) ++ "]"
---                     i -> acc ++ ", " ++ (show i)
---         in printList (List{items = is, len = l}) acc' index + 1 
---     |    otherwise = acc 
-
+--Recursively prints a list's contents.
 printList :: Value -> String -> Int -> String
 printList List {items = is, len = l} acc index 
     | (index < l) && (index < 16) = 
@@ -1267,36 +1255,11 @@ printList List {items = is, len = l} acc index
         in printList (List{items = is, len = l}) acc' (index + 1) 
     | otherwise = acc 
 
+--Uses pattern matching to determine if a special comma 
+-- and space needs to be added or not.
 accSmall :: String -> Bool
 accSmall "" = False
 accSmall _ = True
-
--- printList :: Value -> String -> Int
--- printList List {items = is, len = l} acc index = 
---     if ((index < l) && (index < 16))
---         let curr = case (M.lookup index is) of 
---             Just i -> i 
---             Nothing -> "SHOULD NEVER GET HERE!!!"
---         in let acc' = case curr of 
---             List {items = ls, len = listLength} -> acc ++ ", [" ++ (printList (List{items = ls, len = listLength}) "" 0) ++ "]"
---             i -> acc ++ ", " ++ (show i)
---         in printList List{items = is, len = l} acc' (index + 1)
---     else 
---         acc
-
--- printList :: Value -> String -> Int
--- printList List {items = is, len = l} acc index = 
---     if ((index < l) && (index < 16))
---         let curr = case (M.lookup index is) of 
---                 Just i -> i -- aligned with case
---                 Nothing -> "SHOULD NEVER GET HERE!!!" -- aligned with case
---         in let acc' = case curr of 
---                 List {items = ls, len = listLength} -> acc ++ ", [" ++ (printList (List{items = ls, len = listLength}) "" 0) ++ "]"
---                 i -> acc ++ ", " ++ (show i)
---         in printList List{items = is, len = l} acc' (index + 1)
---     else 
---         acc
-
 
 main :: IO ()
 main = do
