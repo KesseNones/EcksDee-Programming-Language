@@ -493,7 +493,7 @@ doPop' :: EDState -> Value -> EDState
 --Nothing happens if list is empty.
 doPop' state (List {items = is, len = 0}) = fsPush (List {items = is, len = 0}) state
 doPop' state (List {items = is, len = l}) = 
-    let popped = case (M.lookup l is) of 
+    let popped = case (M.lookup (l - 1) is) of 
             Just i -> i 
             Nothing -> error "Should never happen!!!"
         newLs = M.delete l is
