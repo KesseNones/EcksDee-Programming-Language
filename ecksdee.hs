@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-21.91
+--Version: 2023-12-21.92
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1249,8 +1249,8 @@ printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
     putStrLn ("[" ++ (printList List {items = is, len = l} "" 0) ++ (if (l > 16) then ", ...]" else "]")) >> printStack xs
 printStack ((String {chrs = cs, len = l}):xs) =
-    let pr = if l < 256 then show cs else (init $ show $ take 255 cs) ++ "...\""
-    in putStrLn pr >> printStack xs
+    let pr = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+    in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
 --Recursively prints a list's contents.
