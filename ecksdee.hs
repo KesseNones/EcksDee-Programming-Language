@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-21.25
+--Version: 2023-12-21.86
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1235,13 +1235,68 @@ removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments)
 printStack :: [Value] -> IO ()
 printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
-    -- let prnt = if l < 16 then show is else (init $ show $! take 15 is) ++ ", ...]"
-    -- in putStrLn prnt >> printStack xs
-    putStrLn "LIST" >> printStack xs
+    putStrLn ("[" ++ (printList List {items = is, len = l} "" 0) ++ (if (l > 16) then ", ...]" else "]")) >> printStack xs
 printStack ((String {chrs = cs, len = l}):xs) =
     let pr = if l < 256 then show cs else (init $ show $ take 255 cs) ++ "...\""
     in putStrLn pr >> printStack xs
 printStack (x:xs) = print x >> printStack xs
+
+-- printList :: Value -> String -> Int
+-- printList List {items = is, len = l} acc index 
+--     |    ((index < l) && (index < 16)) = 
+--             let curr = case (M.lookup index is)
+--                     Just i -> i 
+--                     Nothing -> error "SHOULD NEVER GET HERE!!!"
+                                          
+--             acc' = case curr of 
+--                     List {items = ls, len = listLength} -> acc ++ ", [" ++ (printList (List{items = ls, len = listLength}) "" 0) ++ "]"
+--                     i -> acc ++ ", " ++ (show i)
+--         in printList (List{items = is, len = l}) acc' index + 1 
+--     |    otherwise = acc 
+
+printList :: Value -> String -> Int -> String
+printList List {items = is, len = l} acc index 
+    | (index < l) && (index < 16) = 
+        let curr = case M.lookup index is of
+                Just i -> i 
+                Nothing -> error "SHOULD NEVER GET HERE!!!"
+                                          
+            acc' = case curr of 
+                List {items = ls, len = listLength} -> acc ++ (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = ls, len = listLength}) "" 0) ++ (if (listLength > 16) then ", ...]" else "]")
+                i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
+        in printList (List{items = is, len = l}) acc' (index + 1) 
+    | otherwise = acc 
+
+accSmall :: String -> Bool
+accSmall "" = False
+accSmall _ = True
+
+-- printList :: Value -> String -> Int
+-- printList List {items = is, len = l} acc index = 
+--     if ((index < l) && (index < 16))
+--         let curr = case (M.lookup index is) of 
+--             Just i -> i 
+--             Nothing -> "SHOULD NEVER GET HERE!!!"
+--         in let acc' = case curr of 
+--             List {items = ls, len = listLength} -> acc ++ ", [" ++ (printList (List{items = ls, len = listLength}) "" 0) ++ "]"
+--             i -> acc ++ ", " ++ (show i)
+--         in printList List{items = is, len = l} acc' (index + 1)
+--     else 
+--         acc
+
+-- printList :: Value -> String -> Int
+-- printList List {items = is, len = l} acc index = 
+--     if ((index < l) && (index < 16))
+--         let curr = case (M.lookup index is) of 
+--                 Just i -> i -- aligned with case
+--                 Nothing -> "SHOULD NEVER GET HERE!!!" -- aligned with case
+--         in let acc' = case curr of 
+--                 List {items = ls, len = listLength} -> acc ++ ", [" ++ (printList (List{items = ls, len = listLength}) "" 0) ++ "]"
+--                 i -> acc ++ ", " ++ (show i)
+--         in printList List{items = is, len = l} acc' (index + 1)
+--     else 
+--         acc
+
 
 main :: IO ()
 main = do
