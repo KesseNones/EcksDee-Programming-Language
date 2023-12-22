@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.16
+--Version: 2023-12-22.24
 --Toy Programming Language Named EcksDee
 
 {-
@@ -103,15 +103,29 @@ divideVals (Double a) (Double b) = Double (b / a)
 divideVals (Float a) (Float b) = Float (b / a)
 divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
 
+--Performs modulo operation on two values.
 modVals :: Value -> Value -> Value
 modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
 modVals (Integer a) (Integer b) = Integer (b `mod` a)
 modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
 
+doConcat'' :: Value -> Value -> Int -> Int -> Value
+doConcat'' List{items = is, len = l} List{items = accs, len = accLen} index offset 
+    |   (index < l) = 
+            let ins = case (M.lookup index is) of 
+                    Just i -> i 
+                    Nothing -> error "SHOULD NEVER GET HERE!!!"
+                accs' = M.insert (index + offset) ins accs
+            in doConcat'' List{items = is, len = l} List{items = accs', len = accLen + 1} (index + 1) offset  
+    |   otherwise = List{items = accs, len = accLen}
+
 --Concatenates two Strings or Lists.
 doConcat' :: Value -> Value -> Value
 doConcat' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = String {chrs = acs ++ bcs, len = al + bl}
-doConcat' (List {items = as, len = al}) (List {items = bs, len = bl}) = List {items = as, len = al}
+doConcat' List {items = as, len = al} List {items = bs, len = bl} = 
+    let List{items = cs, len = cl} = doConcat'' List{items = as, len = al} List{items = M.empty, len = 0} 0 0
+        List{items = ds, len = dl} = doConcat'' List{items = bs, len = bl} List{items = cs, len = cl} 0 al
+    in List{items = ds, len = dl}
 doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
 
 --Concatentates two Strings/Lists together.
