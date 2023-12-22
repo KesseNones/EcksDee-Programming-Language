@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-21.92
+--Version: 2023-12-22.16
 --Toy Programming Language Named EcksDee
 
 {-
@@ -548,14 +548,29 @@ doFpop state = do
 doFpop' :: EDState -> Value -> EDState
 --Nothing happens if list is empty.
 doFpop' state (List {items = is, len = 0}) = fsPush (List {items = is, len = 0}) state
--- doFpop' state (List {items = is, len = l}) = 
---     let state' = fsPush ( List {items = tail is, len = l - 1} ) state
---     in fsPush (head is) state'
+doFpop' state (List {items = is, len = l}) = 
+    let popped = case (M.lookup 0 is) of 
+            Just i -> i 
+            Nothing -> error "Should NEVER get here!!!"
+        List{items = newLs, len = newLen} = doFpop'' List{items = is, len = l} List{items = M.empty, len = 0} 1
+        state' = fsPush (List{items = newLs, len = newLen}) state
+    in fsPush (popped) state'
+
 --String case.
 doFpop' state (String {chrs = cs, len = l}) = 
     let state' = fsPush (String {chrs = tail cs, len = l - 1}) state
     in fsPush (Char $ head cs) state'
 doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
+
+doFpop'' :: Value -> Value -> Int -> Value
+doFpop'' List{items = as, len = al} List{items = bs, len = bl} index 
+    |   index < al = 
+            let ins = case (M.lookup index as) of 
+                    Just i -> i 
+                    Nothing -> error "Shouldn't EVER get here!"
+                bs' = M.insert (index - 1) ins bs 
+            in doFpop'' List{items = as, len = al} List{items = bs', len = bl + 1} (index + 1)  
+    |   otherwise = List{items = bs, len = bl} 
 
 --Fetches an item from a list of a specific index.
 doIndex :: EDState -> IO EDState
