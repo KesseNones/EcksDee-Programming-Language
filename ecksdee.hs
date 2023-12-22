@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.92
+--Version: 2023-12-22.93
 --Toy Programming Language Named EcksDee
 
 {-
@@ -825,8 +825,15 @@ doAddField state = do
         vals -> do 
             let (state', obj, fieldName, fieldVal) = fsPop3 state
             case (obj, fieldName, fieldVal) of 
-                (Object {fields = fs}, String {chrs = name, len = l}, v) -> return (fsPush (Object{fields = M.insert name v fs}) state')
+                (Object {fields = fs}, String {chrs = name, len = l}, v) -> return (fsPush (doAddField' Object{fields = fs} name v) state')
                 (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+
+doAddField' :: Value -> String -> Value -> Value
+doAddField' Object{fields = fs} key val = 
+    let fs' = case (M.lookup key fs) of 
+            Just i -> error "Operator (addField) error.\nObject field already exists!"
+            Nothing -> M.insert key val fs
+    in Object{fields = fs'}
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
@@ -907,6 +914,7 @@ compareTypesForMut (Float _) (Float _) = True
 compareTypesForMut (String {chrs = _, len = _}) (String {chrs = _, len = _}) = True
 compareTypesForMut (Char _) (Char _) = True
 compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True
+compareTypesForMut Object{fields = _} Object{fields = _} = True 
 compareTypesForMut _ _ = False
 
 --Changes variable to new value if it can be mutated.
