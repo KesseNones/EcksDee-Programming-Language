@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.27
+--Version: 2023-12-22.31
 --Toy Programming Language Named EcksDee
 
 {-
@@ -29,6 +29,7 @@ data Value =
     |   Char Char
     |   Boolean Bool
     |   List { items :: M.Map Int Value, len :: Int}
+    |   Object { fields :: M.Map String Value, len :: Int }
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -1202,6 +1203,7 @@ lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
     | t == "[]" = Val $ List {items = M.empty, len = 0}  --Empty list case.
+    | t == "{}" = Val $ Object {fields = M.empty, len = 0} --Empty object case.
     | (head t) == '"' && (last t) == '"' =
         let str = read t :: String
         in Val $ String { chrs = str, len = length str }  --String case                                                                  
