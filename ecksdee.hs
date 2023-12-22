@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-18.93
+--Version: 2023-12-22.27
 --Toy Programming Language Named EcksDee
 
 {-
@@ -28,7 +28,7 @@ data Value =
     |   String {chrs :: [Char], len :: Int}
     |   Char Char
     |   Boolean Bool
-    |   List { items :: [Value], len :: Int}
+    |   List { items :: M.Map Int Value, len :: Int}
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -103,15 +103,29 @@ divideVals (Double a) (Double b) = Double (b / a)
 divideVals (Float a) (Float b) = Float (b / a)
 divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
 
+--Performs modulo operation on two values.
 modVals :: Value -> Value -> Value
 modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
 modVals (Integer a) (Integer b) = Integer (b `mod` a)
 modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
 
+doConcat'' :: Value -> Value -> Int -> Int -> Value
+doConcat'' List{items = is, len = l} List{items = accs, len = accLen} index offset 
+    |   (index < l) = 
+            let ins = case (M.lookup index is) of 
+                    Just i -> i 
+                    Nothing -> error "SHOULD NEVER GET HERE!!!"
+                accs' = M.insert (index + offset) ins accs
+            in doConcat'' List{items = is, len = l} List{items = accs', len = accLen + 1} (index + 1) offset  
+    |   otherwise = List{items = accs, len = accLen}
+
 --Concatenates two Strings or Lists.
 doConcat' :: Value -> Value -> Value
 doConcat' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = String {chrs = acs ++ bcs, len = al + bl}
-doConcat' (List {items = as, len = al}) (List {items = bs, len = bl}) = List {items = as ++ bs, len = al + bl}
+doConcat' List {items = as, len = al} List {items = bs, len = bl} = 
+    let List{items = cs, len = cl} = doConcat'' List{items = as, len = al} List{items = M.empty, len = 0} 0 0
+        List{items = ds, len = dl} = doConcat'' List{items = bs, len = bl} List{items = cs, len = cl} 0 al
+    in List{items = ds, len = dl}
 doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
 
 --Concatentates two Strings/Lists together.
@@ -474,7 +488,7 @@ doPush state = do
 
 --Pushes item to list or string.
 doPush' :: EDState -> Value -> Value -> EDState
-doPush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (is ++ [valToPush]), len = l + 1} ) state
+doPush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (M.insert l valToPush is), len = l + 1} ) state
 doPush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = cs ++ [c], len = l + 1}) state
 doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed!"
 
@@ -491,10 +505,14 @@ doPop state = do
 --Pops item from list and pushes it to stack.
 doPop' :: EDState -> Value -> EDState
 --Nothing happens if list is empty.
-doPop' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) state
+doPop' state (List {items = is, len = 0}) = fsPush (List {items = is, len = 0}) state
 doPop' state (List {items = is, len = l}) = 
-    let state' = fsPush (  List {items = init is, len = l - 1} ) state
-    in fsPush (last is) state'
+    let popped = case (M.lookup (l - 1) is) of 
+            Just i -> i 
+            Nothing -> error "Should never happen!!!"
+        newLs = M.delete l is
+        state' = fsPush( List {items = newLs, len = l - 1}) state
+    in fsPush popped state'
 doPop' state (String {chrs = "", len = 0}) = fsPush (String {chrs = "", len = 0}) state
 doPop' state (String {chrs = cs, len = l}) = 
     let state' = fsPush (String {chrs = init cs, len = l - 1}) state
@@ -514,9 +532,21 @@ doFpush state = do
 
 --Pushes item to list front.
 doFpush' :: EDState -> Value -> Value -> EDState
-doFpush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (valToPush : is), len = l + 1} ) state
+doFpush' state (List {items = is, len = l}) valToPush = fsPush ( doFpush'' List {items = is, len = l} 0 valToPush ) state
 doFpush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = (c : cs), len = l + 1}) state
 doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
+
+doFpush'' :: Value -> Int -> Value -> Value
+doFpush'' List{items = is, len = l} index insVal 
+    |    index < l = 
+            let old = case (M.lookup index is) of
+                    Just i -> i 
+                    Nothing -> error "Shouldn't ever get here!!!"
+                is' = M.insert index insVal is
+            in doFpush'' List{items = is', len = l} (index + 1) old
+    |    otherwise = 
+            let is' = M.insert index insVal is 
+            in List{items = is', len = l + 1}
 
 --Pops an item from the front of the list and pushes it to the stack.
 doFpop :: EDState -> IO EDState
@@ -531,15 +561,30 @@ doFpop state = do
 --Pops item from list and pushes it to stack.
 doFpop' :: EDState -> Value -> EDState
 --Nothing happens if list is empty.
-doFpop' state (List {items = [], len = 0}) = fsPush (List {items = [], len = 0}) state
+doFpop' state (List {items = is, len = 0}) = fsPush (List {items = is, len = 0}) state
 doFpop' state (List {items = is, len = l}) = 
-    let state' = fsPush ( List {items = tail is, len = l - 1} ) state
-    in fsPush (head is) state'
+    let popped = case (M.lookup 0 is) of 
+            Just i -> i 
+            Nothing -> error "Should NEVER get here!!!"
+        List{items = newLs, len = newLen} = doFpop'' List{items = is, len = l} List{items = M.empty, len = 0} 1
+        state' = fsPush (List{items = newLs, len = newLen}) state
+    in fsPush (popped) state'
+
 --String case.
 doFpop' state (String {chrs = cs, len = l}) = 
     let state' = fsPush (String {chrs = tail cs, len = l - 1}) state
     in fsPush (Char $ head cs) state'
 doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
+
+doFpop'' :: Value -> Value -> Int -> Value
+doFpop'' List{items = as, len = al} List{items = bs, len = bl} index 
+    |   index < al = 
+            let ins = case (M.lookup index as) of 
+                    Just i -> i 
+                    Nothing -> error "Shouldn't EVER get here!"
+                bs' = M.insert (index - 1) ins bs 
+            in doFpop'' List{items = as, len = al} List{items = bs', len = bl + 1} (index + 1)  
+    |   otherwise = List{items = bs, len = bl} 
 
 --Fetches an item from a list of a specific index.
 doIndex :: EDState -> IO EDState
@@ -554,11 +599,14 @@ doIndex state = do
 
 --Retrieves item at index in list or string.
 doIndex' :: EDState -> Value -> Value -> EDState
-doIndex' state (List {items = [], len = 0}) _ = error "Can't index into empty list."
+doIndex' state (List {items = _, len = 0}) _ = error "Can't index into empty list."
 doIndex' state (String {chrs = "", len = 0}) _ = error "Can't index into empty string."
 doIndex' state (List {items = is, len = l}) (Integer index) = 
     let state' = fsPush (List {items = is, len = l}) state
-    in fsPush (is !! index) state'
+        indexed = case (M.lookup index is) of 
+            Just i -> i 
+            Nothing -> error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range.")
+    in fsPush indexed state'
 --String case.
 doIndex' state (String {chrs = cs, len = l}) (Integer index) = 
     let state' = fsPush (String {chrs = cs, len = l}) state
@@ -595,7 +643,7 @@ doIsEmpty state = do
 
 --Performs actual length function.
 doIsEmpty' :: EDState -> Value -> EDState
-doIsEmpty' state (List {items = is, len = l}) = fsPush (Boolean $ null is) state
+doIsEmpty' state (List {items = is, len = l}) = fsPush (Boolean $ l == 0) state
 doIsEmpty' state (String {chrs = cs, len = l}) = fsPush (Boolean $ null cs) state
 doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
 
@@ -611,7 +659,7 @@ doClear state = do
 
 --Performs clear operation.
 doClear' :: EDState -> Value -> EDState
-doClear' state (List {items = _, len = _}) = fsPush (List {items = [], len = 0}) state
+doClear' state (List {items = _, len = _}) = fsPush (List {items = M.empty, len = 0}) state
 doClear' state (String {chrs = _, len = _}) = fsPush (String {chrs = "", len = 0}) state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
@@ -748,16 +796,8 @@ doChangeItemAt state = do
         vals -> do 
             let (state', chngLs, chngItem, index) = fsPop3 state
             case (chngLs, chngItem, index) of 
-                (List {items = is, len = l}, v, Integer i) -> return (fsPush ( List { items = (changeItem [] is 0 i v), len = l } ) state')
+                (List {items = is, len = l}, v, Integer i) -> return (fsPush ( List { items = M.insert i v is, len = l } ) state')
                 (_, _, _) -> error "Operator (changeItemAt) error. List, value, and Integer type in that order needed on stack."
-
---Rebuilds list with altered item if possible. 
---THIS IS POORLY OPTIMIZED AND WILL SUCK ON A LARGE LIST SO MAKE IT BETTER LATER!
-changeItem :: [Value] -> [Value] -> Int -> Int -> Value -> [Value]
-changeItem acc [] curr desiredIndex insVal = acc
-changeItem acc (x:xs) curr desiredIndex insVal
-    |    curr == desiredIndex = (acc ++ [insVal] ++ xs)
-    |    otherwise = changeItem (acc ++ [x]) (xs) (curr + 1) desiredIndex insVal
 
 --Raises one Float or Double to another Float or Double 
 --and returns as such, consuming the original two numbers.
@@ -1161,7 +1201,7 @@ lexToken :: String -> Token
 lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
-    | t == "[]" = Val $ List {items = [], len = 0}  --Empty list case.
+    | t == "[]" = Val $ List {items = M.empty, len = 0}  --Empty list case.
     | (head t) == '"' && (last t) == '"' =
         let str = read t :: String
         in Val $ String { chrs = str, len = length str }  --String case                                                                  
@@ -1236,12 +1276,31 @@ removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments)
 printStack :: [Value] -> IO ()
 printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
-    let prnt = if l < 16 then show is else (init $ show $! take 15 is) ++ ", ...]"
-    in putStrLn prnt >> printStack xs
+    putStrLn ("[" ++ (printList List {items = is, len = l} "" 0) ++ (if (l > 16) then ", ...]" else "]")) >> printStack xs
 printStack ((String {chrs = cs, len = l}):xs) =
-    let pr = if l < 256 then show cs else (init $ show $ take 255 cs) ++ "...\""
-    in putStrLn pr >> printStack xs
+    let pr = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+    in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
 printStack (x:xs) = print x >> printStack xs
+
+--Recursively prints a list's contents.
+printList :: Value -> String -> Int -> String
+printList List {items = is, len = l} acc index 
+    | (index < l) && (index < 16) = 
+        let curr = case M.lookup index is of
+                Just i -> i 
+                Nothing -> error "SHOULD NEVER GET HERE!!!"
+                                          
+            acc' = case curr of 
+                List {items = ls, len = listLength} -> acc ++ (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = ls, len = listLength}) "" 0) ++ (if (listLength > 16) then ", ...]" else "]")
+                i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
+        in printList (List{items = is, len = l}) acc' (index + 1) 
+    | otherwise = acc 
+
+--Uses pattern matching to determine if a special comma 
+-- and space needs to be added or not.
+accSmall :: String -> Bool
+accSmall "" = False
+accSmall _ = True
 
 main :: IO ()
 main = do
