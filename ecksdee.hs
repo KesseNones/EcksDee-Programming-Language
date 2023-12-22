@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.24
+--Version: 2023-12-22.27
 --Toy Programming Language Named EcksDee
 
 {-
@@ -605,7 +605,7 @@ doIndex' state (List {items = is, len = l}) (Integer index) =
     let state' = fsPush (List {items = is, len = l}) state
         indexed = case (M.lookup index is) of 
             Just i -> i 
-            Nothing -> error "Operator (index) error. Index out of valid range."
+            Nothing -> error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range.")
     in fsPush indexed state'
 --String case.
 doIndex' state (String {chrs = cs, len = l}) (Integer index) = 
