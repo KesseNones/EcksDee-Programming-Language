@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.31
+--Version: 2023-12-22.92
 --Toy Programming Language Named EcksDee
 
 {-
@@ -29,7 +29,7 @@ data Value =
     |   Char Char
     |   Boolean Bool
     |   List { items :: M.Map Int Value, len :: Int}
-    |   Object { fields :: M.Map String Value, len :: Int }
+    |   Object { fields :: M.Map String Value }
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -815,6 +815,19 @@ doPow state = do
                 (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
                 (_, _) -> error "Operator (pow) error.\nOperands need to be type Float Float or Double Double!\nCan't mix types and only Float or Double types are valid!"
 
+doAddField :: EDState -> IO EDState
+doAddField state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (addField) error. Three operands needed!"
+        [x] -> error "Operator (addField) error. Three operands needed!"
+        [x, y] -> error "Operator (addField) error. Three operands needed!"
+        vals -> do 
+            let (state', obj, fieldName, fieldVal) = fsPop3 state
+            case (obj, fieldName, fieldVal) of 
+                (Object {fields = fs}, String {chrs = name, len = l}, v) -> return (fsPush (Object{fields = M.insert name v fs}) state')
+                (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -863,6 +876,9 @@ doOp "cast" = doCast
 --IO stuff
 doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
+
+--Object Operators
+doOp "addField" = doAddField 
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
@@ -1203,7 +1219,7 @@ lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
     | t == "[]" = Val $ List {items = M.empty, len = 0}  --Empty list case.
-    | t == "{}" = Val $ Object {fields = M.empty, len = 0} --Empty object case.
+    | t == "{}" = Val $ Object {fields = M.empty} --Empty object case.
     | (head t) == '"' && (last t) == '"' =
         let str = read t :: String
         in Val $ String { chrs = str, len = length str }  --String case                                                                  
