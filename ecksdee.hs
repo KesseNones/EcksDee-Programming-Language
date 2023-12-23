@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.26
+--Version: 2023-12-23.90
 --Toy Programming Language Named EcksDee
 
 {-
@@ -662,6 +662,7 @@ doClear state = do
 doClear' :: EDState -> Value -> EDState
 doClear' state (List {items = _, len = _}) = fsPush (List {items = M.empty, len = 0}) state
 doClear' state (String {chrs = _, len = _}) = fsPush (String {chrs = "", len = 0}) state
+doClear' state (Object{fields = _}) = fsPush (Object{fields = M.empty}) state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
 --Used to turn a value of one type into another.
