@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.00
+--Version: 2023-12-23.10
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1319,6 +1319,7 @@ printList List {items = is, len = l} acc index
                                           
             acc' = case curr of 
                 List {items = ls, len = listLength} -> acc ++ (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = ls, len = listLength}) "" 0) ++ (if (listLength > 16) then ", ...]" else "]")
+                Object {fields = fs} -> acc ++ (if (accSmall acc) then ", {" else "{") ++ (printObj (M.toList fs) "") ++ "}"
                 i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
         in printList (List{items = is, len = l}) acc' (index + 1) 
     | otherwise = acc 
@@ -1329,7 +1330,7 @@ printObj [] acc = acc
 printObj ((name, val):xs) acc = 
     let insStr = case val of 
             Object{fields = fs} -> "{" ++ (printObj (M.toList fs) "") ++ "}"
-            List{items = is, len = l} -> (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = is, len = l}) "" 0) ++ (if (l > 16) then ", ...]" else "]")
+            List{items = is, len = l} -> "[" ++ (printList (List{items = is, len = l}) "" 0) ++ (if (l > 16) then ", ...]" else "]")
             String{chrs = cs, len = l} -> if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
             i -> show i
 
