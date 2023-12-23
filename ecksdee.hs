@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.10
+--Version: 2023-12-23.24
 --Toy Programming Language Named EcksDee
 
 {-
@@ -835,6 +835,19 @@ doAddField' Object{fields = fs} key val =
             Nothing -> M.insert key val fs
     in Object{fields = fs'}
 
+--Removes a field from a given object. Does nothing if the field doesn't exist.
+doRemoveField :: EDState -> IO EDState
+doRemoveField state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (removeField) error. Two operands needed!"
+        [x] -> error "Operator (removeField) error. Two operands needed!"
+        vals -> do 
+            let (state', obj, removalKey) = fsPop2 state
+            case (obj, removalKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> return (fsPush Object{fields = (M.delete name fs)} state')
+                (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String"
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -886,6 +899,7 @@ doOp "readLine" = doReadLine
 
 --Object Operators
 doOp "addField" = doAddField 
+doOp "removeField" = doRemoveField
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
