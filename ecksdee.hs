@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.91
+--Version: 2023-12-23.92
 --Toy Programming Language Named EcksDee
 
 {-
@@ -853,6 +853,7 @@ doRemoveField state = do
                     return (fsPush Object{fields = fs'} state')
                 (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String."
 
+--Grabs the value of a field in an object or throws an error if it doesn't exist.
 doGetField :: EDState -> IO EDState
 doGetField state = do 
     let stck = stack state
@@ -869,6 +870,27 @@ doGetField state = do
                         state'' = fsPush Object{fields = fs} state'
                     return (fsPush lkup state'')
                 (_, _) -> error "Operator (getField) error.\nOperands need to be type Object and String."
+
+--Mutates the value of a field in the object assuming the field exists 
+-- and the types match for the old and new values.
+doMutateField :: EDState -> IO EDState
+doMutateField state = do 
+    let stck = stack state 
+    case stck of 
+        [] -> error "Operator (mutateField) error. Three operands needed!"
+        [x] -> error "Operator (mutateField) error. Three operands needed!"
+        [x, y] -> error "Operator (mutateField) error. Three operands needed!"
+        vals -> do 
+            let (state', obj, mutKey, newVal) = fsPop3 state 
+            case (obj, mutKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                    let fs' = case (M.lookup name fs) of 
+                            Just i -> if (compareTypesForMut i newVal) 
+                                then (M.insert name newVal fs) 
+                                else error ("Operator (mutateField) error.\nNew value for field " ++ name ++ " must match type of current field value!")
+                            Nothing -> error ("Operator (mutateField) error.\nField " ++ name ++ " doesn't exist in given object!")
+                    return (fsPush Object{fields = fs'} state')
+                (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
@@ -923,6 +945,7 @@ doOp "readLine" = doReadLine
 doOp "addField" = doAddField 
 doOp "removeField" = doRemoveField
 doOp "getField" = doGetField
+doOp "mutateField" = doMutateField
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
