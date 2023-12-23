@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.25
+--Version: 2023-12-23.26
 --Toy Programming Language Named EcksDee
 
 {-
@@ -831,7 +831,7 @@ doAddField state = do
 doAddField' :: Value -> String -> Value -> Value
 doAddField' Object{fields = fs} key val = 
     let fs' = case (M.lookup key fs) of 
-            Just i -> error "Operator (addField) error.\nObject field already exists!"
+            Just i -> error ("Operator (addField) error.\nField " ++ key ++ " already exists in given object!")
             Nothing -> M.insert key val fs
     in Object{fields = fs'}
 
