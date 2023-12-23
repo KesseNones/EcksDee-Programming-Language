@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.93
+--Version: 2023-12-23.00
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1306,6 +1306,7 @@ printStack ((List {items = is, len = l}):xs) =
 printStack ((String {chrs = cs, len = l}):xs) =
     let pr = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
     in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
+printStack ((Object{fields = fs}):xs) = putStrLn ("{" ++ (printObj (M.toList fs) "") ++ "}") >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
 --Recursively prints a list's contents.
@@ -1321,6 +1322,20 @@ printList List {items = is, len = l} acc index
                 i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
         in printList (List{items = is, len = l}) acc' (index + 1) 
     | otherwise = acc 
+
+--Prints a given object's fields.
+printObj :: [(String, Value)] -> String -> String
+printObj [] acc = acc 
+printObj ((name, val):xs) acc = 
+    let insStr = case val of 
+            Object{fields = fs} -> "{" ++ (printObj (M.toList fs) "") ++ "}"
+            List{items = is, len = l} -> (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = is, len = l}) "" 0) ++ (if (l > 16) then ", ...]" else "]")
+            String{chrs = cs, len = l} -> if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+            i -> show i
+
+    in printObj xs (acc ++ (if accSmall acc then ", " else "") ++ name ++ " : " ++ insStr)
+    --in printObj xs (acc ++ (if (null xs) then "" else ", " ) ++ name ++ ":" ++ insStr)
+
 
 --Uses pattern matching to determine if a special comma 
 -- and space needs to be added or not.
