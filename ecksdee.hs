@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-22.27
+--Version: 2023-12-23.92
 --Toy Programming Language Named EcksDee
 
 {-
@@ -29,6 +29,7 @@ data Value =
     |   Char Char
     |   Boolean Bool
     |   List { items :: M.Map Int Value, len :: Int}
+    |   Object { fields :: M.Map String Value }
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -661,6 +662,7 @@ doClear state = do
 doClear' :: EDState -> Value -> EDState
 doClear' state (List {items = _, len = _}) = fsPush (List {items = M.empty, len = 0}) state
 doClear' state (String {chrs = _, len = _}) = fsPush (String {chrs = "", len = 0}) state
+doClear' state (Object{fields = _}) = fsPush (Object{fields = M.empty}) state
 doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
 
 --Used to turn a value of one type into another.
@@ -814,6 +816,82 @@ doPow state = do
                 (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
                 (_, _) -> error "Operator (pow) error.\nOperands need to be type Float Float or Double Double!\nCan't mix types and only Float or Double types are valid!"
 
+doAddField :: EDState -> IO EDState
+doAddField state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (addField) error. Three operands needed!"
+        [x] -> error "Operator (addField) error. Three operands needed!"
+        [x, y] -> error "Operator (addField) error. Three operands needed!"
+        vals -> do 
+            let (state', obj, fieldName, fieldVal) = fsPop3 state
+            case (obj, fieldName, fieldVal) of 
+                (Object {fields = fs}, String {chrs = name, len = l}, v) -> return (fsPush (doAddField' Object{fields = fs} name v) state')
+                (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+
+doAddField' :: Value -> String -> Value -> Value
+doAddField' Object{fields = fs} key val = 
+    let fs' = case (M.lookup key fs) of 
+            Just i -> error ("Operator (addField) error.\nField " ++ key ++ " already exists in given object!")
+            Nothing -> M.insert key val fs
+    in Object{fields = fs'}
+
+--Removes a field from a given object. Does nothing if the field doesn't exist.
+doRemoveField :: EDState -> IO EDState
+doRemoveField state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (removeField) error. Two operands needed!"
+        [x] -> error "Operator (removeField) error. Two operands needed!"
+        vals -> do 
+            let (state', obj, removalKey) = fsPop2 state
+            case (obj, removalKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                    let fs' = case (M.lookup name fs) of 
+                            Just i -> (M.delete name fs)
+                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!") 
+                    return (fsPush Object{fields = fs'} state')
+                (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String."
+
+--Grabs the value of a field in an object or throws an error if it doesn't exist.
+doGetField :: EDState -> IO EDState
+doGetField state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (getField) error. Two operands needed!"
+        [x] -> error "Operator (getField) error. Two operands needed!"
+        vals -> do 
+            let (state', obj, findKey) = fsPop2 state 
+            case (obj, findKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                    let lkup = case (M.lookup name fs) of 
+                            Just i -> i
+                            Nothing -> error ("Operator (getField) error.\nField " ++ name ++ " doesn't exist in given object!")
+                        state'' = fsPush Object{fields = fs} state'
+                    return (fsPush lkup state'')
+                (_, _) -> error "Operator (getField) error.\nOperands need to be type Object and String."
+
+--Mutates the value of a field in the object assuming the field exists 
+-- and the types match for the old and new values.
+doMutateField :: EDState -> IO EDState
+doMutateField state = do 
+    let stck = stack state 
+    case stck of 
+        [] -> error "Operator (mutateField) error. Three operands needed!"
+        [x] -> error "Operator (mutateField) error. Three operands needed!"
+        [x, y] -> error "Operator (mutateField) error. Three operands needed!"
+        vals -> do 
+            let (state', obj, mutKey, newVal) = fsPop3 state 
+            case (obj, mutKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                    let fs' = case (M.lookup name fs) of 
+                            Just i -> if (compareTypesForMut i newVal) 
+                                then (M.insert name newVal fs) 
+                                else error ("Operator (mutateField) error.\nNew value for field " ++ name ++ " must match type of current field value!")
+                            Nothing -> error ("Operator (mutateField) error.\nField " ++ name ++ " doesn't exist in given object!")
+                    return (fsPush Object{fields = fs'} state')
+                (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -863,6 +941,12 @@ doOp "cast" = doCast
 doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
 
+--Object Operators
+doOp "addField" = doAddField 
+doOp "removeField" = doRemoveField
+doOp "getField" = doGetField
+doOp "mutateField" = doMutateField
+
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
 
@@ -890,6 +974,7 @@ compareTypesForMut (Float _) (Float _) = True
 compareTypesForMut (String {chrs = _, len = _}) (String {chrs = _, len = _}) = True
 compareTypesForMut (Char _) (Char _) = True
 compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True
+compareTypesForMut Object{fields = _} Object{fields = _} = True 
 compareTypesForMut _ _ = False
 
 --Changes variable to new value if it can be mutated.
@@ -1202,6 +1287,7 @@ lexToken t
     | t == "true" || t == "True" = Val $ Boolean True  --Boolean cases.
     | t == "false" || t == "False" = Val $ Boolean False
     | t == "[]" = Val $ List {items = M.empty, len = 0}  --Empty list case.
+    | t == "{}" = Val $ Object {fields = M.empty} --Empty object case.
     | (head t) == '"' && (last t) == '"' =
         let str = read t :: String
         in Val $ String { chrs = str, len = length str }  --String case                                                                  
@@ -1280,6 +1366,7 @@ printStack ((List {items = is, len = l}):xs) =
 printStack ((String {chrs = cs, len = l}):xs) =
     let pr = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
     in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
+printStack ((Object{fields = fs}):xs) = putStrLn ("{" ++ (printObj (M.toList fs) "") ++ "}") >> printStack xs
 printStack (x:xs) = print x >> printStack xs
 
 --Recursively prints a list's contents.
@@ -1292,9 +1379,24 @@ printList List {items = is, len = l} acc index
                                           
             acc' = case curr of 
                 List {items = ls, len = listLength} -> acc ++ (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = ls, len = listLength}) "" 0) ++ (if (listLength > 16) then ", ...]" else "]")
+                Object {fields = fs} -> acc ++ (if (accSmall acc) then ", {" else "{") ++ (printObj (M.toList fs) "") ++ "}"
                 i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
         in printList (List{items = is, len = l}) acc' (index + 1) 
     | otherwise = acc 
+
+--Prints a given object's fields.
+printObj :: [(String, Value)] -> String -> String
+printObj [] acc = acc 
+printObj ((name, val):xs) acc = 
+    let insStr = case val of 
+            Object{fields = fs} -> "{" ++ (printObj (M.toList fs) "") ++ "}"
+            List{items = is, len = l} -> "[" ++ (printList (List{items = is, len = l}) "" 0) ++ (if (l > 16) then ", ...]" else "]")
+            String{chrs = cs, len = l} -> 
+                let cs' = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+                in show $ String{chrs = cs', len = l}
+            i -> show i
+
+    in printObj xs (acc ++ (if accSmall acc then ", " else "") ++ name ++ " : " ++ insStr)
 
 --Uses pattern matching to determine if a special comma 
 -- and space needs to be added or not.
