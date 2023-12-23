@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.90
+--Version: 2023-12-23.91
 --Toy Programming Language Named EcksDee
 
 {-
@@ -851,7 +851,24 @@ doRemoveField state = do
                             Just i -> (M.delete name fs)
                             Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!") 
                     return (fsPush Object{fields = fs'} state')
-                (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String"
+                (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String."
+
+doGetField :: EDState -> IO EDState
+doGetField state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (getField) error. Two operands needed!"
+        [x] -> error "Operator (getField) error. Two operands needed!"
+        vals -> do 
+            let (state', obj, findKey) = fsPop2 state 
+            case (obj, findKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                    let lkup = case (M.lookup name fs) of 
+                            Just i -> i
+                            Nothing -> error ("Operator (getField) error.\nField " ++ name ++ " doesn't exist in given object!")
+                        state'' = fsPush Object{fields = fs} state'
+                    return (fsPush lkup state'')
+                (_, _) -> error "Operator (getField) error.\nOperands need to be type Object and String."
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
@@ -905,7 +922,7 @@ doOp "readLine" = doReadLine
 --Object Operators
 doOp "addField" = doAddField 
 doOp "removeField" = doRemoveField
---doOp "getField" = doGetField
+doOp "getField" = doGetField
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
