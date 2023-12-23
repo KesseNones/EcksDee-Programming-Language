@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.24
+--Version: 2023-12-23.25
 --Toy Programming Language Named EcksDee
 
 {-
@@ -845,7 +845,11 @@ doRemoveField state = do
         vals -> do 
             let (state', obj, removalKey) = fsPop2 state
             case (obj, removalKey) of 
-                (Object{fields = fs}, String{chrs = name, len = l}) -> return (fsPush Object{fields = (M.delete name fs)} state')
+                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                    let fs' = case (M.lookup name fs) of 
+                            Just i -> (M.delete name fs)
+                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!") 
+                    return (fsPush Object{fields = fs'} state')
                 (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String"
 
 -- performs the operation identified by the string. for example, doOp state "+"
@@ -900,6 +904,7 @@ doOp "readLine" = doReadLine
 --Object Operators
 doOp "addField" = doAddField 
 doOp "removeField" = doRemoveField
+--doOp "getField" = doGetField
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
