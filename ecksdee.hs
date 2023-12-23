@@ -1368,12 +1368,12 @@ printObj ((name, val):xs) acc =
     let insStr = case val of 
             Object{fields = fs} -> "{" ++ (printObj (M.toList fs) "") ++ "}"
             List{items = is, len = l} -> "[" ++ (printList (List{items = is, len = l}) "" 0) ++ (if (l > 16) then ", ...]" else "]")
-            String{chrs = cs, len = l} -> if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+            String{chrs = cs, len = l} -> 
+                let cs' = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+                in show $ String{chrs = cs', len = l}
             i -> show i
 
     in printObj xs (acc ++ (if accSmall acc then ", " else "") ++ name ++ " : " ++ insStr)
-    --in printObj xs (acc ++ (if (null xs) then "" else ", " ) ++ name ++ ":" ++ insStr)
-
 
 --Uses pattern matching to determine if a special comma 
 -- and space needs to be added or not.
