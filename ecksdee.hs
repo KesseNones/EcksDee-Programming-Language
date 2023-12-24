@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-24.33
+--Version: 2023-12-24.38
 --Toy Programming Language Named EcksDee
 
 {-
@@ -917,6 +917,22 @@ doReadFile state = do
                         return (fsPush (String{chrs = fileStr, len = length fileStr}) state')
                     _ -> error "Operator (readFile) error.\nOperand needs to be of type String."
 
+--Writes the desired string to a given file name.
+doWriteFile :: EDState -> IO EDState
+doWriteFile state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (writeFile) error. Two operands needed!"
+        [x] -> error "Operator (writeFile) error. Two operands needed!"
+        vals -> do 
+            let (state', fileName, writeContents) = fsPop2 state
+            case (fileName, writeContents) of 
+                (String{chrs = name, len = _}, String{chrs = contents, len = l}) -> do 
+                    --file <- (openFile name WriteMode)
+                    writeFile name contents 
+                    return (state')
+                (_, _) -> error "Operator (writeFile) error.\nOperands need to be of type String and String."
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -974,6 +990,7 @@ doOp "mutateField" = doMutateField
 
 --File IO Operators
 doOp "readFile" = doReadFile
+doOp "writeFile" = doWriteFile
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
