@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.92
+--Version: 2023-12-24.30
 --Toy Programming Language Named EcksDee
 
 {-
@@ -740,6 +740,16 @@ doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) 
                     Nothing -> error "Operator (cast) error. Failed to convert String to type Double."
     in fsPush (Double parsed) state
 
+doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
+    let listStr = ( "[" ++ (printList List {items = is, len = l} "" 0 False) ++ "]" )
+        listStrLen = length listStr 
+    in fsPush (String{chrs = listStr, len = listStrLen}) state
+
+doCast' state (Object{fields = fs}) (String{chrs = "String", len = _}) = 
+    let objStr = ("{" ++ (printObj (M.toList fs) "") ++ "}")
+        objStrLen = length objStr
+    in fsPush (String{chrs = objStr, len = objStrLen}) state
+
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
 
 --Prints top element of stack. This element must be a string or it freaks out.
@@ -1362,7 +1372,7 @@ removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments)
 printStack :: [Value] -> IO ()
 printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
-    putStrLn ("[" ++ (printList List {items = is, len = l} "" 0) ++ (if (l > 16) then ", ...]" else "]")) >> printStack xs
+    putStrLn ("[" ++ (printList List {items = is, len = l} "" 0 True) ++ (if (l > 16) then ", ...]" else "]")) >> printStack xs
 printStack ((String {chrs = cs, len = l}):xs) =
     let pr = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
     in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
@@ -1370,18 +1380,20 @@ printStack ((Object{fields = fs}):xs) = putStrLn ("{" ++ (printObj (M.toList fs)
 printStack (x:xs) = print x >> printStack xs
 
 --Recursively prints a list's contents.
-printList :: Value -> String -> Int -> String
-printList List {items = is, len = l} acc index 
-    | (index < l) && (index < 16) = 
+printList :: Value -> String -> Int -> Bool -> String
+printList List {items = is, len = l} acc index isLimited 
+    | (index < l) && (index < 16 || isLimited == False) = 
         let curr = case M.lookup index is of
                 Just i -> i 
                 Nothing -> error "SHOULD NEVER GET HERE!!!"
                                           
             acc' = case curr of 
-                List {items = ls, len = listLength} -> acc ++ (if (accSmall acc) then ", [" else "[") ++ (printList (List{items = ls, len = listLength}) "" 0) ++ (if (listLength > 16) then ", ...]" else "]")
+                List {items = ls, len = listLength} -> acc ++ (if (accSmall acc) 
+                    then ", [" 
+                    else "[") ++ (printList (List{items = ls, len = listLength}) "" 0 isLimited) ++ (if (isLimited && listLength > 16) then ", ...]" else "]")
                 Object {fields = fs} -> acc ++ (if (accSmall acc) then ", {" else "{") ++ (printObj (M.toList fs) "") ++ "}"
                 i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
-        in printList (List{items = is, len = l}) acc' (index + 1) 
+        in printList (List{items = is, len = l}) acc' (index + 1) isLimited 
     | otherwise = acc 
 
 --Prints a given object's fields.
@@ -1390,7 +1402,7 @@ printObj [] acc = acc
 printObj ((name, val):xs) acc = 
     let insStr = case val of 
             Object{fields = fs} -> "{" ++ (printObj (M.toList fs) "") ++ "}"
-            List{items = is, len = l} -> "[" ++ (printList (List{items = is, len = l}) "" 0) ++ (if (l > 16) then ", ...]" else "]")
+            List{items = is, len = l} -> "[" ++ (printList (List{items = is, len = l}) "" 0 True) ++ (if (l > 16) then ", ...]" else "]")
             String{chrs = cs, len = l} -> 
                 let cs' = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
                 in show $ String{chrs = cs', len = l}
