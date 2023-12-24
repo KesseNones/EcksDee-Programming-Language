@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-24.28
+--Version: 2023-12-24.29
 --Toy Programming Language Named EcksDee
 
 {-
@@ -744,6 +744,11 @@ doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) =
     let listStr = ( "[" ++ (printList List {items = is, len = l} "" 0) ++ "]" )
         listStrLen = length listStr 
     in fsPush (String{chrs = listStr, len = listStrLen}) state
+
+doCast' state (Object{fields = fs}) (String{chrs = "String", len = _}) = 
+    let objStr = ("{" ++ (printObj (M.toList fs) "") ++ "}")
+        objStrLen = length objStr
+    in fsPush (String{chrs = objStr, len = objStrLen}) state
 
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
 
