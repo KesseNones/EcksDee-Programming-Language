@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-24.30
+--Version: 2023-12-24.94
 --Toy Programming Language Named EcksDee
 
 {-
@@ -19,6 +19,7 @@ import Text.Read (readMaybe)
 import System.IO
 import System.Environment
 import qualified Data.Map.Strict as M
+import Control.DeepSeq
 
 data Value =                                         
         BigInteger Integer
@@ -902,6 +903,38 @@ doMutateField state = do
                     return (fsPush Object{fields = fs'} state')
                 (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
 
+--Reads in the contents of a file to a string.
+doReadFile :: EDState -> IO EDState 
+doReadFile state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (readFile) error. One operand needed!"
+        vals -> do 
+            let (state', fileName) = fsPop state 
+            case (fileName) of 
+                    (String{chrs = cs, len = l}) -> do 
+                        withFile cs ReadMode $ \file -> do 
+                            fileStr <- hGetContents file
+                            let state'' = fsPush (String{chrs = fileStr, len = length fileStr}) state' 
+                            fileStr `deepseq` return (state'')
+                    _ -> error "Operator (readFile) error.\nOperand needs to be of type String."
+
+--Writes the desired string to a given file name.
+doWriteFile :: EDState -> IO EDState
+doWriteFile state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (writeFile) error. Two operands needed!"
+        [x] -> error "Operator (writeFile) error. Two operands needed!"
+        vals -> do 
+            let (state', fileName, writeContents) = fsPop2 state
+            case (fileName, writeContents) of 
+                (String{chrs = name, len = _}, String{chrs = contents, len = l}) -> do 
+                    withFile name WriteMode $ \file -> do 
+                        hPutStr file contents  
+                        return (state')
+                (_, _) -> error "Operator (writeFile) error.\nOperands need to be of type String and String."
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -956,6 +989,10 @@ doOp "addField" = doAddField
 doOp "removeField" = doRemoveField
 doOp "getField" = doGetField
 doOp "mutateField" = doMutateField
+
+--File IO Operators
+doOp "readFile" = doReadFile
+doOp "writeFile" = doWriteFile
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
@@ -1420,20 +1457,19 @@ main :: IO ()
 main = do
     args <- getArgs
 
-    inputFile <- if (not $ null args) 
-        then openFile (args !! 0) ReadMode 
+    let fileName = if (not $ null args) 
+        then (args !! 0) 
         else error "Please provide an EcksDee code file to parse!"
 
-    -- get all the code passed to STDIN as a giant string 
-    code <- hGetContents inputFile
+    withFile fileName ReadMode $ \file -> do   
+        code <- hGetContents file
 
-    -- convert it into a list of tokens
-    let tokens = removeComments False [] ( tokenize code )
+        -- convert it into a list of tokens
+        let tokens = code `deepseq` removeComments False [] ( tokenize code )
 
-    --Parse and run AST, printing result.
-    let ast = parseExpression tokens
-    stateInit <- fsNew
-    finalState <- (doNode ast stateInit)
-    printStack $ reverse $ (stack finalState) 
-
-    hClose inputFile
+        --Parse and run AST, printing result.
+        let ast = parseExpression tokens
+        stateInit <- fsNew
+        finalState <- (doNode ast stateInit)
+        
+        printStack $ reverse $ (stack finalState) 
