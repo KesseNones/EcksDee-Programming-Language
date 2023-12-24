@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-23.92
+--Version: 2023-12-24.28
 --Toy Programming Language Named EcksDee
 
 {-
@@ -739,6 +739,11 @@ doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) 
                     Just val -> val 
                     Nothing -> error "Operator (cast) error. Failed to convert String to type Double."
     in fsPush (Double parsed) state
+
+doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
+    let listStr = ( "[" ++ (printList List {items = is, len = l} "" 0) ++ "]" )
+        listStrLen = length listStr 
+    in fsPush (String{chrs = listStr, len = listStrLen}) state
 
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
 
