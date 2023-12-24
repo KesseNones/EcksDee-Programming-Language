@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-24.30
+--Version: 2023-12-24.33
 --Toy Programming Language Named EcksDee
 
 {-
@@ -902,6 +902,21 @@ doMutateField state = do
                     return (fsPush Object{fields = fs'} state')
                 (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
 
+--Reads in the contents of a file to a string.
+doReadFile :: EDState -> IO EDState 
+doReadFile state = do 
+    let stck = stack state
+    case stck of 
+        [] -> error "Operator (readFile) error. One operand needed!"
+        vals -> do 
+            let (state', fileName) = fsPop state 
+            case (fileName) of 
+                    (String{chrs = cs, len = l}) -> do 
+                        file <- (openFile cs ReadMode) 
+                        fileStr <- hGetContents file
+                        return (fsPush (String{chrs = fileStr, len = length fileStr}) state')
+                    _ -> error "Operator (readFile) error.\nOperand needs to be of type String."
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -956,6 +971,9 @@ doOp "addField" = doAddField
 doOp "removeField" = doRemoveField
 doOp "getField" = doGetField
 doOp "mutateField" = doMutateField
+
+--File IO Operators
+doOp "readFile" = doReadFile
 
 -- Error thrown if reached here.
 doOp op = error $ "unrecognized word: " ++ op 
