@@ -1051,7 +1051,7 @@ funcCall state funcName =
     let look = M.lookup funcName (fns state)
     in case look of 
         Just body -> (state, body)
-        Nothing -> error "Function Call Error: Function isn't defined."
+        Nothing -> error ("Function Call Error: Function \"" ++ funcName ++ "\" isn't defined.")
 
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
