@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-25.09
+--Version: 2023-12-25.10
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1106,7 +1106,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
         "mut" -> do 
             let stackIsEmpty = null (stack state)
             if stackIsEmpty
-                then error "Variable Mut Error: Can't mutate variable when stack is empty."
+                then error ("Variable Mut Error: Can't mutate variable when stack is empty.\nAttempted variable name: " ++ (astNodeToString name))
                 else do 
                     state' <- (mutateVar state (astNodeToString name))
                     doNode (Expression rest) state'
