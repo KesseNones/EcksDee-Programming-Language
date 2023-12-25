@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-25.10
+--Version: 2023-12-25.11
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1042,7 +1042,7 @@ funcDef :: EDState -> String -> AstNode -> EDState
 funcDef state funcName funcBod = 
     let look = M.lookup funcName (fns state)
     in case look of 
-        Just bod -> error "Function Def Error: Function of same name already exists" 
+        Just bod -> error ("Function Def Error: Function of same name \"" ++ funcName ++ "\" already exists") 
         Nothing -> let fns' = M.insert funcName funcBod (fns state)
                    in EDState{stack = (stack state), fns = fns', vars = (vars state)}
 
