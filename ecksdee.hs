@@ -1086,7 +1086,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
         "mak" -> do 
             let stackIsEmpty = null (stack state)
             if stackIsEmpty
-                then error "Variable Mak Error: Can't create variable when stack is empty."
+                then error ("Variable Mak Error: Can't create variable when stack is empty.\nAttempted variable name: " ++ (astNodeToString name))
                 else do
                     state' <- (makeVar state (astNodeToString name))
                     doNode (Expression rest) state'
