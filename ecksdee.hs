@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-25.08
+--Version: 2023-12-25.09
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1078,7 +1078,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
                     let (state', funcBod) = funcCall state (astNodeToString name)
                     state'' <- (doNode funcBod state')
                     doNode (Expression(rest)) state''
-        other -> error ("Function Error: Invalid function command given. Given: " ++ other ++ " Valid: def, call")
+        other -> error ("Function Error: Invalid function command given.\nGiven: " ++ other ++ "\nValid: def, call")
 
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
@@ -1111,7 +1111,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                     state' <- (mutateVar state (astNodeToString name))
                     doNode (Expression rest) state'
 
-        _ -> error "Variable Command Error: Invalid variable command given. Valid: mak, get, mut, del"
+        other -> error ("Variable Command Error: Invalid variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut, del")
 
 --Runs while loop.                                                                                                                      
 doNode ( While loopBody ) state = do
