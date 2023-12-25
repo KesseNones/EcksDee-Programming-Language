@@ -1095,13 +1095,13 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                  in case lkup of
                     Just value -> let stack' = fsPush value state
                               in doNode (Expression rest) stack' 
-                    Nothing -> error ("Variable Get Error: Variable " ++ (astNodeToString name) ++ " doesn't exist or was deleted")
+                    Nothing -> error ("Variable Get Error: Variable " ++ (astNodeToString name) ++ " doesn't exist or was deleted.")
 
         "del" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
                     Just value -> let vars' = M.delete (astNodeToString name) (vars state)
                            in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars'})
-                    Nothing -> error "Variable Del Error: Variable doesn't exist" 
+                    Nothing -> error ("Variable Del Error: Variable " ++ (astNodeToString name) ++ " doesn't exist.") 
 
         "mut" -> do 
             let stackIsEmpty = null (stack state)
