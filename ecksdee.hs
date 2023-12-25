@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-25.07
+--Version: 2023-12-25.08
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1078,7 +1078,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
                     let (state', funcBod) = funcCall state (astNodeToString name)
                     state'' <- (doNode funcBod state')
                     doNode (Expression(rest)) state''
-        _ -> error "Function Error: Invalid function command given. Valid: def, call"
+        other -> error ("Function Error: Invalid function command given. Given: " ++ other ++ " Valid: def, call")
 
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
