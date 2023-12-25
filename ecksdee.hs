@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-24.94
+--Version: 2023-12-25.07
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1005,7 +1005,7 @@ makeVar state varName =
     let lkup = M.lookup varName (vars state)
     --Throw error if variable exists. Otherwise, make variable by inserting it into hash table.
     in case lkup of
-        Just _ -> error "Variable Mak Error: Variable already exists."
+        Just _ -> error ("Variable Mak Error: Variable " ++ (varName) ++ " already exists.")
         Nothing -> do 
             let top = fsTop state
             let vars' = M.insert varName top (vars state)
@@ -1035,8 +1035,8 @@ mutateVar state varName = do
         Just value -> if compareTypesForMut value newVal then 
             let vars' = M.insert varName newVal (vars state)
             in return ( EDState{stack = (stack state), fns = (fns state), vars = vars'} )
-            else error "Variable Mut Error: Can't mutate variable to different type."
-        Nothing -> error "Variable Mut Error: Variable doesn't exist or was deleted"
+            else error ("Variable Mut Error: Can't mutate variable " ++ varName ++ " to different type.")
+        Nothing -> error ("Variable Mut Error: Variable " ++ varName ++ " doesn't exist or was deleted")
 
 funcDef :: EDState -> String -> AstNode -> EDState
 funcDef state funcName funcBod = 
