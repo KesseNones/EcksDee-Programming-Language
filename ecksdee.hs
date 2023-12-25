@@ -1005,7 +1005,7 @@ makeVar state varName =
     let lkup = M.lookup varName (vars state)
     --Throw error if variable exists. Otherwise, make variable by inserting it into hash table.
     in case lkup of
-        Just _ -> error ("Variable Mak Error: Variable " ++ (varName) ++ " already exists.")
+        Just _ -> error ("Variable Mak Error: Variable " ++ varName ++ " already exists.")
         Nothing -> do 
             let top = fsTop state
             let vars' = M.insert varName top (vars state)
@@ -1095,7 +1095,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                  in case lkup of
                     Just value -> let stack' = fsPush value state
                               in doNode (Expression rest) stack' 
-                    Nothing -> error "Variable Get Error: Variable doesn't exist or was deleted"
+                    Nothing -> error ("Variable Get Error: Variable " ++ (astNodeToString name) ++ " doesn't exist or was deleted")
 
         "del" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
