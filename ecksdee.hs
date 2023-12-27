@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-25.11
+--Version: 2023-12-27.23
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1411,7 +1411,7 @@ printStack [] = return ()
 printStack ((List {items = is, len = l}):xs) = 
     putStrLn ("[" ++ (printList List {items = is, len = l} "" 0 True) ++ (if (l > 16) then ", ...]" else "]")) >> printStack xs
 printStack ((String {chrs = cs, len = l}):xs) =
-    let pr = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+    let pr = if l < 256 then cs else (init  $ take 255 cs) ++ "..."
     in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
 printStack ((Object{fields = fs}):xs) = putStrLn ("{" ++ (printObj (M.toList fs) "") ++ "}") >> printStack xs
 printStack (x:xs) = print x >> printStack xs
@@ -1441,7 +1441,7 @@ printObj ((name, val):xs) acc =
             Object{fields = fs} -> "{" ++ (printObj (M.toList fs) "") ++ "}"
             List{items = is, len = l} -> "[" ++ (printList (List{items = is, len = l}) "" 0 True) ++ (if (l > 16) then ", ...]" else "]")
             String{chrs = cs, len = l} -> 
-                let cs' = if l < 256 then cs else (init $ show $ take 255 cs) ++ "..."
+                let cs' = if l < 256 then cs else (init $ take 255 cs) ++ "..."
                 in show $ String{chrs = cs', len = l}
             i -> show i
 
