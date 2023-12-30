@@ -95,6 +95,14 @@ All you have to do is to push the empty list to the
 stack like so: ```[]```. From there, values can be added to this empty list 
 using the ```push``` or ```fpush``` operator which will be discussed later.
 
+#### Object
+This is another versatile data type different from lists but also very useful.
+Objects store key value pairs where the keys are type String and the values are
+type Value. This means like Lists Objects can store themselves. 
+An object is constructed very similarly to a list where an empty object is pushed
+on the stack like so: ```{}```. The operator ```addField``` can then be used to 
+add fields to the object. The Object operators will be discussed later. 
+
 ### Operators
 Now that all the types of data have been covered that can be pushed onto the stack, 
 now it's time to cover all the basic operators that can be used on the data.
