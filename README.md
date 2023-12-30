@@ -119,7 +119,10 @@ Both forms of stacks will be used in describing various code examples in operato
 
 At present, the current operators are: 
 
-#### + 
+#### Operator: + 
+
+##### Performance: O(1)
+
 Adds the top two elements of a stack together. 
 For example, given a stack of numbers: ```b a```, it pops ```b``` and ```a``` 
 and adds them together and pushes number ```c```, leaving stack: ```c```. In the case of numbers ```a``` and ```b```, 
@@ -140,6 +143,9 @@ Boolean True
 ```
 
 #### - 
+
+##### Performance: O(1)
+
 Given a stack of values: ```a b``` where ```a``` and ```b``` are matching types and of types: 
 ```Integer```, ```BigInteger```, ```Float```, or ```Double```. Subtracts ```b``` from ```a``` 
 and pushes the result ```c``` to the stack, leaving stack ```c```.
