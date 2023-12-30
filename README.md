@@ -119,9 +119,9 @@ Both forms of stacks will be used in describing various code examples in operato
 
 At present, the current operators are: 
 
-#### Operator: + 
+#### Operator: ```+``` 
 
-##### Performance: O(1)
+##### Performance: ```O(1)``` (constant time)
 
 Adds the top two elements of a stack together. 
 For example, given a stack of numbers: ```b a```, it pops ```b``` and ```a``` 
@@ -142,9 +142,9 @@ Double 42.2
 Boolean True
 ```
 
-#### - 
+#### Operator: ```-``` 
 
-##### Performance: O(1)
+##### Performance: ```O(1)``` (constant time)
 
 Given a stack of values: ```a b``` where ```a``` and ```b``` are matching types and of types: 
 ```Integer```, ```BigInteger```, ```Float```, or ```Double```. Subtracts ```b``` from ```a``` 
@@ -160,7 +160,10 @@ Float 3.1399999
 Double 2.01828
 ```
 
-#### * 
+#### Operator: ```*``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Multiplies the top two elements of the stack together. As with ```+``` and ```-``` , 
 the types must match and the valid types for ```*``` are: ```Integer```, ```BigInteger```, ```Float```, ```Double```, and ```Boolean```.
 For the first four types ```*``` acts as multiplication. For ```Boolean``` it acts as a logical AND.
@@ -176,7 +179,10 @@ Double 445.2
 Boolean False
 ```
 
-#### / 
+#### Operator: ```/``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```a b``` where ```a``` and ```b``` are both of type ```t``` in which ```t``` can be
 types: ```Integer```, ```BigInteger```, ```Float```, and ```Double```. The operator ```/``` then
 pops ```a``` and ```b``` and divides ```a``` by ```b```, getting resulting value ```c``` still 
@@ -193,7 +199,10 @@ Float 1.5
 Double 3.1415929203539825
 ```
 
-#### swap 
+#### Operator: ```swap``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Swaps the top two items on top of the stack. If the stack is empty 
 or only one item is on the stack, nothing happens. In terms of types, any two items 
 of any data type can be swapped on the stack. Generally, given stack: ```x y```, 
@@ -212,7 +221,10 @@ String "bar"
 String "foo"
 ```
 
-#### drop 
+#### Operator: ```drop``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Easily the most common operator. Given stack ```x y z```, drop removes the top item from the stack. 
 In this case, applying drop to the stack gives ```x y```, removing ```z```.
 If the stack is empty when ```drop``` is used, nothing happens.
@@ -226,7 +238,10 @@ Integer 42
 Float 1.414
 ```
 
-#### rot 
+#### Operator: ```rot``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Rotates the top three items of the stack to the right. 
 If only two operands are on stack it acts like the ```swap``` operator, and if only one or no items exist, nothing happens. 
 The operator ```rot``` can work with any types involved.
@@ -241,7 +256,10 @@ String "foo"
 String "bar"
 ```
 
-#### dup 
+#### Operator: ```dup``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Pushes a duplicate of the top element of the stack or does nothing if stack is empty. 
 Like ```swap```, ```drop```, and ```rot```, ```dup``` works with any type on the stack. In general, given a stack: ```x```, 
 using ```dup``` results in the stack: ```x x```.
@@ -256,7 +274,10 @@ Integer 3
 Integer 3
 ```
 
-#### == 
+#### Operator: ```==``` 
+
+##### Performance: ```O(n)``` <br> (Constant time for all types except lists which is linear if lengths of two lists being compared equal each other.)
+
 Determines if the top two elements of a stack are equal to each other. 
 Pops top two items and pushes a ```Boolean``` based on equality. 
 For example, given stack: ```x y```, ```x``` and ```y``` are popped and checked if ```x``` is equal to ```y```. 
@@ -275,7 +296,10 @@ Boolean False
 Boolean True
 ```
 
-#### /= 
+#### Operator: ```/=``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Exactly the same as ```==``` except it pushes the opposite Boolean to the stack.
 The types of the operands also need to match for this to work.
 
