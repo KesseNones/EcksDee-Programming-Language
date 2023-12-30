@@ -105,11 +105,17 @@ add fields to the object. The Object operators will be discussed later.
 
 ### Operators
 Now that all the types of data have been covered that can be pushed onto the stack, 
-now it's time to cover all the basic operators that can be used on the data.
+it's time to cover all the basic operators that can be used on the data.
 
 The general stack will be displayed in a left-to-right format where the top of the stack is the rightmost item. These generalized stacks will only contain the bare minimum items for a given operation, such as
-a general stack being ```x y``` for an operation that needs two operands. However, more than just ```x``` and ```y``` can be on the stack. For example, the stack could be ```a b c d e f x y``` and the operation would only care about ```x``` and ```y``` since it only needs two operands at the top of the stack.  
+a general stack being ```x y``` for an operation that needs two operands. However, more than just ```x``` and ```y``` can be on the stack. 
+For example, the stack could be ```a b c d e f x y``` and the operation would only care about ```x``` and ```y``` since it only needs two operands at the top of the stack.  
 The ending stack that results from an example program will be displayed top down with the top item of the stack listed last.
+
+The final stack given in the examples is the stack you'd see get printed in the terminal after running EcksDee on a program file. 
+This form of the stack is read bottom up, where the top of the stack is at the bottom. In other words, the stack grows down.
+
+Both forms of stacks will be used in describing various code examples in operators and beyond.
 
 At present, the current operators are: 
 
