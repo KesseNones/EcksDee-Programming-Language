@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-31.00
+--Version: 2023-12-31.01
 --Toy Programming Language Named EcksDee
 
 {-
@@ -796,6 +796,10 @@ doContains state = do
             let contains = case (top, secondToTop) of 
                                 (v, List {items = is, len = _}) -> v `elem` is
                                 (Char c, String {chrs = cs, len = _}) -> c `elem` cs
+                                (String{chrs = name, len = _}, Object{fields = fs}) -> 
+                                    case (M.lookup name fs) of 
+                                        Just _ -> True 
+                                        Nothing -> False
                                 (_, _) -> error "Operator (contains) error. List or string needed to asses if item is contained within."
             return (fsPush (Boolean contains) state)
 
