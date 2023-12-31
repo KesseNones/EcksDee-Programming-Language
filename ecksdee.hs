@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-27.23
+--Version: 2023-12-31.00
 --Toy Programming Language Named EcksDee
 
 {-
@@ -647,6 +647,7 @@ doIsEmpty state = do
 doIsEmpty' :: EDState -> Value -> EDState
 doIsEmpty' state (List {items = is, len = l}) = fsPush (Boolean $ l == 0) state
 doIsEmpty' state (String {chrs = cs, len = l}) = fsPush (Boolean $ null cs) state
+doIsEmpty' state Object{fields = fs} = fsPush (Boolean $ M.null fs) state 
 doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
 
 --Sets the string or list at the top of the stack to empty.
