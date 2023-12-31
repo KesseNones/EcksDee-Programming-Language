@@ -998,7 +998,7 @@ O(log(n))
 
 Given a stack ```x y``` where ```x``` is type ```Object``` and ```y``` is type ```String```,
 pops the two values from the stack, looks up the field named by ```String``` ```y``` and pushes the value ```z``` contained by field ```y```
-to the stack, yielding stack: ```x y z``` 
+to the stack, yielding stack: ```x y z```. An error happens if the field doesn't exist in the object.
 
 Example Program:
 ```
@@ -1023,6 +1023,60 @@ Final Stack:
 {foo : Integer 42}
 {bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
 Integer 666
+```
+
+#### Operator: ```mutateField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y z``` where ```x``` is type ```Object```, ```y``` is type ```String```, and ```z``` is any Value type,
+pops the three values from the stack and mutates the field named by ```String``` ```y``` with Value ```z``` to ```Object```
+```x```. This altered object with the altered field ```o``` is pushed on the stack leaving stack ```o```. 
+An error is thrown if the field doesn't exist in the object or the type of the field's old value and the type of the new value don't match.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+
+/' Mutates value of foo and qux contained in object '/
+
+dup
+
+"foo"
+420
+mutateField
+
+/' Grabs the object value of qux 
+and mutates its field foo to the value BigInteger 42. 
+This updated object is then mutate for the new value of qux in the object. '/
+
+"qux" getField 
+"foo"
+42b
+mutateField
+"qux"
+swap
+mutateField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 420, qux : {foo : BigInteger 42}}
 ```
 
 ### While Loops
