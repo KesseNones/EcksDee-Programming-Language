@@ -955,6 +955,39 @@ Final Stack:
 ```
 ```
 
+#### Operator: ```addField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y z``` where ```x``` is type ```Object```, ```y``` is type ```String```, and ```z``` is any Value type,
+pops the three values from the stack and adds the field named by ```String``` ```y``` with Value ```z``` to ```Object```
+```x```. This altered object ```o``` is pushed on the stack leaving stack ```o```.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
+```
+
+
 ### While Loops
 While loops are a form of operator known as a fancy operator 
 because more is required to use it than just having some stuff 
