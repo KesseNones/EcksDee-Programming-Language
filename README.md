@@ -1079,6 +1079,47 @@ Final Stack:
 {bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 420, qux : {foo : BigInteger 42}}
 ```
 
+#### Operator: ```removeField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y``` where ```x``` is type ```Object``` and ```y``` is type ```String```,
+pops the two values from the stack, looks up the field named by ```String``` ```y``` and removes field ```y``` from ```x```
+yielding an altered object without the field in it ```o``` that's pushed onto the stack, yielding stack ```o```. 
+An error is thrown if the field doesn't exist in the object ```x```.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+
+dup
+
+/' Removes object from current object. '/
+
+"qux"
+removeField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666}
+```
+
 ### While Loops
 While loops are a form of operator known as a fancy operator 
 because more is required to use it than just having some stuff 
