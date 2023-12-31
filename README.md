@@ -777,7 +777,15 @@ String {chrs = "bar", len = 3}
 Boolean False
 ```
 
-#### changeItemAt 
+#### Operator: ```changeItemAt``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
 Given stack: ```x y z```, where ```x``` is a ```List```, ```y``` is type Value, 
 and ```z``` is type ```Integer```.
 Pops ```x```, ```y```, and ```z```, and alters item at index ```z``` in ```x``` to item ```y``` and then pushes the altered list ```L``` to the stack, leaving stack: ```L```
@@ -789,6 +797,7 @@ Example Program:
 /' Demonstrates the change more easily. 
 This is a comment by the way. 
 This will be discussed more later on. '/
+
 dup 
 
 'b' 0 changeItemAt
@@ -796,11 +805,19 @@ dup
 
 Final Stack:
 ```
-List [Char 'f',Char 'o',Char 'o']
-List [Char 'b',Char 'o',Char 'o']
+[Char 'f', Char 'o', Char 'o']
+[Char 'b', Char 'o', Char 'o']
 ```
 
-#### isWhiteSpace 
+#### Operator: ```isWhiteSpace``` 
+
+##### Performance: 
+```
+O(1)
+``` 
+
+(Constant time)
+
 Given stack: ```x```, where ```x``` is type ```Char```. Determines if ```x``` is a whitespace character 
 and pushes a ```Boolean``` based on the result.
 
@@ -818,8 +835,19 @@ Char 'g'
 Boolean False
 ```
 
-#### cast 
-Given stack: ```x y```, where ```x``` is a Value that is **not** a ```List``` and ```y``` is a ```String```. The cast operator pops ```x``` and ```y``` and tries to cast ```x``` to the type spelled 
+#### Operator: ```cast``` 
+
+##### Performance: 
+```
+List to String: O(n)
+Object to String: O(n)
+BigInteger to String: O(n)
+All other casts: O(1)
+``` 
+
+(Linear time to stringify Lists, Objects, and BigIntegers. Constant time for all other casts.)
+
+Given stack: ```x y```, where ```x``` is a Value and ```y``` is a ```String```, The cast operator pops ```x``` and ```y``` and tries to cast ```x``` to the type spelled 
 out in the string ```y```. If the type is valid in the ```String``` ```y```, 
 the cast occurs and the casted value ```z``` is pushed to the stack, resulting in stack: ```z```.
 
@@ -841,12 +869,20 @@ dup
 
 Final Stack:
 ```
-String "Your number is: 150601872777831737268034534874546176"
+String {chrs = "Your number is: 150601872777831737268034534874546176", len = 52}
 Double 3.1415929203539825
 Integer 3
 ```
 
-#### printLine 
+#### Operator: ```printLine``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being printed.)
+
 Given stack: ```x```, where ```x``` is a String. 
 The operator printLine performs an IO action which writes the ```String``` ```x``` to standard output, 
 ending it with a newline character. The stack remains unchanged but the ```String``` ```x``` is printed.
@@ -871,9 +907,17 @@ Stdout:
 Hello, World!
 ```
 
-#### readLine 
+#### Operator: ```readLine``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being read from stdin.)
+
 Reads a ```String``` ending in a newline of input and pushes the ```String``` to the stack. 
-The example input given for Stdin is an example, any input ending with a new line could've gone there.
+The example input given for Stdin is an example, any input ending with a newline could've gone there.
 
 Example Program: <br>
 	```readLine```
@@ -885,7 +929,7 @@ This is some input!
 
 Final Stack:
 ```
-String "This is some input!"
+String {chrs = "This is some input!", len = 19}
 ```
 
 Example using full IO to illustrate that it's indeed neat:
