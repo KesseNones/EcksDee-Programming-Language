@@ -966,7 +966,7 @@ O(log(n))
 
 Given a stack ```x y z``` where ```x``` is type ```Object```, ```y``` is type ```String```, and ```z``` is any Value type,
 pops the three values from the stack and adds the field named by ```String``` ```y``` with Value ```z``` to ```Object```
-```x```. This altered object ```o``` is pushed on the stack leaving stack ```o```.
+```x```. This altered object ```o``` is pushed on the stack leaving stack ```o```. An error is thrown if the field already exists.
 
 Example Program:
 ```
@@ -987,6 +987,43 @@ Final Stack:
 {bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
 ```
 
+#### Operator: ```getField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y``` where ```x``` is type ```Object``` and ```y``` is type ```String```,
+pops the two values from the stack, looks up the field named by ```String``` ```y``` and pushes the value ```z``` contained by field ```y```
+to the stack, yielding stack: ```x y z``` 
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+
+/' Fetches value of foo contained in object '/
+
+"foo"
+getField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
+Integer 666
+```
 
 ### While Loops
 While loops are a form of operator known as a fancy operator 
