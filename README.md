@@ -95,17 +95,34 @@ All you have to do is to push the empty list to the
 stack like so: ```[]```. From there, values can be added to this empty list 
 using the ```push``` or ```fpush``` operator which will be discussed later.
 
+#### Object
+This is another versatile data type different from lists but also very useful.
+Objects store key value pairs where the keys are type String and the values are
+type Value. This means like Lists Objects can store themselves. 
+An object is constructed very similarly to a list where an empty object is pushed
+on the stack like so: ```{}```. The operator ```addField``` can then be used to 
+add fields to the object. The Object operators will be discussed later. 
+
 ### Operators
 Now that all the types of data have been covered that can be pushed onto the stack, 
-now it's time to cover all the basic operators that can be used on the data.
+it's time to cover all the basic operators that can be used on the data.
 
 The general stack will be displayed in a left-to-right format where the top of the stack is the rightmost item. These generalized stacks will only contain the bare minimum items for a given operation, such as
-a general stack being ```x y``` for an operation that needs two operands. However, more than just ```x``` and ```y``` can be on the stack. For example, the stack could be ```a b c d e f x y``` and the operation would only care about ```x``` and ```y``` since it only needs two operands at the top of the stack.  
+a general stack being ```x y``` for an operation that needs two operands. However, more than just ```x``` and ```y``` can be on the stack. 
+For example, the stack could be ```a b c d e f x y``` and the operation would only care about ```x``` and ```y``` since it only needs two operands at the top of the stack.  
 The ending stack that results from an example program will be displayed top down with the top item of the stack listed last.
+
+The final stack given in the examples is the stack you'd see get printed in the terminal after running EcksDee on a program file. 
+This form of the stack is read bottom up, where the top of the stack is at the bottom. In other words, the stack grows down.
+
+Both forms of stacks will be used in describing various code examples in operators and beyond.
 
 At present, the current operators are: 
 
-#### + 
+#### Operator: ```+``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Adds the top two elements of a stack together. 
 For example, given a stack of numbers: ```b a```, it pops ```b``` and ```a``` 
 and adds them together and pushes number ```c```, leaving stack: ```c```. In the case of numbers ```a``` and ```b```, 
@@ -125,7 +142,10 @@ Double 42.2
 Boolean True
 ```
 
-#### - 
+#### Operator: ```-``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given a stack of values: ```a b``` where ```a``` and ```b``` are matching types and of types: 
 ```Integer```, ```BigInteger```, ```Float```, or ```Double```. Subtracts ```b``` from ```a``` 
 and pushes the result ```c``` to the stack, leaving stack ```c```.
@@ -140,7 +160,10 @@ Float 3.1399999
 Double 2.01828
 ```
 
-#### * 
+#### Operator: ```*``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Multiplies the top two elements of the stack together. As with ```+``` and ```-``` , 
 the types must match and the valid types for ```*``` are: ```Integer```, ```BigInteger```, ```Float```, ```Double```, and ```Boolean```.
 For the first four types ```*``` acts as multiplication. For ```Boolean``` it acts as a logical AND.
@@ -156,7 +179,10 @@ Double 445.2
 Boolean False
 ```
 
-#### / 
+#### Operator: ```/``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```a b``` where ```a``` and ```b``` are both of type ```t``` in which ```t``` can be
 types: ```Integer```, ```BigInteger```, ```Float```, and ```Double```. The operator ```/``` then
 pops ```a``` and ```b``` and divides ```a``` by ```b```, getting resulting value ```c``` still 
@@ -173,7 +199,10 @@ Float 1.5
 Double 3.1415929203539825
 ```
 
-#### swap 
+#### Operator: ```swap``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Swaps the top two items on top of the stack. If the stack is empty 
 or only one item is on the stack, nothing happens. In terms of types, any two items 
 of any data type can be swapped on the stack. Generally, given stack: ```x y```, 
@@ -188,11 +217,14 @@ swap
 
 Final Stack: 
 ```
-String "bar" 
-String "foo"
+String {chrs = "bar", len = 3}
+String {chrs = "foo", len = 3}
 ```
 
-#### drop 
+#### Operator: ```drop``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Easily the most common operator. Given stack ```x y z```, drop removes the top item from the stack. 
 In this case, applying drop to the stack gives ```x y```, removing ```z```.
 If the stack is empty when ```drop``` is used, nothing happens.
@@ -201,12 +233,15 @@ Example Program: <br>
 	```"foo" 42 1.414 666 drop``` <br>
 Final Stack: 
 ```
-String "foo" 
-Integer 42 
+String {chrs = "foo", len = 3}
+Integer 42
 Float 1.414
 ```
 
-#### rot 
+#### Operator: ```rot``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Rotates the top three items of the stack to the right. 
 If only two operands are on stack it acts like the ```swap``` operator, and if only one or no items exist, nothing happens. 
 The operator ```rot``` can work with any types involved.
@@ -216,12 +251,15 @@ Example Program: <br>
 	```"foo" "bar" "baz" rot```<br>
 Final Stack: 
 ```
-String "baz" 
-String "foo" 
-String "bar"
+String {chrs = "baz", len = 3}
+String {chrs = "foo", len = 3}
+String {chrs = "bar", len = 3}
 ```
 
-#### dup 
+#### Operator: ```dup``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Pushes a duplicate of the top element of the stack or does nothing if stack is empty. 
 Like ```swap```, ```drop```, and ```rot```, ```dup``` works with any type on the stack. In general, given a stack: ```x```, 
 using ```dup``` results in the stack: ```x x```.
@@ -236,10 +274,13 @@ Integer 3
 Integer 3
 ```
 
-#### == 
+#### Operator: ```==``` 
+
+##### Performance: ```Worst Case: O(n) Best Case: O(1)``` <br> (Constant time for all types except lists which is linear if lengths of two lists being compared equal each other.)
+
 Determines if the top two elements of a stack are equal to each other. 
 Pops top two items and pushes a ```Boolean``` based on equality. 
-For example, given stack: ```x y```, ```x``` and ```y``` are popped and checked if ```x``` is equal to ```y```. 
+For example, given stack: ```x y```, where both items are NOT type ```Object```, ```x``` and ```y``` are popped and checked if ```x``` is equal to ```y```. 
 If so, ```True``` is pushed and ```False``` otherwise. 
 For a valid comparison to be made, the types of ```x``` and ```y``` must match, otherwise an error is thrown.
 
@@ -255,7 +296,10 @@ Boolean False
 Boolean True
 ```
 
-#### /= 
+#### Operator: ```/=``` 
+
+##### Performance: ```Worst Case: O(n) Best Case: O(1)``` <br> (Constant time for all types except lists which is linear.)
+
 Exactly the same as ```==``` except it pushes the opposite Boolean to the stack.
 The types of the operands also need to match for this to work.
 
@@ -271,10 +315,13 @@ Boolean True
 Boolean False
 ```
 
-#### > 
+#### Operator: ```>``` 
+
+##### Performance: ```Worst Case: O(n) Best Case: O(1)``` <br> (Constant time for all types except lists which is linear.)
+
 Determines if the second to top element is greater than the top element of the stack. 
 Pushes ```Boolean``` based on the truth value of the expression. If the types don't match, an error occurs.
-Generally, given stack: ```x y```, it pops ```x``` and ```y``` to see if ```x``` is greater than ```y```
+Generally, given stack: ```x y```, where both items are NOT type ```Object```, it pops ```x``` and ```y``` to see if ```x``` is greater than ```y```
 and pushes a ```Boolean``` based on the result. 
 
 Example Program: <br>
@@ -289,7 +336,10 @@ Boolean True
 Boolean False
 ```
 
-#### < 
+#### Operator: ```<``` 
+
+##### Performance: ```Worst Case: O(n) Best Case: O(1)``` <br> (Constant time for all types except lists which is linear.)
+
 Acts like the greater than (```>```) operator but checks to see 
 if the second to top is LESS than the top, rather than greater.
 Types of the two comparison operands need to match. <br>
@@ -305,9 +355,12 @@ Boolean False
 Boolean True
 ```
 
-#### >= 
+#### Operator: ```>=``` 
+
+##### Performance: ```Worst Case: O(n) Best Case: O(1)``` <br> (Constant time for all types except lists which is linear.)
+
 Examines if second to top element is greater than or equal to the top element of the stack.
-Types need to match. Given stack: ```x y```, it is determined if ```x``` is greater than or equal to ```y```. 
+Types need to match. Given stack: ```x y```, where both items are NOT type ```Object```, it is determined if ```x``` is greater than or equal to ```y```. 
 
 Example Program: <br>
 	```"foo" "foo" >= 99 100 >= 3.14 2.718 >= 69.420d 420.69d >= 'c' 'a' >= true true >=``` <br>
@@ -321,7 +374,10 @@ Foolean True
 Boolean True
 ```
 
-#### <= 
+#### Operator: ```<=``` 
+
+##### Performance: ```Worst Case: O(n) Best Case: O(1)``` <br> (Constant time for all types except lists which is linear.)
+
 Acts like the greater than equal to operator (```>=```) but has generally opposite results 
 by checking if the second to top of the stack is LESS than or equal to the top.
 Types of operands need to match or an error occurs.
@@ -338,7 +394,10 @@ Boolean False
 Boolean True 
 ```
 
-#### % 
+#### Operator: ```%``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```x y```, ```x``` and ```y``` are popped and ```x``` modulo (division but finding the remainder instead of the quotient) ```y``` 
 is performed with the result pushed on the stack. 
 In other words, the second to top item of the stack is modded by the top item of the stack.
@@ -357,7 +416,10 @@ BigInteger 2
 Integer 199
 ```
 
-#### and 
+#### Operator: ```and``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```x y```, where ```x``` and ```y``` are of type Boolean, the operator ```and``` pops ```x``` and ```y``` 
 and performs a logical AND operation on them, pushing the Boolean result to the stack. ```True``` is only
 pushed if ```x``` and ```y``` are both ```True```.
@@ -372,7 +434,10 @@ Boolean False
 Boolean False
 ```
 
-#### or 
+#### Operator: ```or``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```x y```, where ```x``` and ```y``` are of type Boolean, the operator ```or``` pops ```x``` and ```y``` 
 and performs a logical OR operation on them, pushing the Boolean result to the stack.
 ```False``` is only pushed when ```x``` and ```y``` are both ```False```. 
@@ -387,7 +452,10 @@ Boolean True
 Boolean False
 ```
 
-#### xor 
+#### Operator: ```xor``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```x y```, where ```x``` and ```y``` are of type Boolean, the operator ```xor``` pops ```x``` and ```y``` and performs a logical XOR (eXclusive OR) operation on them, 
 pushing the Boolean result to the stack. ```True``` is only pushed when ```x``` is ```true``` and ```y``` is ```false``` or ```x``` is ```false``` and ```y``` is ```true```.
 
@@ -401,7 +469,10 @@ Boolean True
 Boolean False
 ```
 
-#### not 
+#### Operator: ```not``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```x```, where ```x``` is of type Boolean, the operator ```not``` pops ```x``` and peforms a logical NOT operation on ```x```, pushing the opposite Boolean to the stack. 
 
 Example Program: <br>
@@ -412,7 +483,10 @@ Boolean True
 Boolean False
 ```
 
-#### pow 
+#### Operator: ```pow``` 
+
+##### Performance: ```O(1)``` (constant time)
+
 Given stack: ```x y```, where ```x``` and ```y``` are of type ```t``` which can be: 
 ```Float``` or ```Double```, ```x``` and ```y``` are popped and ```x``` is raised to the power of ```y```, yielding an exponent result that's pushed to the stack. 
 
@@ -426,22 +500,35 @@ Float 1.4142135
 Float 3.0
 ```
 
-#### ++ 
-Given stack: ```x y```, where ```x``` and ```y``` are of type ```String``` or ```List```, ```x``` and ```y``` are popped and concatenated together, with the result being pushed onto the stack.
+#### Operator: ```++``` 
+
+##### Performance: ```O(n + m)``` <br> 
+(Linear time where n is the number of things in the first String/List and m is the number of items in the second String/List.)
+
+Given stack: ```x y```, where ```x``` and ```y``` are both the same type ```String``` or ```List```, ```x``` and ```y``` are popped and concatenated together, with the result being pushed onto the stack.
 
 Example Program: <br>
 	```"foo " "bar" ++ [] 1 p 2 p 3 p [] 4 p 5 p 6 p ++```<br>
 Final Stack: 
 ```
-String "foo bar"
-List [Integer 1, Integer 2, Integer 3, Integer 4, Integer 5, Integer 6]
+String {chrs = "foo bar", len = 7}
+[Integer 1, Integer 2, Integer 3, Integer 4, Integer 5, Integer 6]
 ``` 
 
 How the ```p``` aka ```push``` operator works is discussed below.
 
-#### push 
+#### Operator: ```push``` 
+
+##### Performance: 
+```
+Lists: O(log(n))
+Strings O(n)
+``` 
+
+(Logarithmic time for Lists and linear time for Strings.)
+
 Given stack: ```x y```, where ```x``` is of type ```String``` or ```List```, and ```y``` is of type ```Char``` for a ```String``` 
-and ANY type for a ```List```, ```x``` and ```y``` are popped and ```x``` is pushed into ```x``` using the ```push``` aka ```p``` operator. 
+and ANY type for a ```List```, ```x``` and ```y``` are popped and ```y``` is pushed into ```x``` using the ```push``` aka ```p``` operator. 
 This operator is how lists are built in EcksDee and can be how extra characters are added 
 to strings. The operator ```push``` and ```p``` are synonymous. Having a shortened version 
 of ```push``` just makes it easier to manually build a list in code.
@@ -456,14 +543,24 @@ Example Program:
 
 Final Stack: 
 ```
-List [String "foo", String "bar", String "baz"] 
-List [Integer 2, Integer 4, Integer 6, Integer 8] 
-String "Pushed Char: c"
-List [String "lists", String "can", Integer 2, 
-	String "have", Char 'c', String "multiple", String "types"]
+[String {chrs = "foo", len = 3}, String {chrs = "bar", len = 3}, String {chrs = "baz", len = 3}]
+[Integer 2, Integer 4, Integer 6, Integer 8]
+String {chrs = "Pushed Char: c", len = 14}
+[String {chrs = "lists", len = 5}, String {chrs = "can", len = 3}, Integer 2, 
+String {chrs = "have", len = 4}, Char 'c', String {chrs = "multiple", len = 8}, 
+String {chrs = "types", len = 5}]
 ```
 
-#### pop 
+#### Operator: ```pop``` 
+
+##### Performance: 
+```
+Lists: O(log(n))
+Strings O(n)
+```
+
+(Logarithmic time for Lists, linear time for Strings.) 
+
 Given stack: ```x```, where ```x``` is of type ```String``` or ```List```. Item ```x``` is popped from the stack, the last item is removed from the list or string, 
 with the altered ```String```/```List``` pushed back on with the ```Char```/```Value``` pushed also.
 If the ```String```/```List``` is empty, nothing happens except the empty ```String```/```List``` is pushed back to the stack. Operators ```pop``` and ```po``` are equivalent.
@@ -473,13 +570,22 @@ Example Program: <br>
 	```"Hello, Worldz" pop [] 1 p 2 p 3 p 77 p pop```<br>
 Final Stack: 
 ```
-String "Hello, World" 
+String {chrs = "Hello, World", len = 12}
 Char 'z'
-List [Integer 1, Integer 2, Integer 3] 
+[Integer 1, Integer 2, Integer 3]
 Integer 77
 ```
 
-#### fpush 
+#### Operator: ```fpush``` 
+
+##### Performance: 
+```
+Lists: O(n * log(n))
+Strings O(1)
+``` 
+
+(Linear logarithmic time for lists. Constant time for Strings!)
+
 Given stack: ```x y``` where ```x``` is of type ```String```/```List``` and ```x``` is of type ```Char```/Any. 
 Items ```x``` and ```y``` are popped and ```y``` is pushed to the front of ```x``` 
 with the result being pushed back to the stack. 
@@ -489,11 +595,21 @@ Example Program: <br>
 	```[] "foo" fpush "bar" fpush "baz" fpush " is a front pushed Char" 'c' fp```<br>
 Final Stack: 
 ```
-List [String "baz", String "bar", String "foo"] 
-String "c is a front pushed Char"
+[String {chrs = "baz", len = 3}, 
+String {chrs = "bar", len = 3}, String {chrs = "foo", len = 3}]
+String {chrs = "c is a front pushed Char", len = 24}
 ```
 
-#### fpop 
+#### Operator: ```fpop``` 
+
+##### Performance: 
+```
+Lists: O(n * log(n))
+Strings O(1)
+``` 
+
+(Linear logarithmic time for lists. Constant time for Strings!)
+
 Given stack: ```x```, ```fpop``` or ```fpo``` pops an item from the front of a ```String``` or ```List``` instead of the back like ```pop```/```po``` does. The altered ```String```/```List``` is then pushed back on the stack and the front popped ```Char```/Value is pushed onto the stack afterwards.
 
 Example Program: <br>
@@ -507,13 +623,22 @@ fpo
 
 Final Stack: 
 ```
-String "There was a Char that doesn't belong at the start of this sentence."
+String {chrs = "There was a Char that doesn't belong at the start of this sentence.", len = 67}
 Char '9'
-List [Integer 1, Integer 2, Integer 3]
+[Integer 1, Integer 2, Integer 3]
 Integer 666
 ```
 
-#### index 
+#### Operator: ```index``` 
+
+##### Performance: 
+```
+Lists: O(log(n))
+Strings O(n)
+``` 
+
+(Logarithmic time for lists. Linear time for Strings.)
+
 Given stack: ```x y```, where ```x``` is of type ```String```/```List``` and ```y``` is of type ```Integer```. Item ```y``` is popped and used as an index into ```x```. If the index is valid, 
 then the ```Char```/Value contained in ```x``` at index ```y``` is duplicated and pushed onto the stack. 
 The item ```x``` remains unchanged.
@@ -522,86 +647,148 @@ Example Program:<br>
 	```[] 1 p 2 p 3 p 1 index "foo bar baz" 0 index``` <br>
 Final Stack: 
 ```
-List [Integer 1, Integer 2, Integer 3] 
+[Integer 1, Integer 2, Integer 3]
 Integer 2
-String "foo bar baz" 
+String {chrs = "foo bar baz", len = 11}
 Char 'f'
 ```
 
-#### length 
+#### Operator: ```length``` 
+
+##### Performance: 
+```
+O(1)
+``` 
+
+(Constant time)
+
 Given stack: ```x```, where ```x``` is of type ```String```/```List```. 
-The operator ```length``` or ```len``` determines the length of the ```String```/```List``` 
+The operator ```length``` or ```len``` fetches the length of the ```String```/```List``` 
 and pushes the resulting length as an ```Integer``` to the stack.
 
 Example Program:<br>
-	```"foo bar baz" length [] 1 p 2 p 3 p "wow!" p len``` <br>
+	```"foo bar baz" length [] 1 p 2 p 3 p "wow!" p 666 p len``` <br>
 Final Stack: 
 ```
-String "foo bar baz", 
-Integer 11, 
-List [Integer 1,Integer 2,Integer 3,String "wow!"], 
-Integer 4
-```
+String {chrs = "foo bar baz", len = 11}
+Integer 11
+[Integer 1, Integer 2, Integer 3, String {chrs = "wow!", len = 4}, Integer 666]
+Integer 5
+``` 
 
-#### isEmpty 
-Given stack: ```x```, where ```x``` is of type ```String```/```List```. 
+#### Operator: ```isEmpty``` 
+
+##### Performance: 
+```
+O(1)
+``` 
+
+(Constant time)
+
+Given stack: ```x```, where ```x``` is of type ```String```/```List```/```Object```. 
 The operator ```isEmpty``` determines if ```x``` is empty 
 and pushes a ```Boolean``` to the stack based on that check.
 
 Example Program: <br>
-	```"" isEmpty [] isEmpty [] 1 p isEmpty "foo" isEmpty``` <br>
+	```"" isEmpty [] isEmpty [] 1 p isEmpty "foo" isEmpty {} isEmpty {} "foo" 42 addField isEmpty``` <br>
 Final Stack: 
 ```
-String "", 
-Boolean True, 
-List [], 
-Boolean True, 
-List [Integer 1], 
-Boolean False, 
-String "foo", 
+String {chrs = "", len = 0}
+Boolean True
+[]
+Boolean True
+[Integer 1]
+Boolean False
+String {chrs = "foo", len = 3}
+Boolean False
+{}
+Boolean True
+{foo : Integer 42}
 Boolean False
 ```
- 
-#### clear 
-Given stack: ```x```, where ```x``` is of type ```String```/```List```. 
-Pops ```x``` off the stack and pushes an empty ```String```/```List```, effectively clearing ```x```. 
+
+#### Operator: ```clear``` 
+
+##### Performance: 
+```
+O(1)
+``` 
+
+(Constant time)
+
+Given stack: ```x```, where ```x``` is of type ```String```/```List```/```Object```. 
+Pops ```x``` off the stack and pushes an empty ```String```/```List```/```Object```, effectively clearing ```x```. 
 
 Example program:  <br>
-	```"This string isn't empty!" clear [] 1 p 2 p clear``` <br>
+	```"This string isn't empty!" dup clear [] 1 p 2 p dup clear {} "bar" "foo" addField dup clear``` <br>
 Final Stack:
 ```
-String ""
-List []
+String {chrs = "This string isn't empty!", len = 24}
+String {chrs = "", len = 0}
+[Integer 1, Integer 2]
+[]
+{bar : String {chrs = "foo", len = 3}}
+{}
 ```
 
-#### contains 
-Given stack ```x y```, where ```x``` is a ```String```/```List``` and ```y``` is a ```Char```/Value. 
-Checks to see if ```y``` is contained in ```x``` and pushes ```Boolean``` to stack as a result, leaving original values.
+#### Operator: ```contains``` 
+
+##### Performance: 
+```
+Strings and Lists: O(n)
+Objects: O(log(n))
+``` 
+
+(Linear time for Strings and Lists. Logarithmic time for Objects.)
+
+Given stack ```x y```, where ```x``` is a ```String```/```List```/```Object``` and ```y``` is a ```Char```/Value/```String```. 
+Checks to see if ```y``` is contained in ```x``` and pushes a ```Boolean``` to stack as a result, leaving original values.
 
 Example Program:
 ```
-"foo" 
+"foo"
 'f' contains
-"bar" 
+"bar"
 'z' contains
-[] 1 p 2 p 3 p 
+
+[] 1 p 2 p 3 p
 2 contains
+
+{} "foo" 666 addField
+"foo" contains
+
+{} "foo" 666 addField
+"bar" contains
 ```
 
 Final Stack:
 ```
-String "foo"
+String {chrs = "foo", len = 3}
 Char 'f'
 Boolean True
-String "bar"
+String {chrs = "bar", len = 3}
 Char 'z'
 Boolean False
-List [Integer 1,Integer 2,Integer 3]
+[Integer 1, Integer 2, Integer 3]
 Integer 2
 Boolean True
+{foo : Integer 666}
+String {chrs = "foo", len = 3}
+Boolean True
+{foo : Integer 666}
+String {chrs = "bar", len = 3}
+Boolean False
 ```
 
-#### changeItemAt 
+#### Operator: ```changeItemAt``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
 Given stack: ```x y z```, where ```x``` is a ```List```, ```y``` is type Value, 
 and ```z``` is type ```Integer```.
 Pops ```x```, ```y```, and ```z```, and alters item at index ```z``` in ```x``` to item ```y``` and then pushes the altered list ```L``` to the stack, leaving stack: ```L```
@@ -613,6 +800,7 @@ Example Program:
 /' Demonstrates the change more easily. 
 This is a comment by the way. 
 This will be discussed more later on. '/
+
 dup 
 
 'b' 0 changeItemAt
@@ -620,11 +808,19 @@ dup
 
 Final Stack:
 ```
-List [Char 'f',Char 'o',Char 'o']
-List [Char 'b',Char 'o',Char 'o']
+[Char 'f', Char 'o', Char 'o']
+[Char 'b', Char 'o', Char 'o']
 ```
 
-#### isWhiteSpace 
+#### Operator: ```isWhiteSpace``` 
+
+##### Performance: 
+```
+O(1)
+``` 
+
+(Constant time)
+
 Given stack: ```x```, where ```x``` is type ```Char```. Determines if ```x``` is a whitespace character 
 and pushes a ```Boolean``` based on the result.
 
@@ -642,8 +838,19 @@ Char 'g'
 Boolean False
 ```
 
-#### cast 
-Given stack: ```x y```, where ```x``` is a Value that is **not** a ```List``` and ```y``` is a ```String```. The cast operator pops ```x``` and ```y``` and tries to cast ```x``` to the type spelled 
+#### Operator: ```cast``` 
+
+##### Performance: 
+```
+List to String: O(n)
+Object to String: O(n)
+BigInteger to String: O(n)
+All other casts: O(1)
+``` 
+
+(Linear time to stringify Lists, Objects, and BigIntegers. Constant time for all other casts.)
+
+Given stack: ```x y```, where ```x``` is a Value and ```y``` is a ```String```, The cast operator pops ```x``` and ```y``` and tries to cast ```x``` to the type spelled 
 out in the string ```y```. If the type is valid in the ```String``` ```y```, 
 the cast occurs and the casted value ```z``` is pushed to the stack, resulting in stack: ```z```.
 
@@ -665,12 +872,20 @@ dup
 
 Final Stack:
 ```
-String "Your number is: 150601872777831737268034534874546176"
+String {chrs = "Your number is: 150601872777831737268034534874546176", len = 52}
 Double 3.1415929203539825
 Integer 3
 ```
 
-#### printLine 
+#### Operator: ```printLine``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being printed.)
+
 Given stack: ```x```, where ```x``` is a String. 
 The operator printLine performs an IO action which writes the ```String``` ```x``` to standard output, 
 ending it with a newline character. The stack remains unchanged but the ```String``` ```x``` is printed.
@@ -695,9 +910,17 @@ Stdout:
 Hello, World!
 ```
 
-#### readLine 
+#### Operator: ```readLine``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being read from stdin.)
+
 Reads a ```String``` ending in a newline of input and pushes the ```String``` to the stack. 
-The example input given for Stdin is an example, any input ending with a new line could've gone there.
+The example input given for Stdin is an example, any input ending with a newline could've gone there.
 
 Example Program: <br>
 	```readLine```
@@ -709,7 +932,7 @@ This is some input!
 
 Final Stack:
 ```
-String "This is some input!"
+String {chrs = "This is some input!", len = 19}
 ```
 
 Example using full IO to illustrate that it's indeed neat:
@@ -733,6 +956,182 @@ Hello, Joe!
 
 Final Stack:
 ```
+```
+
+#### Operator: ```addField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y z``` where ```x``` is type ```Object```, ```y``` is type ```String```, and ```z``` is any Value type,
+pops the three values from the stack and adds the field named by ```String``` ```y``` with Value ```z``` to ```Object```
+```x```. This altered object ```o``` is pushed on the stack leaving stack ```o```. An error is thrown if the field already exists.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
+```
+
+#### Operator: ```getField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y``` where ```x``` is type ```Object``` and ```y``` is type ```String```,
+pops the two values from the stack, looks up the field named by ```String``` ```y``` and pushes the value ```z``` contained by field ```y```
+to the stack, yielding stack: ```x y z```. An error happens if the field doesn't exist in the object.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+
+/' Fetches value of foo contained in object '/
+
+"foo"
+getField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
+Integer 666
+```
+
+#### Operator: ```mutateField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y z``` where ```x``` is type ```Object```, ```y``` is type ```String```, and ```z``` is any Value type,
+pops the three values from the stack and mutates the field named by ```String``` ```y``` with Value ```z``` to ```Object```
+```x```. This altered object with the altered field ```o``` is pushed on the stack leaving stack ```o```. 
+An error is thrown if the field doesn't exist in the object or the type of the field's old value and the type of the new value don't match.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+
+/' Mutates value of foo and qux contained in object '/
+
+dup
+
+"foo"
+420
+mutateField
+
+/' Grabs the object value of qux 
+and mutates its field foo to the value BigInteger 42. 
+This updated object is then mutate for the new value of qux in the object. '/
+
+"qux" getField 
+"foo"
+42b
+mutateField
+"qux"
+swap
+mutateField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 420, 
+qux : {foo : BigInteger 42}}
+```
+
+#### Operator: ```removeField``` 
+
+##### Performance: 
+```
+O(log(n))
+``` 
+
+(Logarithmic time)
+
+Given a stack ```x y``` where ```x``` is type ```Object``` and ```y``` is type ```String```,
+pops the two values from the stack, looks up the field named by ```String``` ```y``` and removes field ```y``` from ```x```
+yielding an altered object without the field in it ```o``` that's pushed onto the stack, yielding stack ```o```. 
+An error is thrown if the field doesn't exist in the object ```x```.
+
+Example Program:
+```
+{}
+"foo"
+42
+addField
+{}
+"foo" 666 addField
+"bar" [] addField
+"baz" "This is a string!!!" addField
+"qux" {} "foo" 2829682985925825728957927572800002b addField addField
+
+dup
+
+/' Removes object from current object. '/
+
+"qux"
+removeField
+```
+
+Final Stack:
+```
+{foo : Integer 42}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666}
 ```
 
 ### While Loops
@@ -872,9 +1271,9 @@ else
 Final Stack:
 ```
 Boolean True
-String "I only push if I'm true!"
+String {chrs = "I only push if I'm true!", len = 24}
 Boolean False
-String "Forty two isn't bigger than sixty nine!"
+String {chrs = "Forty two isn't bigger than sixty nine!", len = 39}
 ```
 
 ### Functions
@@ -929,10 +1328,10 @@ func call foo ;
 
 Final Stack:
 ```
-String "First Run"
+String {chrs = "First Run", len = 9}
 Double 1.4142135623730951
 Double 12.076989632131767
-String "Second Run"
+String {chrs = "Second Run", len = 10}
 Double 1.4142135623730951
 Double 12.076989632131767
 ```
