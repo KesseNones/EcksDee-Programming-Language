@@ -217,8 +217,8 @@ swap
 
 Final Stack: 
 ```
-String "bar" 
-String "foo"
+String {chrs = "bar", len = 3}
+String {chrs = "foo", len = 3}
 ```
 
 #### Operator: ```drop``` 
@@ -233,8 +233,8 @@ Example Program: <br>
 	```"foo" 42 1.414 666 drop``` <br>
 Final Stack: 
 ```
-String "foo" 
-Integer 42 
+String {chrs = "foo", len = 3}
+Integer 42
 Float 1.414
 ```
 
@@ -251,9 +251,9 @@ Example Program: <br>
 	```"foo" "bar" "baz" rot```<br>
 Final Stack: 
 ```
-String "baz" 
-String "foo" 
-String "bar"
+String {chrs = "baz", len = 3}
+String {chrs = "foo", len = 3}
+String {chrs = "bar", len = 3}
 ```
 
 #### Operator: ```dup``` 
@@ -511,8 +511,8 @@ Example Program: <br>
 	```"foo " "bar" ++ [] 1 p 2 p 3 p [] 4 p 5 p 6 p ++```<br>
 Final Stack: 
 ```
-String "foo bar"
-List [Integer 1, Integer 2, Integer 3, Integer 4, Integer 5, Integer 6]
+String {chrs = "foo bar", len = 7}
+[Integer 1, Integer 2, Integer 3, Integer 4, Integer 5, Integer 6]
 ``` 
 
 How the ```p``` aka ```push``` operator works is discussed below.
@@ -1257,9 +1257,9 @@ else
 Final Stack:
 ```
 Boolean True
-String "I only push if I'm true!"
+String {chrs = "I only push if I'm true!", len = 24}
 Boolean False
-String "Forty two isn't bigger than sixty nine!"
+String {chrs = "Forty two isn't bigger than sixty nine!", len = 39}
 ```
 
 ### Functions
@@ -1314,10 +1314,10 @@ func call foo ;
 
 Final Stack:
 ```
-String "First Run"
+String {chrs = "First Run", len = 9}
 Double 1.4142135623730951
 Double 12.076989632131767
-String "Second Run"
+String {chrs = "Second Run", len = 10}
 Double 1.4142135623730951
 Double 12.076989632131767
 ```
