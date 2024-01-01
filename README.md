@@ -546,7 +546,9 @@ Final Stack:
 [String {chrs = "foo", len = 3}, String {chrs = "bar", len = 3}, String {chrs = "baz", len = 3}]
 [Integer 2, Integer 4, Integer 6, Integer 8]
 String {chrs = "Pushed Char: c", len = 14}
-[String {chrs = "lists", len = 5}, String {chrs = "can", len = 3}, Integer 2, String {chrs = "have", len = 4}, Char 'c', String {chrs = "multiple", len = 8}, String {chrs = "types", len = 5}]
+[String {chrs = "lists", len = 5}, String {chrs = "can", len = 3}, Integer 2, 
+String {chrs = "have", len = 4}, Char 'c', String {chrs = "multiple", len = 8}, 
+String {chrs = "types", len = 5}]
 ```
 
 #### Operator: ```pop``` 
@@ -593,7 +595,8 @@ Example Program: <br>
 	```[] "foo" fpush "bar" fpush "baz" fpush " is a front pushed Char" 'c' fp```<br>
 Final Stack: 
 ```
-[String {chrs = "baz", len = 3}, String {chrs = "bar", len = 3}, String {chrs = "foo", len = 3}]
+[String {chrs = "baz", len = 3}, 
+String {chrs = "bar", len = 3}, String {chrs = "foo", len = 3}]
 String {chrs = "c is a front pushed Char", len = 24}
 ```
 
@@ -984,7 +987,9 @@ addField
 Final Stack:
 ```
 {foo : Integer 42}
-{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
 ```
 
 #### Operator: ```getField``` 
@@ -1021,7 +1026,9 @@ getField
 Final Stack:
 ```
 {foo : Integer 42}
-{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
 Integer 666
 ```
 
@@ -1075,8 +1082,12 @@ mutateField
 Final Stack:
 ```
 {foo : Integer 42}
-{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
-{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 420, qux : {foo : BigInteger 42}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 420, 
+qux : {foo : BigInteger 42}}
 ```
 
 #### Operator: ```removeField``` 
@@ -1116,8 +1127,11 @@ removeField
 Final Stack:
 ```
 {foo : Integer 42}
-{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666, qux : {foo : BigInteger 2829682985925825728957927572800002}}
-{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, foo : Integer 666}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666, 
+qux : {foo : BigInteger 2829682985925825728957927572800002}}
+{bar : [], baz : String {chrs = "This is a string!!!", len = 19}, 
+foo : Integer 666}
 ```
 
 ### While Loops
