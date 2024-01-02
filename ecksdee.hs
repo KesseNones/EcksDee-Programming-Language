@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-31.01
+--Version: 2024-01-02.98
 --Toy Programming Language Named EcksDee
 
 {-
@@ -762,7 +762,7 @@ doPrintLine state = do
         then error "Operator (printLine) error. Can't print from empty stack!"
         else case (head stck) of 
             String {chrs = cs, len = l} -> putStrLn cs 
-            _ -> error "Operator (printLine) error. Top of stack must be a string to be printed!"
+            _ -> error "Operator (printLine) error. Top of stack must be a String to be printed!"
     return state
 
 --Reads a line from stdin, and pushes it onto stack.
@@ -771,6 +771,17 @@ doReadLine state = do
     let stck = (stack state)
     input <- getLine
     return (EDState{stack = ((String {chrs = input, len = length input}) : stck), fns = (fns state), vars = (vars state)})
+
+--Prints a char to stdout given at top of stack.
+doPrintChar :: EDState -> IO EDState
+doPrintChar state = do 
+    let stck = stack state
+    if (null stck)
+        then error "Operator (printChar) error. Can't print empty stack!"
+        else case (head stck) of 
+            Char c -> putChar c 
+            _ -> error "Operator (printChar) error. Top of stack must be type Char when printed!"
+    return state
 
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
@@ -988,6 +999,7 @@ doOp "cast" = doCast
 --IO stuff
 doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
+doOp "printChar" = doPrintChar
 
 --Object Operators
 doOp "addField" = doAddField 
