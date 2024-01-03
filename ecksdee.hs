@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-03.02
+--Version: 2024-01-03.03
 --Toy Programming Language Named EcksDee
 
 {-
@@ -774,7 +774,16 @@ doReadLine state = do
 
 doRead :: EDState -> IO EDState
 doRead state = do 
-    return state
+    captured <- doRead' ""
+    return (fsPush (String{chrs = captured, len = length captured}) state)
+
+doRead' :: String -> IO String 
+doRead' acc = do 
+    input <- getLine 
+    if (null input)
+        then return acc 
+        else doRead' (acc ++ input ++ ['\n'])
+
 
 --Prints a char to stdout given at top of stack.
 doPrintChar :: EDState -> IO EDState
