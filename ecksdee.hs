@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-03.04
+--Version: 2024-01-03.12
 --Toy Programming Language Named EcksDee
 
 {-
@@ -765,6 +765,17 @@ doPrintLine state = do
             _ -> error "Operator (printLine) error. Top of stack must be a String to be printed!"
     return state
 
+--Writes a string to stdout without adding a newline automatically to the end.
+doPrint :: EDState -> IO EDState
+doPrint state = do 
+    let stck = stack state
+    if (null stck)
+        then error "Operator (print) error. One operand needed for print!"
+        else case (head stck) of 
+            String{chrs = cs, len = l} -> putStr cs 
+            _ -> error "Operator (print) error. Top of stack needs to be a Sring to be printed!"
+    return state
+
 --Reads a line from stdin, and pushes it onto stack.
 doReadLine :: EDState -> IO EDState
 doReadLine state = do 
@@ -772,6 +783,7 @@ doReadLine state = do
     input <- getLine
     return (fsPush (String{chrs = input, len = length input}) state)
 
+--Reads a multi-line string from stdin.
 doRead :: EDState -> IO EDState
 doRead state = do 
     captured <- doRead' ""
@@ -789,7 +801,6 @@ doRead' acc = do
             if (null input)
                 then return acc 
                 else doRead' (acc ++ input ++ ['\n'])
-
 
 --Prints a char to stdout given at top of stack.
 doPrintChar :: EDState -> IO EDState
@@ -1027,7 +1038,7 @@ doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
 doOp "printChar" = doPrintChar
 doOp "readChar" = doReadChar
-
+doOp "print" = doPrint
 doOp "read" = doRead
 
 --Object Operators
