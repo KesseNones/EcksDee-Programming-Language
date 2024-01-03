@@ -877,7 +877,7 @@ Double 3.1415929203539825
 Integer 3
 ```
 
-#### Operator: ```printLine``` 
+#### Operator: ```print``` 
 
 ##### Performance: 
 ```
@@ -887,14 +887,13 @@ O(n)
 (Linear time based on size of string being printed.)
 
 Given stack: ```x```, where ```x``` is a String. 
-The operator printLine performs an IO action which writes the ```String``` ```x``` to standard output, 
-ending it with a newline character. The stack remains unchanged but the ```String``` ```x``` is printed.
-This is the OUT portion of IO.
+The operator print performs an IO action which writes the ```String``` ```x``` to standard output. 
+The stack remains unchanged. This operator prints the string as-is, without anything else happening.
 
 Example Program:
 ```
-"Hello, World!"
-printLine
+"Hello, World!\n"
+print
 /' Dropping the string leaves an empty stack. 
 As a result, all you see when running this program 
 is the hello world string getting printed.  '/
@@ -908,6 +907,37 @@ Final Stack:
 Stdout:
 ```
 Hello, World!
+```
+
+#### Operator: ```printLine``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being printed.)
+
+Works basically the same as ```print``` except for the fact that it automatically adds a newline (```\n```) to the end of the string being printed.
+
+Example Program:
+```
+/' \n not needed at the end of this string because it's automatically put there by printLine '/
+"Hello, World II: Electric Boogaloo!"
+printLine
+/' Dropping the string leaves an empty stack. 
+As a result, all you see when running this program 
+is the hello world string getting printed.  '/
+drop
+```
+
+Final Stack:
+```
+```
+
+Stdout:
+```
+Hello, World II: Electric Boogaloo!
 ```
 
 #### Operator: ```readLine``` 
