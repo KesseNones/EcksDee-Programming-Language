@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-02.98
+--Version: 2024-01-03.01
 --Toy Programming Language Named EcksDee
 
 {-
@@ -783,6 +783,13 @@ doPrintChar state = do
             _ -> error "Operator (printChar) error. Top of stack must be type Char when printed!"
     return state
 
+--Reads a Char from stdin and pushes it to the stack.
+doReadChar :: EDState -> IO EDState 
+doReadChar state = do 
+    let stck = stack state
+    inChar <- getChar 
+    return (fsPush (Char inChar) state)
+
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
 -- pushes true if yes and false if no.
@@ -1000,6 +1007,7 @@ doOp "cast" = doCast
 doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
 doOp "printChar" = doPrintChar
+doOp "readChar" = doReadChar
 
 --Object Operators
 doOp "addField" = doAddField 
