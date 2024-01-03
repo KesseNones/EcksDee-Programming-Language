@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-03.03
+--Version: 2024-01-03.04
 --Toy Programming Language Named EcksDee
 
 {-
@@ -777,12 +777,18 @@ doRead state = do
     captured <- doRead' ""
     return (fsPush (String{chrs = captured, len = length captured}) state)
 
+--Reads a multi-line string from stdin until 
+-- an empty string is read or EOF is hit.
 doRead' :: String -> IO String 
 doRead' acc = do 
-    input <- getLine 
-    if (null input)
-        then return acc 
-        else doRead' (acc ++ input ++ ['\n'])
+    isEnd <- isEOF
+    if (isEnd) 
+        then return acc
+        else do 
+            input <- getLine 
+            if (null input)
+                then return acc 
+                else doRead' (acc ++ input ++ ['\n'])
 
 
 --Prints a char to stdout given at top of stack.
