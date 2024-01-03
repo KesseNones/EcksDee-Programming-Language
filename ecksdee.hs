@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-03.01
+--Version: 2024-01-03.02
 --Toy Programming Language Named EcksDee
 
 {-
@@ -770,7 +770,11 @@ doReadLine :: EDState -> IO EDState
 doReadLine state = do 
     let stck = (stack state)
     input <- getLine
-    return (EDState{stack = ((String {chrs = input, len = length input}) : stck), fns = (fns state), vars = (vars state)})
+    return (fsPush (String{chrs = input, len = length input}) state)
+
+doRead :: EDState -> IO EDState
+doRead state = do 
+    return state
 
 --Prints a char to stdout given at top of stack.
 doPrintChar :: EDState -> IO EDState
@@ -1008,6 +1012,8 @@ doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
 doOp "printChar" = doPrintChar
 doOp "readChar" = doReadChar
+
+doOp "read" = doRead
 
 --Object Operators
 doOp "addField" = doAddField 
