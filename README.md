@@ -940,6 +940,7 @@ Stdout:
 Hello, World II: Electric Boogaloo!
 ```
 
+
 #### Operator: ```read``` 
 
 ##### Performance: 
@@ -1050,6 +1051,63 @@ Hello, Joe!
 
 Final Stack:
 ```
+```
+
+#### Operator: ```readChar```
+
+##### Performance:
+```
+O(1)
+```
+
+(Constant time since it's one character being read.)
+
+Reads a ```Char``` from stdin and pushes the ```Char``` to the stack.
+
+Example Program:
+```
+readChar
+```
+
+Stdin:
+```
+a
+```
+
+Final Stack:
+```
+Char 'a'
+```
+
+This operator only consumes one ```Char``` at a time. 
+
+Example with Same Program as Before:
+
+Stdin:
+```
+abc
+```
+
+Final Stack:
+```
+Char 'a'
+```
+
+Example Program to Show how the Consumtion Works:
+```
+readChar
+readLine
+```
+
+Stdin:
+```
+abc
+```
+
+Final Stack:
+```
+Char 'a'
+String {chrs = "bc", len = 2}
 ```
 
 #### Operator: ```addField``` 
