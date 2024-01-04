@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-03.12
+--Version: 2024-01-04.47
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1394,13 +1394,22 @@ lexToken t
     | t == "{}" = Val $ Object {fields = M.empty} --Empty object case.
     | (head t) == '"' && (last t) == '"' =
         let str = read t :: String
-        in Val $ String { chrs = str, len = length str }  --String case                                                                  
-    | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
+        in Val $ String { chrs = str, len = length str }  --String case
+    | isValidChar t = Val $ Char (read t :: Char) --Char case.
     | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
     | (last t == 'd') && ((isNum (if head t == '-' then tail $ init t else init t)) == 1) = Val $ Double (read (init t) :: Double) -- Double case
     | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
     | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case
     | otherwise = Word t                             
+
+--Determines if a string can be casted to a char.
+isValidChar :: String -> Bool
+isValidChar str = 
+    let parseRes = readMaybe str :: Maybe Char
+        isValid = case parseRes of 
+            Just _ -> True
+            Nothing -> False
+    in isValid 
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
 tokenize :: String -> [Token]
