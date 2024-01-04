@@ -940,6 +940,33 @@ Stdout:
 Hello, World II: Electric Boogaloo!
 ```
 
+#### Operator: ```printChar```
+
+##### Performance:
+```
+O(1)
+```
+
+(Constant time since it's one character being printed.)
+
+Given stack ```x``` where ```x``` is of type ```Char```, prints ```x``` to stdout, 
+leaving ```x``` on the stack. 
+
+Example Program:
+```
+'a'
+printChar
+```
+
+Stdout:
+```
+a
+```
+
+Final Stack:
+```
+Char 'a'
+```
 
 #### Operator: ```read``` 
 
