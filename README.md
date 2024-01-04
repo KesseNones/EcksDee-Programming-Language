@@ -940,6 +940,67 @@ Stdout:
 Hello, World II: Electric Boogaloo!
 ```
 
+#### Operator: ```read``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being read from stdin.)
+
+Reads a ```String``` from stdin and pushes the ```String``` to the stack. 
+The example input given for stdin is an example, any input could've gone there.
+
+Example Program: <br>
+	```read```
+
+Stdin:
+```
+This
+is
+multiline
+input!!!
+
+```
+
+Final Stack:
+```
+String {chrs = "This\nis\nmultiline\ninput!!!\n", len = 27}
+```
+
+Example using full IO to illustrate multi-line capability:
+```
+"Enter a statement to be printed: "
+printLine
+drop
+
+read
+
+"You wrote: \n"
+swap ++
+printLine
+drop
+```
+
+TERMINAL:
+```
+Enter a statement to be printed:
+This is a multiline statement.
+This will go until an extra newline is entered.
+Also will go until EOF is reached.
+
+You wrote:
+This is a multiline statement.
+This will go until an extra newline is entered.
+Also will go until EOF is reached.
+
+```
+
+Final Stack:
+```
+```
+
 #### Operator: ```readLine``` 
 
 ##### Performance: 
@@ -951,6 +1012,9 @@ O(n)
 
 Reads a ```String``` ending in a newline of input and pushes the ```String``` to the stack. 
 The example input given for Stdin is an example, any input ending with a newline could've gone there.
+
+Generally ```readLine``` is more convenient for basic input 
+and ```read``` is better for parsing large input strings. 
 
 Example Program: <br>
 	```readLine```
