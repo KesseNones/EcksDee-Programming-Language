@@ -219,6 +219,11 @@ doDrop state = do
         let (state', a) = fsPop state
         in return (state')
 
+--Clears the entire stack to empty. 
+-- Avoids having to type drop over and over again.
+doDropStack :: EDState -> IO EDState
+doDropStack EDState{stack = _, fns = fs, vars = vs} = return (EDState{stack = [], fns = fs, vars = vs})
+
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
 --2 Items is identical to swap.
@@ -999,6 +1004,7 @@ doOp "*"  = doMul
 doOp "/"  = doDiv  
 doOp "swap"  = doSwap  
 doOp "drop"  = doDrop  
+doOp "dropStack" = doDropStack
 doOp "rot"  = doRot  
 doOp "dup"  = doDup 
 doOp "=="  = doEqual 
@@ -1031,6 +1037,7 @@ doOp "clear" = doClear
 doOp "contains" = doContains
 doOp "changeItemAt" = doChangeItemAt --Changes item in list at a specified index.
 doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
+
 --Type stuff
 doOp "cast" = doCast
 --IO stuff
