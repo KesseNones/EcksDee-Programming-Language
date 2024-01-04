@@ -238,6 +238,23 @@ Integer 42
 Float 1.414
 ```
 
+#### Operator: ```dropStack``` 
+
+##### Performance: ```O(1)``` (constant time)
+
+Clears the entire stack. Can be used if the stack is really full 
+and the user doesn't want to type ```drop``` over and over again.
+
+**Be aware!** The stack is a global data structure in EcksDee, 
+therefore if you use ```dropStack``` it will clear the stack in all contexts, 
+including any data desired to be saved.
+
+Example Program: <br>
+	```"foo" 42 1.414 666 dropStack``` <br>
+Final Stack: 
+```
+```
+
 #### Operator: ```rot``` 
 
 ##### Performance: ```O(1)``` (constant time)
