@@ -238,6 +238,23 @@ Integer 42
 Float 1.414
 ```
 
+#### Operator: ```dropStack``` 
+
+##### Performance: ```O(1)``` (constant time)
+
+Clears the entire stack. Can be used if the stack is really full 
+and the user doesn't want to type ```drop``` over and over again.
+
+**Be aware!** The stack is a global data structure in EcksDee, 
+therefore if you use ```dropStack``` it will clear the stack in all contexts, 
+including any data desired to be saved.
+
+Example Program: <br>
+	```"foo" 42 1.414 666 dropStack``` <br>
+Final Stack: 
+```
+```
+
 #### Operator: ```rot``` 
 
 ##### Performance: ```O(1)``` (constant time)
@@ -877,7 +894,7 @@ Double 3.1415929203539825
 Integer 3
 ```
 
-#### Operator: ```printLine``` 
+#### Operator: ```print``` 
 
 ##### Performance: 
 ```
@@ -887,14 +904,13 @@ O(n)
 (Linear time based on size of string being printed.)
 
 Given stack: ```x```, where ```x``` is a String. 
-The operator printLine performs an IO action which writes the ```String``` ```x``` to standard output, 
-ending it with a newline character. The stack remains unchanged but the ```String``` ```x``` is printed.
-This is the OUT portion of IO.
+The operator print performs an IO action which writes the ```String``` ```x``` to standard output. 
+The stack remains unchanged. This operator prints the string as-is, without anything else happening.
 
 Example Program:
 ```
-"Hello, World!"
-printLine
+"Hello, World!\n"
+print
 /' Dropping the string leaves an empty stack. 
 As a result, all you see when running this program 
 is the hello world string getting printed.  '/
@@ -910,6 +926,126 @@ Stdout:
 Hello, World!
 ```
 
+#### Operator: ```printLine``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being printed.)
+
+Works basically the same as ```print``` except for the fact that it automatically adds a newline (```\n```) to the end of the string being printed.
+
+Example Program:
+```
+/' \n not needed at the end of this string because it's automatically put there by printLine '/
+"Hello, World II: Electric Boogaloo!"
+printLine
+/' Dropping the string leaves an empty stack. 
+As a result, all you see when running this program 
+is the hello world string getting printed.  '/
+drop
+```
+
+Final Stack:
+```
+```
+
+Stdout:
+```
+Hello, World II: Electric Boogaloo!
+```
+
+#### Operator: ```printChar```
+
+##### Performance:
+```
+O(1)
+```
+
+(Constant time since it's one character being printed.)
+
+Given stack ```x``` where ```x``` is of type ```Char```, prints ```x``` to stdout, 
+leaving ```x``` on the stack. 
+
+Example Program:
+```
+'a'
+printChar
+```
+
+Stdout:
+```
+a
+```
+
+Final Stack:
+```
+Char 'a'
+```
+
+#### Operator: ```read``` 
+
+##### Performance: 
+```
+O(n)
+``` 
+
+(Linear time based on size of string being read from stdin.)
+
+Reads a ```String``` from stdin and pushes the ```String``` to the stack. 
+The example input given for stdin is an example, any input could've gone there.
+
+Example Program: <br>
+	```read```
+
+Stdin:
+```
+This
+is
+multiline
+input!!!
+
+```
+
+Final Stack:
+```
+String {chrs = "This\nis\nmultiline\ninput!!!\n", len = 27}
+```
+
+Example using full IO to illustrate multi-line capability:
+```
+"Enter a statement to be printed: "
+printLine
+drop
+
+read
+
+"You wrote: \n"
+swap ++
+printLine
+drop
+```
+
+TERMINAL:
+```
+Enter a statement to be printed:
+This is a multiline statement.
+This will go until an extra newline is entered.
+Also will go until EOF is reached.
+
+You wrote:
+This is a multiline statement.
+This will go until an extra newline is entered.
+Also will go until EOF is reached.
+
+```
+
+Final Stack:
+```
+```
+
 #### Operator: ```readLine``` 
 
 ##### Performance: 
@@ -921,6 +1057,9 @@ O(n)
 
 Reads a ```String``` ending in a newline of input and pushes the ```String``` to the stack. 
 The example input given for Stdin is an example, any input ending with a newline could've gone there.
+
+Generally ```readLine``` is more convenient for basic input 
+and ```read``` is better for parsing large input strings. 
 
 Example Program: <br>
 	```readLine```
@@ -956,6 +1095,63 @@ Hello, Joe!
 
 Final Stack:
 ```
+```
+
+#### Operator: ```readChar```
+
+##### Performance:
+```
+O(1)
+```
+
+(Constant time since it's one character being read.)
+
+Reads a ```Char``` from stdin and pushes the ```Char``` to the stack.
+
+Example Program:
+```
+readChar
+```
+
+Stdin:
+```
+a
+```
+
+Final Stack:
+```
+Char 'a'
+```
+
+This operator only consumes one ```Char``` at a time. 
+
+Example with Same Program as Before:
+
+Stdin:
+```
+abc
+```
+
+Final Stack:
+```
+Char 'a'
+```
+
+Example Program to Show how the Consumtion Works:
+```
+readChar
+readLine
+```
+
+Stdin:
+```
+abc
+```
+
+Final Stack:
+```
+Char 'a'
+String {chrs = "bc", len = 2}
 ```
 
 #### Operator: ```addField``` 

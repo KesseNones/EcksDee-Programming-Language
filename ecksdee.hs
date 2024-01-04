@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2023-12-31.01
+--Version: 2024-01-04.47
 --Toy Programming Language Named EcksDee
 
 {-
@@ -218,6 +218,11 @@ doDrop state = do
     else 
         let (state', a) = fsPop state
         in return (state')
+
+--Clears the entire stack to empty. 
+-- Avoids having to type drop over and over again.
+doDropStack :: EDState -> IO EDState
+doDropStack EDState{stack = _, fns = fs, vars = vs} = return (EDState{stack = [], fns = fs, vars = vs})
 
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
@@ -762,7 +767,18 @@ doPrintLine state = do
         then error "Operator (printLine) error. Can't print from empty stack!"
         else case (head stck) of 
             String {chrs = cs, len = l} -> putStrLn cs 
-            _ -> error "Operator (printLine) error. Top of stack must be a string to be printed!"
+            _ -> error "Operator (printLine) error. Top of stack must be a String to be printed!"
+    return state
+
+--Writes a string to stdout without adding a newline automatically to the end.
+doPrint :: EDState -> IO EDState
+doPrint state = do 
+    let stck = stack state
+    if (null stck)
+        then error "Operator (print) error. One operand needed for print!"
+        else case (head stck) of 
+            String{chrs = cs, len = l} -> putStr cs 
+            _ -> error "Operator (print) error. Top of stack needs to be a Sring to be printed!"
     return state
 
 --Reads a line from stdin, and pushes it onto stack.
@@ -770,7 +786,44 @@ doReadLine :: EDState -> IO EDState
 doReadLine state = do 
     let stck = (stack state)
     input <- getLine
-    return (EDState{stack = ((String {chrs = input, len = length input}) : stck), fns = (fns state), vars = (vars state)})
+    return (fsPush (String{chrs = input, len = length input}) state)
+
+--Reads a multi-line string from stdin.
+doRead :: EDState -> IO EDState
+doRead state = do 
+    captured <- doRead' ""
+    return (fsPush (String{chrs = captured, len = length captured}) state)
+
+--Reads a multi-line string from stdin until 
+-- an empty string is read or EOF is hit.
+doRead' :: String -> IO String 
+doRead' acc = do 
+    isEnd <- isEOF
+    if (isEnd) 
+        then return acc
+        else do 
+            input <- getLine 
+            if (null input)
+                then return acc 
+                else doRead' (acc ++ input ++ ['\n'])
+
+--Prints a char to stdout given at top of stack.
+doPrintChar :: EDState -> IO EDState
+doPrintChar state = do 
+    let stck = stack state
+    if (null stck)
+        then error "Operator (printChar) error. Can't print empty stack!"
+        else case (head stck) of 
+            Char c -> putChar c 
+            _ -> error "Operator (printChar) error. Top of stack must be type Char when printed!"
+    return state
+
+--Reads a Char from stdin and pushes it to the stack.
+doReadChar :: EDState -> IO EDState 
+doReadChar state = do 
+    let stck = stack state
+    inChar <- getChar 
+    return (fsPush (Char inChar) state)
 
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
@@ -951,6 +1004,7 @@ doOp "*"  = doMul
 doOp "/"  = doDiv  
 doOp "swap"  = doSwap  
 doOp "drop"  = doDrop  
+doOp "dropStack" = doDropStack
 doOp "rot"  = doRot  
 doOp "dup"  = doDup 
 doOp "=="  = doEqual 
@@ -983,11 +1037,16 @@ doOp "clear" = doClear
 doOp "contains" = doContains
 doOp "changeItemAt" = doChangeItemAt --Changes item in list at a specified index.
 doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
+
 --Type stuff
 doOp "cast" = doCast
 --IO stuff
 doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
+doOp "printChar" = doPrintChar
+doOp "readChar" = doReadChar
+doOp "print" = doPrint
+doOp "read" = doRead
 
 --Object Operators
 doOp "addField" = doAddField 
@@ -1342,13 +1401,22 @@ lexToken t
     | t == "{}" = Val $ Object {fields = M.empty} --Empty object case.
     | (head t) == '"' && (last t) == '"' =
         let str = read t :: String
-        in Val $ String { chrs = str, len = length str }  --String case                                                                  
-    | (head t) == '\'' && (last t) == '\'' && length t == 3 = Val $ Char (read t :: Char) --Char case
+        in Val $ String { chrs = str, len = length str }  --String case
+    | isValidChar t = Val $ Char (read t :: Char) --Char case.
     | (last t == 'b') && ((isNum (if head t == '-' then tail $ init t else init t)) == 0) = Val $ BigInteger (read (init t) :: Integer) --BigInteger case
     | (last t == 'd') && ((isNum (if head t == '-' then tail $ init t else init t)) == 1) = Val $ Double (read (init t) :: Double) -- Double case
     | (isNum (if head t == '-' then tail t else t)) == 0 = Val $ Integer (read t :: Int) --Int Case
     | (isNum (if head t == '-' then tail t else t)) == 1 = Val $ Float (read t :: Float) --Float case
     | otherwise = Word t                             
+
+--Determines if a string can be casted to a char.
+isValidChar :: String -> Bool
+isValidChar str = 
+    let parseRes = readMaybe str :: Maybe Char
+        isValid = case parseRes of 
+            Just _ -> True
+            Nothing -> False
+    in isValid 
 
 -- Takes a whole program and turns it into a list of tokens. Calls "lexToken"
 tokenize :: String -> [Token]
