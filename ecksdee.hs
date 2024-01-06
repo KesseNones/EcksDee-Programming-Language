@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-04.47
+--Version: 2024-01-06.19
 --Toy Programming Language Named EcksDee
 
 {-
@@ -9,6 +9,7 @@
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
         -Standardize errors.
+        -Casting edge case may exist where BigInteger to Char works when it shouldn't!
 -}
 
 import Data.List
@@ -696,12 +697,27 @@ doCast' state (BigInteger n) (String {chrs = "Integer", len = _}) = fsPush (Inte
 doCast' state (BigInteger n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger n) state --Do nothing case.
 doCast' state (BigInteger n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
 doCast' state (BigInteger n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (BigInteger n) (String{chrs = "Char", len = _}) =
+    let nInt = fromIntegral n :: Int
+    in if validIntToChar nInt 
+        then fsPush (Char $ chr nInt) state
+        else error ("\nOperator (cast) error. " 
+            ++ "Failed to convert type BigInteger to Char." ++ 
+            "\nTry making sure the Integer is in the UTF-8 numerical range.\n"
+            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
 
 doCast' state (Integer n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
 doCast' state (Integer n) (String {chrs = "Integer", len = _}) = fsPush (Integer n) state --Do nothing case
 doCast' state (Integer n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (fromIntegral n :: Integer)) state 
 doCast' state (Integer n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
 doCast' state (Integer n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (Integer n) (String{chrs = "Char", len = _}) = 
+    if validIntToChar n 
+        then fsPush (Char $ chr n) state
+        else error ("\nOperator (cast) error. " 
+            ++ "Failed to convert type Integer to Char." ++ 
+            "\nTry making sure the Integer is in the UTF-8 numerical range.\n"
+            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
 
 doCast' state (Float n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
 doCast' state (Float n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
@@ -723,28 +739,28 @@ doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _})
     let mbyInt = readMaybe cs :: Maybe Int
         parsed = case mbyInt of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type Integer."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Integer.")
     in fsPush (Integer parsed) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "BigInteger", len = _}) = 
     let mbyBigInt = readMaybe cs :: Maybe Integer
         parsed = case mbyBigInt of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type BigInteger."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type BigInteger.")
     in fsPush (BigInteger parsed) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Float", len = _}) = 
     let mbyFlt = readMaybe cs :: Maybe Float
         parsed = case mbyFlt of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type Float."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Float.")
     in fsPush (Float parsed) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) = 
     let mbyDbl = readMaybe cs :: Maybe Double
         parsed = case mbyDbl of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type Double."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Double.")
     in fsPush (Double parsed) state
 
 doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
@@ -757,7 +773,12 @@ doCast' state (Object{fields = fs}) (String{chrs = "String", len = _}) =
         objStrLen = length objStr
     in fsPush (String{chrs = objStr, len = objStrLen}) state
 
-doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
+doCast' state val _ = error "Operator (cast) error.\nSecond argument of cast needs to be string or invalid cast configuration was given."
+
+--Determines if the number is 
+-- in the valid UTF-8 character number range for casting.
+validIntToChar :: Int -> Bool
+validIntToChar num = (num >= (ord minBound)) && (num <= (ord maxBound))
 
 --Prints top element of stack. This element must be a string or it freaks out.
 doPrintLine :: EDState -> IO EDState
