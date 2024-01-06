@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-04.47
+--Version: 2024-01-06.01
 --Toy Programming Language Named EcksDee
 
 {-
@@ -702,6 +702,10 @@ doCast' state (Integer n) (String {chrs = "Integer", len = _}) = fsPush (Integer
 doCast' state (Integer n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (fromIntegral n :: Integer)) state 
 doCast' state (Integer n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
 doCast' state (Integer n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (Integer n) (String{chrs = "Char", len = _}) = 
+    if validIntToChar n 
+        then fsPush (Char $ chr n) state
+        else error "Operator (cast) error. Failed to convert type Integer to Char.\nTry making sure the Integer is in the UTF-8 numerical range." 
 
 doCast' state (Float n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
 doCast' state (Float n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
@@ -758,6 +762,11 @@ doCast' state (Object{fields = fs}) (String{chrs = "String", len = _}) =
     in fsPush (String{chrs = objStr, len = objStrLen}) state
 
 doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
+
+--Determines if the number is 
+-- in the valid UTF-8 character number range for casting.
+validIntToChar :: Int -> Bool
+validIntToChar num = (num >= (ord minBound)) && (num <= (ord maxBound))
 
 --Prints top element of stack. This element must be a string or it freaks out.
 doPrintLine :: EDState -> IO EDState
