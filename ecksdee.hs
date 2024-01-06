@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.03
+--Version: 2024-01-06.19
 --Toy Programming Language Named EcksDee
 
 {-
@@ -9,6 +9,7 @@
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
         -Standardize errors.
+        -Casting edge case may exist where BigInteger to Char works when it shouldn't!
 -}
 
 import Data.List
@@ -738,28 +739,28 @@ doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _})
     let mbyInt = readMaybe cs :: Maybe Int
         parsed = case mbyInt of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type Integer."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Integer.")
     in fsPush (Integer parsed) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "BigInteger", len = _}) = 
     let mbyBigInt = readMaybe cs :: Maybe Integer
         parsed = case mbyBigInt of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type BigInteger."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type BigInteger.")
     in fsPush (BigInteger parsed) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Float", len = _}) = 
     let mbyFlt = readMaybe cs :: Maybe Float
         parsed = case mbyFlt of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type Float."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Float.")
     in fsPush (Float parsed) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) = 
     let mbyDbl = readMaybe cs :: Maybe Double
         parsed = case mbyDbl of 
                     Just val -> val 
-                    Nothing -> error "Operator (cast) error. Failed to convert String to type Double."
+                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Double.")
     in fsPush (Double parsed) state
 
 doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
@@ -772,7 +773,7 @@ doCast' state (Object{fields = fs}) (String{chrs = "String", len = _}) =
         objStrLen = length objStr
     in fsPush (String{chrs = objStr, len = objStrLen}) state
 
-doCast' state val _ = error "Operator (cast) error. Second argument of cast needs to be string."
+doCast' state val _ = error "Operator (cast) error.\nSecond argument of cast needs to be string or invalid cast configuration was given."
 
 --Determines if the number is 
 -- in the valid UTF-8 character number range for casting.
