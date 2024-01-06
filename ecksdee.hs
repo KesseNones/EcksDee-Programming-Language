@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.19
+--Version: 2024-01-06.21
 --Toy Programming Language Named EcksDee
 
 {-
@@ -734,6 +734,9 @@ doCast' state (Double n) (String {chrs = "Double", len = _}) = fsPush (Double n)
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "String", len = _}) = fsPush (String {chrs = cs, len = l}) state --Do nothing case.
 
 doCast' state (Char c) (String {chrs = "String", len = _}) = fsPush ( String {chrs = ("" ++ [c]), len = length ("" ++ [c])} ) state --Char to string cast.
+
+doCast' state (Char c) (String {chrs = "Integer", len = _}) = fsPush (Integer $ ord c) state
+doCast' state (Char c) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (fromIntegral (ord c) :: Integer)) state
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _}) = 
     let mbyInt = readMaybe cs :: Maybe Int
