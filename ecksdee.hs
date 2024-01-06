@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.02
+--Version: 2024-01-06.03
 --Toy Programming Language Named EcksDee
 
 {-
@@ -696,6 +696,14 @@ doCast' state (BigInteger n) (String {chrs = "Integer", len = _}) = fsPush (Inte
 doCast' state (BigInteger n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger n) state --Do nothing case.
 doCast' state (BigInteger n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
 doCast' state (BigInteger n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
+doCast' state (BigInteger n) (String{chrs = "Char", len = _}) =
+    let nInt = fromIntegral n :: Int
+    in if validIntToChar nInt 
+        then fsPush (Char $ chr nInt) state
+        else error ("\nOperator (cast) error. " 
+            ++ "Failed to convert type BigInteger to Char." ++ 
+            "\nTry making sure the Integer is in the UTF-8 numerical range.\n"
+            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
 
 doCast' state (Integer n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
 doCast' state (Integer n) (String {chrs = "Integer", len = _}) = fsPush (Integer n) state --Do nothing case
