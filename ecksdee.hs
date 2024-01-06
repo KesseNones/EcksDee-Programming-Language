@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.21
+--Version: 2024-01-06.26
 --Toy Programming Language Named EcksDee
 
 {-
@@ -818,6 +818,14 @@ doRead state = do
     captured <- doRead' ""
     return (fsPush (String{chrs = captured, len = length captured}) state)
 
+--Prints a desired error to stdout.
+doPrintError :: EDState -> IO EDState
+doPrintError state = do 
+    let stck = stack state
+    case stck of 
+        ((String{chrs = err, len = _}):xs) -> error err
+        _ -> error "\nOperator (printError) error.\nString needed on top of stack for error to print."
+
 --Reads a multi-line string from stdin until 
 -- an empty string is read or EOF is hit.
 doRead' :: String -> IO String 
@@ -1071,6 +1079,8 @@ doOp "printChar" = doPrintChar
 doOp "readChar" = doReadChar
 doOp "print" = doPrint
 doOp "read" = doRead
+
+doOp "printError" = doPrintError
 
 --Object Operators
 doOp "addField" = doAddField 
