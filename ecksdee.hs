@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.01
+--Version: 2024-01-06.02
 --Toy Programming Language Named EcksDee
 
 {-
@@ -705,7 +705,10 @@ doCast' state (Integer n) (String {chrs = "Double", len = _}) = fsPush (Double (
 doCast' state (Integer n) (String{chrs = "Char", len = _}) = 
     if validIntToChar n 
         then fsPush (Char $ chr n) state
-        else error "Operator (cast) error. Failed to convert type Integer to Char.\nTry making sure the Integer is in the UTF-8 numerical range." 
+        else error ("\nOperator (cast) error. " 
+            ++ "Failed to convert type Integer to Char." ++ 
+            "\nTry making sure the Integer is in the UTF-8 numerical range.\n"
+            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
 
 doCast' state (Float n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
 doCast' state (Float n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
