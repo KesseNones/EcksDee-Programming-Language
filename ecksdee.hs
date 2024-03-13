@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-13.86
+--Version: 2024-03-13.94
 --Toy Programming Language Named EcksDee
 
 {-
@@ -60,6 +60,8 @@ data AstNode =
     |   Function {funcCmd :: AstNode, funcName :: AstNode, funcBod :: AstNode}
 
     |   Variable {varName :: AstNode, varCmd :: AstNode}
+
+    |   LocVar {name :: AstNode, cmd :: AstNode}
 
     deriving ( Show )
 
@@ -1099,6 +1101,28 @@ doOp op = error $ "unrecognized word: " ++ op
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
 
+--Creates a local variable in the current scope. 
+-- Throws error if variable already exists.
+makeLoc :: EDState -> String -> IO EDState
+makeLoc state name = 
+    let look = M.lookup name (head $ frames state)
+    in case look of 
+        Just _ -> error ("Loc Mak Error:\nlocal Variable " ++ name ++ " already exists in current scope.") 
+        Nothing -> do 
+            let top = fsTop state
+            let frame' = M.insert name top (head $ frames state)
+            return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))})
+
+--Performs a lookup through all stack frames to find desired variable name.
+--If found, returns it, else returns Nothing.
+getLoc :: [M.Map String Value] -> String -> Maybe Value
+getLoc [] name = Nothing
+getLoc (f:fs) name = 
+    let look = M.lookup name f 
+    in case look of 
+        Just v -> Just v
+        Nothing -> getLoc fs name  
+
 makeVar :: EDState -> String -> IO EDState
 makeVar state varName = 
     let lkup = M.lookup varName (vars state)
@@ -1109,6 +1133,31 @@ makeVar state varName =
             let top = fsTop state
             let vars' = M.insert varName top (vars state)
             return (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
+
+--Recursively builds a new list of stack frames with the mutated variable in it.
+mutateLoc' :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
+mutateLoc' [] acc mutVal name = error ("SHOULD NEVER GET HERE!!!!!!")
+mutateLoc' (f:fs) acc mutVal name = 
+    let look = M.lookup name f 
+    in case look of 
+            Just _ -> 
+                let f' = M.insert name mutVal f
+                in acc ++ (f':fs) 
+            Nothing -> mutateLoc' fs (acc ++ [f]) mutVal name
+
+--Mutates a given local variable.
+mutateLoc :: EDState -> String -> IO EDState
+mutateLoc state name =
+    let locVarToChange = case (getLoc (frames state) name) of 
+            Just v -> v 
+            Nothing -> error ("Loc Mut Error:\nLocal Variable " ++ name ++ " not defined for mutation.")
+        newVal = fsTop state
+
+    in if (compareTypesForMut newVal locVarToChange) 
+            then
+                return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (mutateLoc' (frames state) [] newVal name)})
+            else error ("Loc Mut Error:\nCan't mutate local variable " ++ name ++ " to different type.")
+
 
 --Comapres types in order to enforce static typing when mutating variables.
 compareTypesForMut :: Value -> Value -> Bool
@@ -1223,6 +1272,33 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 
         other -> error ("Variable Command Error: Invalid variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut, del")
 
+--Runs all the different cases of local variable actions.
+doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
+    case (astNodeToString cmd) of
+        "mak" ->
+            let stackIsEmpty = null (stack state)
+            in if stackIsEmpty
+                then error ("Loc Mak Error: Can't create variable when stack is empty.\nAttempted local variable name: " ++ (astNodeToString name))
+                else do
+                    state' <- (makeLoc state (astNodeToString name))
+                    doNode (Expression rest) state'
+                           
+        "get" -> let findRes = getLoc (frames state) (astNodeToString name) 
+                 in case findRes of
+                    Just value -> let state' = fsPush value state
+                              in doNode (Expression rest) state' 
+                    Nothing -> error ("Loc Get Error:\nLocal Variable " ++ (astNodeToString name) ++ " not defined.")
+
+        "mut" -> 
+            let stackIsEmpty = null (stack state)
+            in if stackIsEmpty
+                then error ("Loc Mut Error: Can't mutate local variable when stack is empty.\nAttempted local variable name: " ++ (astNodeToString name))
+                else do 
+                    state' <- (mutateLoc state (astNodeToString name))
+                    doNode (Expression rest) state'
+
+        other -> error ("Local Variable Command Error: Invalid local variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut")
+
 --Runs while loop.                                                                                                                      
 doNode ( While loopBody ) state = do
     let stackIsEmpty = null (stack state)
@@ -1315,6 +1391,11 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
     | token == Word "var" = 
         let (varAct, variableName, remTokens) = parseVarAction tokens
             newParsed = alreadyParsed ++ [Variable{varName = variableName, varCmd = varAct}]
+        in parseExpression' newParsed remTokens terminators
+
+    | token == Word "loc" =
+        let (varAct, variableName, remTokens) = parseVarAction tokens
+            newParsed = alreadyParsed ++ [LocVar{name = variableName, cmd = varAct}]
         in parseExpression' newParsed remTokens terminators
         
     -- no special word found. We are parsing a list of operations. Keep doing this until 
@@ -1591,6 +1672,6 @@ main = do
         stateInit <- fsNew
         finalState <- (doNode ast stateInit)
         
-        putStrLn $ show $ length $ frames finalState
+        --putStrLn $ show $ length $ frames finalState
 
         printStack $ reverse $ (stack finalState) 
