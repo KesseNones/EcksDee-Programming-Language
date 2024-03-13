@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.26
+--Version: 2024-03-13.23
 --Toy Programming Language Named EcksDee
 
 {-
@@ -68,7 +68,8 @@ data AstNode =
 data EDState = EDState { 
     stack :: [Value], 
     fns :: M.Map String AstNode,
-    vars :: M.Map String Value
+    vars :: M.Map String Value,
+    frames :: [M.Map String Value]
 }
 
 --Adds two values together. If the types can't be added, throw an error.
@@ -204,8 +205,8 @@ doSwap :: EDState -> IO EDState
 doSwap state = do 
     let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
         vals -> do 
             let (state', b, a) = fsPop2 state
             let state'' = fsPush a state' 
@@ -223,7 +224,7 @@ doDrop state = do
 --Clears the entire stack to empty. 
 -- Avoids having to type drop over and over again.
 doDropStack :: EDState -> IO EDState
-doDropStack EDState{stack = _, fns = fs, vars = vs} = return (EDState{stack = [], fns = fs, vars = vs})
+doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms})
 
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
@@ -233,9 +234,9 @@ doRot :: EDState -> IO EDState
 doRot state = do 
     let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state)} )
-        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state)} )
         vals -> do 
             let (state', c, b, a) = fsPop3 state
             let state'' = fsPush a state'
@@ -247,7 +248,7 @@ doDup :: EDState -> IO EDState
 doDup state = do 
     let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
         vals -> do 
             let (state', top) = fsPop state
             let state'' = fsPush top state'
@@ -1107,7 +1108,7 @@ makeVar state varName =
         Nothing -> do 
             let top = fsTop state
             let vars' = M.insert varName top (vars state)
-            return (EDState{stack = (stack state), fns = (fns state), vars = vars'})
+            return (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
 
 --Comapres types in order to enforce static typing when mutating variables.
 compareTypesForMut :: Value -> Value -> Bool
@@ -1132,7 +1133,7 @@ mutateVar state varName = do
     case lkupVal of
         Just value -> if compareTypesForMut value newVal then 
             let vars' = M.insert varName newVal (vars state)
-            in return ( EDState{stack = (stack state), fns = (fns state), vars = vars'} )
+            in return ( EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} )
             else error ("Variable Mut Error: Can't mutate variable " ++ varName ++ " to different type.")
         Nothing -> error ("Variable Mut Error: Variable " ++ varName ++ " doesn't exist or was deleted")
 
@@ -1142,7 +1143,7 @@ funcDef state funcName funcBod =
     in case look of 
         Just bod -> error ("Function Def Error: Function of same name \"" ++ funcName ++ "\" already exists") 
         Nothing -> let fns' = M.insert funcName funcBod (fns state)
-                   in EDState{stack = (stack state), fns = fns', vars = (vars state)}
+                   in EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
 
 funcCall :: EDState -> String -> (EDState, AstNode)
 funcCall state funcName = 
@@ -1198,7 +1199,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
         "del" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
                     Just value -> let vars' = M.delete (astNodeToString name) (vars state)
-                           in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars'})
+                           in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
                     Nothing -> error ("Variable Del Error: Variable " ++ (astNodeToString name) ++ " doesn't exist.") 
 
         "mut" -> do 
@@ -1362,27 +1363,27 @@ parseWhile [] = error "while without closing semicolon."
 parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] tokens [";"]
                     in (Expression(loopBod), (remTokens))
     
--- create a new interpreter
+--Makes new interpretor state with default values.
 fsNew :: IO EDState
-fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty }
+fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty]}
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
-fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state)}
+fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state)}
 
 --Removes value from top of stack, returning it.
 fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
     let top = head (stack state) 
         newStack = tail (stack state)  
-    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state) }, top )
+    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state) }, top )
 
 --Removes the top two elements from the stack, returning them.
 fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
-    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state)}, secondToTop, top)
+    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state)}, secondToTop, top)
 
 --Removes top three elements from stack.
 fsPop3 :: EDState -> ( EDState, Value, Value, Value )
@@ -1390,7 +1391,7 @@ fsPop3 state =
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
         (state''', thirdToTop) = fsPop state''
-    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state)}, thirdToTop, secondToTop, top)
+    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state)}, thirdToTop, secondToTop, top)
 
 --Returns value at top of stack. 
 fsTop :: EDState -> Value 
