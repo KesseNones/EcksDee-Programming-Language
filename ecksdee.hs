@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-13.23
+--Version: 2024-03-13.86
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1152,6 +1152,17 @@ funcCall state funcName =
         Just body -> (state, body)
         Nothing -> error ("Function Call Error: Function \"" ++ funcName ++ "\" isn't defined.")
 
+--Used to add a stack frame when the scope increases. 
+addFrame :: EDState -> EDState
+addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state))}
+
+--Removes stack frame if not at global scope.
+removeFrame :: EDState -> EDState
+removeFrame EDState{stack = s, fns = f, vars = v, frames = [x]} = 
+    EDState{stack = s, fns = f, vars = v, frames = [x]}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs)} =
+    EDState{stack = s, fns = f, vars = v, frames = (xs)}
+
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
 
@@ -1165,8 +1176,8 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
 
     --Runs true branch if top is true, false if false, and errors out otherwise.
     case top of 
-        (Boolean True) -> doNode trueBranch state
-        (Boolean False) -> doNode falseBranch state
+        (Boolean True) -> doNode trueBranch (addFrame state)
+        (Boolean False) -> doNode falseBranch (addFrame state)
         _ -> error "If statement error:\nIf statement requires top of stack to be type Boolean to perform valid branching!"
 
 --Patterm matches function definition.
@@ -1175,7 +1186,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
         "def" -> doNode (Expression(rest)) (funcDef state (astNodeToString name) body)
         "call" -> do 
                     let (state', funcBod) = funcCall state (astNodeToString name)
-                    state'' <- (doNode funcBod state')
+                    state'' <- (doNode funcBod (addFrame state') )
                     doNode (Expression(rest)) state''
         other -> error ("Function Error: Invalid function command given.\nGiven: " ++ other ++ "\nValid: def, call")
 
@@ -1219,12 +1230,12 @@ doNode ( While loopBody ) state = do
         then error "While Loop error:\nNo boolean value for while loop to check because stack is empty." 
         else fsTop state
 
-    --Creates new stack if loop body runs.
+    --Creates new state if loop body runs.
     -- Otherwise newState is same as state.
     -- Errors out if top of stack isn't a boolean type.
     newState <- case top of 
-        (Boolean True) -> doNode (loopBody) state
-        (Boolean False) -> return (state)
+        (Boolean True) -> doNode (loopBody) (addFrame state)
+        (Boolean False) -> return state
         _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
 
     let stackIsEmpty' = null (stack newState)
@@ -1241,13 +1252,13 @@ doNode ( While loopBody ) state = do
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
-doNode ( Terminal ( Val v ) ) state = return (fsPush v state)
+doNode ( Terminal ( Val v ) ) state = return $ fsPush v state
 
 -- ...if it's a word, execute the operation
 doNode ( Terminal ( Word o ) ) state = doOp o state
 
 -- "doing" an empty expression does nothing
-doNode ( Expression [] ) state = return state
+doNode ( Expression [] ) state = return $ removeFrame state
 
 -- "doing" a non-empty expression tries to execute every node in the expression
 doNode ( Expression ( first:rest ) ) state = do  
@@ -1580,4 +1591,6 @@ main = do
         stateInit <- fsNew
         finalState <- (doNode ast stateInit)
         
+        putStrLn $ show $ length $ frames finalState
+
         printStack $ reverse $ (stack finalState) 
