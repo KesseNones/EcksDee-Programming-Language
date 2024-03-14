@@ -1590,6 +1590,12 @@ The super generalized variable syntax looks like this: <br>
 The ```CMD_KEYWORD``` has four valid potential values: ```mak```, ```get```, ```mut```, and ```del```.
 
 #### mak 
+Performance:
+```
+O(log(n))
+```
+Logarithmic time where `n` is the number of variables in existence.
+
 Short for "make", makes a variable. The ```mak``` keyword causes 
 the top value of the stack to be read and associated with the desired ```VAR_NAME``` given. 
 If the stack is empty, an error is thrown because there's no value to assign to ```VAR_NAME```.
@@ -1604,6 +1610,13 @@ Which saves top value ```x``` from the stack as ```VAR_NAME```.
 The original stack is unchanged.
 
 #### get 
+Performance:
+```
+O(log(n))
+```
+Logarithmic time where `n` is the number of variables in existence.
+
+
 The second most common ```CMD_KEYWORD```, this keyword gets the value held 
 in a variable and pushes it to the stack. 
 If the variable with ```VAR_NAME``` hasn't been made using ```mak``` yet, 
@@ -1613,6 +1626,12 @@ The general syntax for the get keyword is: <br>
 Which pushes the value ```x``` held by ```VAR_NAME``` onto the stack.
 
 #### mut 
+Performance:
+```
+O(log(n))
+```
+Logarithmic time where `n` is the number of variables in existence.
+
 Short for "mutate", commands ```VAR_NAME``` to hold a new value, effectively mutating it.
 If ```VAR_NAME``` hasn't been made with the ```mak``` keyword yet, 
 then an error is thrown because ```VAR_NAME``` isn't a variable yet and therefore can't be mutated.
@@ -1624,6 +1643,12 @@ Given stack: ```y``` and ```VAR_NAME``` with value ```x``` of type ```t```. If `
 The stack remains unchanged but the variable has been sucessfully mutated.
 
 #### del 
+Performance:
+```
+O(log(n))
+```
+Logarithmic time where `n` is the number of variables in existence.
+
 Short for "delete", deletes a variable from existence. 
 Since variables are global in scope by default, 
 the ```del``` keyword allows some manual scoping to occur, allowing the existence of more local variables.
@@ -1749,13 +1774,40 @@ since variables automatically follow scope.
 Here's a quick summary of all commands:
 All commands work on a base-level similarly to how it works for `var`.
 ##### mak
+Performance:
+```
+O(log(n))
+```
+Logarithmic time where `n` is the number of variables in given stack frame existence.
+
 Creates the variable with the same type as the item at the top of the stack.
 
 ##### get
+Performance:
+```
+O(m * log(n))
+```
+Linear-logarithmic time where `n` is the number of variables in 
+a given stack frame and `m` is the number of stack frames in existence.
+This would only happen if a local variable was to be found far away from the current program scope 
+where a lot of traversal would be needed.
+
 Traverses through all existing stack frames to find the desired variable name.
 Throws error if none is found and pushes value to stack if found.
 
-##### mut 
+##### mut
+Performance:
+```
+O(m^2 * log(n))
+```
+Polynomial second order logarithmic time where `n` is the number of variables in 
+a given stack frame and `m` is the number of stack frames in existence.
+This would only happen if a local variable was mutated far away from the current program scope 
+where a lot of traversal would be needed.
+
+The performance is so bad here because it has to reconstruct the list as it traverses in the worst-case. 
+In most cases though it won't be this bad since `m` and `n` are typically small.
+
 If variable has been found to exist and its value has the same type as the 
 value at the top of the stack, the variable is changed to that value at the top of the stack.
 
