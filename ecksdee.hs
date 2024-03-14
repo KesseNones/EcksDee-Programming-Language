@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-01-06.26
+--Version: 2024-03-13.94
 --Toy Programming Language Named EcksDee
 
 {-
@@ -61,6 +61,8 @@ data AstNode =
 
     |   Variable {varName :: AstNode, varCmd :: AstNode}
 
+    |   LocVar {name :: AstNode, cmd :: AstNode}
+
     deriving ( Show )
 
 -- This is the state of the interpreter. 
@@ -68,7 +70,8 @@ data AstNode =
 data EDState = EDState { 
     stack :: [Value], 
     fns :: M.Map String AstNode,
-    vars :: M.Map String Value
+    vars :: M.Map String Value,
+    frames :: [M.Map String Value]
 }
 
 --Adds two values together. If the types can't be added, throw an error.
@@ -204,8 +207,8 @@ doSwap :: EDState -> IO EDState
 doSwap state = do 
     let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
         vals -> do 
             let (state', b, a) = fsPop2 state
             let state'' = fsPush a state' 
@@ -223,7 +226,7 @@ doDrop state = do
 --Clears the entire stack to empty. 
 -- Avoids having to type drop over and over again.
 doDropStack :: EDState -> IO EDState
-doDropStack EDState{stack = _, fns = fs, vars = vs} = return (EDState{stack = [], fns = fs, vars = vs})
+doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms})
 
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
@@ -233,9 +236,9 @@ doRot :: EDState -> IO EDState
 doRot state = do 
     let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state)} )
-        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state)} )
         vals -> do 
             let (state', c, b, a) = fsPop3 state
             let state'' = fsPush a state'
@@ -247,7 +250,7 @@ doDup :: EDState -> IO EDState
 doDup state = do 
     let stck = (stack state)
     case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
         vals -> do 
             let (state', top) = fsPop state
             let state'' = fsPush top state'
@@ -1098,6 +1101,28 @@ doOp op = error $ "unrecognized word: " ++ op
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
 
+--Creates a local variable in the current scope. 
+-- Throws error if variable already exists.
+makeLoc :: EDState -> String -> IO EDState
+makeLoc state name = 
+    let look = M.lookup name (head $ frames state)
+    in case look of 
+        Just _ -> error ("Loc Mak Error:\nlocal Variable " ++ name ++ " already exists in current scope.") 
+        Nothing -> do 
+            let top = fsTop state
+            let frame' = M.insert name top (head $ frames state)
+            return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))})
+
+--Performs a lookup through all stack frames to find desired variable name.
+--If found, returns it, else returns Nothing.
+getLoc :: [M.Map String Value] -> String -> Maybe Value
+getLoc [] name = Nothing
+getLoc (f:fs) name = 
+    let look = M.lookup name f 
+    in case look of 
+        Just v -> Just v
+        Nothing -> getLoc fs name  
+
 makeVar :: EDState -> String -> IO EDState
 makeVar state varName = 
     let lkup = M.lookup varName (vars state)
@@ -1107,7 +1132,32 @@ makeVar state varName =
         Nothing -> do 
             let top = fsTop state
             let vars' = M.insert varName top (vars state)
-            return (EDState{stack = (stack state), fns = (fns state), vars = vars'})
+            return (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
+
+--Recursively builds a new list of stack frames with the mutated variable in it.
+mutateLoc' :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
+mutateLoc' [] acc mutVal name = error ("SHOULD NEVER GET HERE!!!!!!")
+mutateLoc' (f:fs) acc mutVal name = 
+    let look = M.lookup name f 
+    in case look of 
+            Just _ -> 
+                let f' = M.insert name mutVal f
+                in acc ++ (f':fs) 
+            Nothing -> mutateLoc' fs (acc ++ [f]) mutVal name
+
+--Mutates a given local variable.
+mutateLoc :: EDState -> String -> IO EDState
+mutateLoc state name =
+    let locVarToChange = case (getLoc (frames state) name) of 
+            Just v -> v 
+            Nothing -> error ("Loc Mut Error:\nLocal Variable " ++ name ++ " not defined for mutation.")
+        newVal = fsTop state
+
+    in if (compareTypesForMut newVal locVarToChange) 
+            then
+                return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (mutateLoc' (frames state) [] newVal name)})
+            else error ("Loc Mut Error:\nCan't mutate local variable " ++ name ++ " to different type.")
+
 
 --Comapres types in order to enforce static typing when mutating variables.
 compareTypesForMut :: Value -> Value -> Bool
@@ -1132,7 +1182,7 @@ mutateVar state varName = do
     case lkupVal of
         Just value -> if compareTypesForMut value newVal then 
             let vars' = M.insert varName newVal (vars state)
-            in return ( EDState{stack = (stack state), fns = (fns state), vars = vars'} )
+            in return ( EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} )
             else error ("Variable Mut Error: Can't mutate variable " ++ varName ++ " to different type.")
         Nothing -> error ("Variable Mut Error: Variable " ++ varName ++ " doesn't exist or was deleted")
 
@@ -1142,7 +1192,7 @@ funcDef state funcName funcBod =
     in case look of 
         Just bod -> error ("Function Def Error: Function of same name \"" ++ funcName ++ "\" already exists") 
         Nothing -> let fns' = M.insert funcName funcBod (fns state)
-                   in EDState{stack = (stack state), fns = fns', vars = (vars state)}
+                   in EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
 
 funcCall :: EDState -> String -> (EDState, AstNode)
 funcCall state funcName = 
@@ -1150,6 +1200,17 @@ funcCall state funcName =
     in case look of 
         Just body -> (state, body)
         Nothing -> error ("Function Call Error: Function \"" ++ funcName ++ "\" isn't defined.")
+
+--Used to add a stack frame when the scope increases. 
+addFrame :: EDState -> EDState
+addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state))}
+
+--Removes stack frame if not at global scope.
+removeFrame :: EDState -> EDState
+removeFrame EDState{stack = s, fns = f, vars = v, frames = [x]} = 
+    EDState{stack = s, fns = f, vars = v, frames = [x]}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs)} =
+    EDState{stack = s, fns = f, vars = v, frames = (xs)}
 
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
@@ -1164,8 +1225,8 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
 
     --Runs true branch if top is true, false if false, and errors out otherwise.
     case top of 
-        (Boolean True) -> doNode trueBranch state
-        (Boolean False) -> doNode falseBranch state
+        (Boolean True) -> doNode trueBranch (addFrame state)
+        (Boolean False) -> doNode falseBranch (addFrame state)
         _ -> error "If statement error:\nIf statement requires top of stack to be type Boolean to perform valid branching!"
 
 --Patterm matches function definition.
@@ -1174,7 +1235,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
         "def" -> doNode (Expression(rest)) (funcDef state (astNodeToString name) body)
         "call" -> do 
                     let (state', funcBod) = funcCall state (astNodeToString name)
-                    state'' <- (doNode funcBod state')
+                    state'' <- (doNode funcBod (addFrame state') )
                     doNode (Expression(rest)) state''
         other -> error ("Function Error: Invalid function command given.\nGiven: " ++ other ++ "\nValid: def, call")
 
@@ -1198,7 +1259,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
         "del" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
                     Just value -> let vars' = M.delete (astNodeToString name) (vars state)
-                           in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars'})
+                           in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
                     Nothing -> error ("Variable Del Error: Variable " ++ (astNodeToString name) ++ " doesn't exist.") 
 
         "mut" -> do 
@@ -1211,6 +1272,33 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 
         other -> error ("Variable Command Error: Invalid variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut, del")
 
+--Runs all the different cases of local variable actions.
+doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
+    case (astNodeToString cmd) of
+        "mak" ->
+            let stackIsEmpty = null (stack state)
+            in if stackIsEmpty
+                then error ("Loc Mak Error: Can't create variable when stack is empty.\nAttempted local variable name: " ++ (astNodeToString name))
+                else do
+                    state' <- (makeLoc state (astNodeToString name))
+                    doNode (Expression rest) state'
+                           
+        "get" -> let findRes = getLoc (frames state) (astNodeToString name) 
+                 in case findRes of
+                    Just value -> let state' = fsPush value state
+                              in doNode (Expression rest) state' 
+                    Nothing -> error ("Loc Get Error:\nLocal Variable " ++ (astNodeToString name) ++ " not defined.")
+
+        "mut" -> 
+            let stackIsEmpty = null (stack state)
+            in if stackIsEmpty
+                then error ("Loc Mut Error: Can't mutate local variable when stack is empty.\nAttempted local variable name: " ++ (astNodeToString name))
+                else do 
+                    state' <- (mutateLoc state (astNodeToString name))
+                    doNode (Expression rest) state'
+
+        other -> error ("Local Variable Command Error: Invalid local variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut")
+
 --Runs while loop.                                                                                                                      
 doNode ( While loopBody ) state = do
     let stackIsEmpty = null (stack state)
@@ -1218,12 +1306,12 @@ doNode ( While loopBody ) state = do
         then error "While Loop error:\nNo boolean value for while loop to check because stack is empty." 
         else fsTop state
 
-    --Creates new stack if loop body runs.
+    --Creates new state if loop body runs.
     -- Otherwise newState is same as state.
     -- Errors out if top of stack isn't a boolean type.
     newState <- case top of 
-        (Boolean True) -> doNode (loopBody) state
-        (Boolean False) -> return (state)
+        (Boolean True) -> doNode (loopBody) (addFrame state)
+        (Boolean False) -> return state
         _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
 
     let stackIsEmpty' = null (stack newState)
@@ -1240,13 +1328,13 @@ doNode ( While loopBody ) state = do
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
-doNode ( Terminal ( Val v ) ) state = return (fsPush v state)
+doNode ( Terminal ( Val v ) ) state = return $ fsPush v state
 
 -- ...if it's a word, execute the operation
 doNode ( Terminal ( Word o ) ) state = doOp o state
 
 -- "doing" an empty expression does nothing
-doNode ( Expression [] ) state = return state
+doNode ( Expression [] ) state = return $ removeFrame state
 
 -- "doing" a non-empty expression tries to execute every node in the expression
 doNode ( Expression ( first:rest ) ) state = do  
@@ -1303,6 +1391,11 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
     | token == Word "var" = 
         let (varAct, variableName, remTokens) = parseVarAction tokens
             newParsed = alreadyParsed ++ [Variable{varName = variableName, varCmd = varAct}]
+        in parseExpression' newParsed remTokens terminators
+
+    | token == Word "loc" =
+        let (varAct, variableName, remTokens) = parseVarAction tokens
+            newParsed = alreadyParsed ++ [LocVar{name = variableName, cmd = varAct}]
         in parseExpression' newParsed remTokens terminators
         
     -- no special word found. We are parsing a list of operations. Keep doing this until 
@@ -1362,27 +1455,27 @@ parseWhile [] = error "while without closing semicolon."
 parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] tokens [";"]
                     in (Expression(loopBod), (remTokens))
     
--- create a new interpreter
+--Makes new interpretor state with default values.
 fsNew :: IO EDState
-fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty }
+fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty]}
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
-fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state)}
+fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state)}
 
 --Removes value from top of stack, returning it.
 fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
     let top = head (stack state) 
         newStack = tail (stack state)  
-    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state) }, top )
+    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state) }, top )
 
 --Removes the top two elements from the stack, returning them.
 fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
-    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state)}, secondToTop, top)
+    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state)}, secondToTop, top)
 
 --Removes top three elements from stack.
 fsPop3 :: EDState -> ( EDState, Value, Value, Value )
@@ -1390,7 +1483,7 @@ fsPop3 state =
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
         (state''', thirdToTop) = fsPop state''
-    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state)}, thirdToTop, secondToTop, top)
+    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state)}, thirdToTop, secondToTop, top)
 
 --Returns value at top of stack. 
 fsTop :: EDState -> Value 
@@ -1579,4 +1672,6 @@ main = do
         stateInit <- fsNew
         finalState <- (doNode ast stateInit)
         
+        --putStrLn $ show $ length $ frames finalState
+
         printStack $ reverse $ (stack finalState) 
