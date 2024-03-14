@@ -1728,6 +1728,292 @@ Integer 81
 Overall variables aren't strictly necessary but they can be very useful 
 in making some code more readable and generalizable.
 
+#### LOCAL VARIABLES
+Local variables now exist in the language which are a more convenient form of the variable system.
+Local variables follow a scoping system where variables of a particular scope get dropped once that
+scope ends. Scopes change when entering a function, while loop, or if statements as the program runs.
+
+
+What this means is that you can create variables inside functions and not have to worry 
+about deleting them if the function is called multiple times like with the standard variable
+system. 
+
+The syntax of local variables is very similar to standard variables: <br>
+```loc CMD_KEYWORD LOC_VAR_NAME ;```
+
+This syntax is very similar to global variables except with the `loc` keyword used instead of `var`.
+The keyword `loc` is short for `loc`al variable as one would expect.
+The `CMD_KEYWORD` follows the same potential commands as `var` except that there's no `del`, 
+since variables automatically follow scope.
+
+Here's a quick summary of all commands:
+All commands work on a base-level similarly to how it works for `var`.
+##### mak
+Creates the variable with the same type as the item at the top of the stack.
+
+##### get
+Traverses through all existing stack frames to find the desired variable name.
+Throws error if none is found and pushes value to stack if found.
+
+##### mut 
+If variable has been found to exist and its value has the same type as the 
+value at the top of the stack, the variable is changed to that value at the top of the stack.
+
+##### *NO* del
+There is no del for `loc` since variables are cleared out when a given scope is left.
+
+##### Basic Example with a Sum Function:
+```
+/' Sums the top two arguments on the stack. 
+Basically does that + does but preserves the top two elements. '/
+func def sum
+	/' ENTERED FUNCTION SCOPE '/
+
+	swap
+	loc mak x ;
+	swap
+	loc mak y ;
+
+	loc get x ;
+	loc get y ;
+	+
+
+	/' 
+	No need to delete x or y 
+	because they're local variables ! 
+	'/
+
+	/' LEFT FUNCTION SCOPE '/
+
+;
+
+2 2
+func call sum ;
+
+2 3 
+func call sum ;
+
+57 12
+func call sum ;
+```
+
+Final Stack
+```
+Integer 2
+Integer 2
+Integer 4
+Integer 2
+Integer 3
+Integer 5
+Integer 57
+Integer 12
+Integer 69
+```
+
+##### Local Variable Example with Recursion
+```
+func def recurse
+	loc mak curr ;
+	drop
+	
+	loc get curr ;
+	0 ==
+	if 
+		drop
+		
+		"DONE RUNNING!!!"
+		printLine
+		
+		drop
+	else
+		drop
+		
+		"STILL RUNNING!!! "
+		loc get curr ;
+		"String" cast
+		++ 
+		printLine
+		drop
+
+		loc get curr ;
+		1 -
+
+		func call recurse ;
+	;
+
+	/' 
+		As can be seen, this function recursively counts down and the local 
+		variable curr doesn't need to be deleted at the end of the function.
+		This allows for behavior much closer to recursion!
+
+	'/
+;
+
+30
+func call recurse ;
+10
+func call recurse ;
+```
+Final Stack
+```
+```
+STDOUT
+```
+STILL RUNNING!!! 30
+STILL RUNNING!!! 29
+STILL RUNNING!!! 28
+STILL RUNNING!!! 27
+STILL RUNNING!!! 26
+STILL RUNNING!!! 25
+STILL RUNNING!!! 24
+STILL RUNNING!!! 23
+STILL RUNNING!!! 22
+STILL RUNNING!!! 21
+STILL RUNNING!!! 20
+STILL RUNNING!!! 19
+STILL RUNNING!!! 18
+STILL RUNNING!!! 17
+STILL RUNNING!!! 16
+STILL RUNNING!!! 15
+STILL RUNNING!!! 14
+STILL RUNNING!!! 13
+STILL RUNNING!!! 12
+STILL RUNNING!!! 11
+STILL RUNNING!!! 10
+STILL RUNNING!!! 9
+STILL RUNNING!!! 8
+STILL RUNNING!!! 7
+STILL RUNNING!!! 6
+STILL RUNNING!!! 5
+STILL RUNNING!!! 4
+STILL RUNNING!!! 3
+STILL RUNNING!!! 2
+STILL RUNNING!!! 1
+DONE RUNNING!!!
+STILL RUNNING!!! 10
+STILL RUNNING!!! 9
+STILL RUNNING!!! 8
+STILL RUNNING!!! 7
+STILL RUNNING!!! 6
+STILL RUNNING!!! 5
+STILL RUNNING!!! 4
+STILL RUNNING!!! 3
+STILL RUNNING!!! 2
+STILL RUNNING!!! 1
+DONE RUNNING!!!
+```
+
+##### Erronious Example with Local Variables
+```
+true 
+if
+	drop
+	420 
+	loc mak foo ;
+	loc get foo ;
+	loc get foo ;
+	* *
+	/' Leaving if statement scope! '/
+;
+
+/' Will throw an error because foo is not in scope here! '/
+loc get foo ;
+```
+
+STDERR
+```
+ecksdee: Loc Get Error:
+Local Variable foo not defined.
+CallStack (from HasCallStack):
+  error, called at ecksdee.hs:1290:32 in main:Main
+```
+
+##### Same Example but Fixed
+```
+true 
+if
+	drop
+	420 
+	loc mak foo ;
+	loc get foo ;
+	loc get foo ;
+	* *
+	/' Leaving if statement scope! '/
+;
+/' This works since attempt to access foo outside its scope has been removed. '/
+```
+Final Stack
+```
+Integer 74088000
+```
+
+##### Final Local Variable Example
+```
+/' Good demonstration on the convenience of local variables '/
+
+/' Squares the number at the top of the stack 
+while preserving the original number 
+Throws error if stack is empty due to * operator. '/
+func def square
+	/' Saves input square number at top 
+	of stack to num variable. '/
+	loc mak num ;
+
+	/' Makes two copies of num and multiples them, 
+	effectively squaring num. '/
+	loc get num ;
+	loc get num ;
+	*
+;
+
+/' Computes the first 10 squares starting at 0. '/
+func def firstTenSquares 
+	0
+	loc mak count ;
+	10 < 
+	while
+		drop
+
+		loc get count ;
+		func call square ;
+		swap
+		1 +
+		loc mut count ;
+
+		10 <
+	;
+	drop
+;
+
+/' Can be called multiple times without needing manual variable deletion :) '/
+func call firstTenSquares ;
+func call firstTenSquares ;
+```
+
+Final Stack
+```
+Integer 0
+Integer 1
+Integer 4
+Integer 9
+Integer 16
+Integer 25
+Integer 36
+Integer 49
+Integer 64
+Integer 81
+Integer 0
+Integer 1
+Integer 4
+Integer 9
+Integer 16
+Integer 25
+Integer 36
+Integer 49
+Integer 64
+Integer 81
+```
+
 ### Comments and Whitespace Information
 The way EcksDee largely tokenizes its code is by whitespace. 
 Meaning that almost every token, with the exception of pushing ```Char```s and ```String```s, 
