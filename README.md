@@ -2066,6 +2066,16 @@ Integer 64
 Integer 81
 ```
 
+#### `var` VS `loc` When to use which?
+Both work as variable systems and both have tradeoffs. 
+The `var` system has better performance since it only has to check one map instead of potentially `m` maps
+but it requires manual scoping where `loc` automatically manages the variables based on scope which makes
+things like functions much more convenient since you don't need a huge list of `var del`s at the end
+of a function anymore. However, manual scoping can be useful sometimes like for temporary variables
+or other potential use cases. 
+
+TL;DR: Both work with `loc` often being more convenient unless you *really need* manual scoping.
+
 ### Comments and Whitespace Information
 The way EcksDee largely tokenizes its code is by whitespace. 
 Meaning that almost every token, with the exception of pushing ```Char```s and ```String```s, 
