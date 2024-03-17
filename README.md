@@ -985,6 +985,35 @@ Final Stack:
 Char 'a'
 ```
 
+#### Operator: ```printError```
+##### Performance:
+```
+O(n)
+```
+(Linear time based on size of error string.)
+
+Given stack `x` where `x` is of type `String`,
+`x` is written to stdout and the program is
+terminated due to an error being thrown.
+This operator essentially allows you to throw custom
+errors. Note that this operator appends a newline
+like the `printLine` operator does.
+
+Example Program: <br>
+```
+"Custom Error!!!"
+printError
+```
+
+Stdout:
+```
+Custom Error!!!
+```
+
+Final Stack:<br>
+N/A Since program terminated early so what 
+the stack has does not matter
+
 #### Operator: ```read``` 
 
 ##### Performance: 
