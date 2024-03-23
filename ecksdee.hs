@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-13.94
+--Version: 2024-03-23.14
 --Toy Programming Language Named EcksDee
 
 {-
@@ -62,6 +62,8 @@ data AstNode =
     |   Variable {varName :: AstNode, varCmd :: AstNode}
 
     |   LocVar {name :: AstNode, cmd :: AstNode}
+
+    |   AttErr {attempt :: AstNode, onError :: AstNode}
 
     deriving ( Show )
 
@@ -1215,6 +1217,9 @@ removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs)} =
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
 
+doNode AttErr{attempt = att, onError = err} state = do 
+    return state
+
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
@@ -1388,15 +1393,22 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
             newParsed = alreadyParsed ++ [Function{funcCmd = cmd, funcName = name, funcBod = bod}]
         in parseExpression' newParsed remTokens terminators
 
+    --Parse basic variable case.
     | token == Word "var" = 
         let (varAct, variableName, remTokens) = parseVarAction tokens
             newParsed = alreadyParsed ++ [Variable{varName = variableName, varCmd = varAct}]
         in parseExpression' newParsed remTokens terminators
 
+    --Parse local variable.
     | token == Word "loc" =
         let (varAct, variableName, remTokens) = parseVarAction tokens
             newParsed = alreadyParsed ++ [LocVar{name = variableName, cmd = varAct}]
         in parseExpression' newParsed remTokens terminators
+
+    --Parse attErr block.
+    | token == Word "attempt" =
+        let (attemptBranch, errorBranch, remTokens) = parseAttErr tokens
+        in parseExpression' (alreadyParsed ++ [AttErr{attempt = attemptBranch, onError = errorBranch}]) remTokens terminators
         
     -- no special word found. We are parsing a list of operations. Keep doing this until 
     -- there aren't any. 
@@ -1411,6 +1423,21 @@ parseExpression tokens =
 --Custom trace function used during debugging. Made by Grant.
 traceThing :: (Show a) => a -> a 
 traceThing x = traceShow x x 
+
+--Parses an attErr code block into its appropriate expression.
+parseAttErr :: [Token] -> (AstNode, AstNode, [Token])
+parseAttErr tokens = 
+    let (attBranch, remainingTokens, terminator ) = parseExpression' [] tokens [ "onError", ";" ]
+        (errBranch, remTokens) = if terminator == (Just $ Word "onError") 
+            then parseErrorBranch remainingTokens 
+            else error "attempt onError Error:\n Branch onError branch missing.\nUSAGE: attempt CODE_TO_ATTEMPT onError CODE_TO_HANDLE_ERROR ;"
+    in (Expression(attBranch), errBranch, remTokens)
+
+--Parses the onError branch of attErr.
+parseErrorBranch :: [Token] -> (AstNode, [Token])
+parseErrorBranch tokens = 
+    let (errorHandleCode, remTokens, terminator) = parseExpression' [] tokens [";"]
+    in (Expression(errorHandleCode), remTokens)
 
 parseVarAction :: [Token] -> (AstNode, AstNode, [Token])
 parseVarAction (token:tokens) = 
