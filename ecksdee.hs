@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-25.187
+--Version: 2024-03-25.20
 --Toy Programming Language Named EcksDee
 
 {-
@@ -780,28 +780,32 @@ doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _})
         parsed = case mbyInt of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Integer.")
-    in fsPush (Integer parsed) state
+        push = (\x -> fsPush (Integer x) state) 
+    in push $! parsed
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "BigInteger", len = _}) = 
     let mbyBigInt = readMaybe cs :: Maybe Integer
         parsed = case mbyBigInt of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type BigInteger.")
-    in fsPush (BigInteger parsed) state
+        push = (\x -> fsPush (BigInteger x) state)
+    in push $! parsed
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Float", len = _}) = 
     let mbyFlt = readMaybe cs :: Maybe Float
         parsed = case mbyFlt of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Float.")
-    in fsPush (Float parsed) state
+        push = (\x -> fsPush (Float x) state)
+    in push $! parsed
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) = 
     let mbyDbl = readMaybe cs :: Maybe Double
         parsed = case mbyDbl of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Double.")
-    in fsPush (Double parsed) state
+        push = (\x -> fsPush (Double parsed) state)
+    in push $! parsed
 
 doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
     let listStr = ( "[" ++ (printList List {items = is, len = l} "" 0 False) ++ "]" )
