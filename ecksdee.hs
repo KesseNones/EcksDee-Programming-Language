@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-25.16
+--Version: 2024-03-25.17
 --Toy Programming Language Named EcksDee
 
 {-
@@ -641,7 +641,8 @@ doIndex' state (List {items = is, len = l}) (Integer index) =
         indexed = case (M.lookup index is) of 
             Just i -> i 
             Nothing -> error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range for list.")
-    in fsPush indexed state'
+        push = (\x -> fsPush x state')
+    in push $! indexed
 --String case.
 doIndex' state (String {chrs = cs, len = l}) (Integer index) = 
     let state' = fsPush (String {chrs = cs, len = l}) state
@@ -649,7 +650,8 @@ doIndex' state (String {chrs = cs, len = l}) (Integer index) =
             if (index > -1 && index < l) 
                 then index 
                 else error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range for string.")
-    in fsPush (Char $ cs !! accessIndex) state'
+        push = (\x -> fsPush (Char $ cs !! x) state')
+    in push $! accessIndex
 doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/string and an index value. \n Index must use type Integer to perform an index"
 
 --Takes the length of a list or string at the top 
@@ -1099,7 +1101,7 @@ doOp "fpush" = doFpush
 doOp "fp" = doFpush --Alias for fpush
 doOp "fpop" = doFpop
 doOp "fpo" = doFpop --Alias for fpop
-doOp "index" = doIndex --RIGHT HERE (FOR DEBUGGING PURPOSES)
+doOp "index" = doIndex 
 doOp "length" = doLength
 doOp "len" = doLength --Alias for length
 doOp "isEmpty" = doIsEmpty
