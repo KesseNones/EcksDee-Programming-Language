@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-25.22
+--Version: 2024-03-25.23
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1133,7 +1133,7 @@ doOp "printError" = doPrintError
 
 --Object Operators
 doOp "addField" = doAddField 
-doOp "removeField" = doRemoveField
+doOp "removeField" = doRemoveField --RIGHT HERE!!!
 doOp "getField" = doGetField
 doOp "mutateField" = doMutateField
 
