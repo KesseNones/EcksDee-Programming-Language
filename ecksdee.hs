@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-25.17
+--Version: 2024-03-25.18
 --Toy Programming Language Named EcksDee
 
 {-
@@ -906,7 +906,8 @@ doIsWhite state = do
             Char c -> return (fsPush (Boolean (isSpace c)) state)
             _ -> error "Operator (isWhitespace) error. Type to be analyzed needs to be type Char!"
 
---Determines if a list contains a member.
+--Determines if a list, string, 
+-- or object contains a value, char, or field, respectively.
 doContains :: EDState -> IO EDState
 doContains state = do 
     let stck = (stack state)
@@ -922,7 +923,7 @@ doContains state = do
                                     case (M.lookup name fs) of 
                                         Just _ -> True 
                                         Nothing -> False
-                                (_, _) -> error "Operator (contains) error. List or string needed to asses if item is contained within."
+                                (_, _) -> error "Operator (contains) error.\nFirst pushed element must be List, String, or Object,\n and second item needs to be value, Char, or String, respectively."
             return (fsPush (Boolean contains) state)
 
 --Changes an item at a given index in a list to a new item on the stack.
