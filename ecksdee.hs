@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-25.20
+--Version: 2024-03-25.22
 --Toy Programming Language Named EcksDee
 
 {-
@@ -960,6 +960,7 @@ doPow state = do
                 (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
                 (_, _) -> error "Operator (pow) error.\nOperands need to be type Float Float or Double Double!\nCan't mix types and only Float or Double types are valid!"
 
+--Adds a field to a given object.
 doAddField :: EDState -> IO EDState
 doAddField state = do 
     let stck = stack state
@@ -967,21 +968,23 @@ doAddField state = do
         [] -> error "Operator (addField) error. Three operands needed!"
         [x] -> error "Operator (addField) error. Three operands needed!"
         [x, y] -> error "Operator (addField) error. Three operands needed!"
-        vals -> do 
+        vals ->  
             let (state', obj, fieldName, fieldVal) = fsPop3 state
-            case (obj, fieldName, fieldVal) of 
-                (Object {fields = fs}, String {chrs = name, len = l}, v) ->
-                    let ret = (\x -> (return x))
-                    in ret $! (fsPush (doAddField' Object{fields = fs} name v) state')  
-                
-                (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+                obj' = case (obj, fieldName, fieldVal) of 
+                        (Object {fields = fs}, String {chrs = name, len = l}, v) ->
+                            (doAddField' Object{fields = fs} name v)  
+                        
+                        (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+                ret = (\x -> return (fsPush x state'))
+            in ret $! obj'
 
 doAddField' :: Value -> String -> Value -> Value
 doAddField' Object{fields = fs} key val = 
     let fs' = case (M.lookup key fs) of 
             Just i -> error ("Operator (addField) error.\nField " ++ key ++ " already exists in given object!")
             Nothing -> M.insert key val fs
-    in Object{fields = fs'}
+        newObj = (\x -> Object{fields = x})
+    in newObj $! fs'
 
 --Removes a field from a given object. Does nothing if the field doesn't exist.
 doRemoveField :: EDState -> IO EDState
