@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-26.168
+--Version: 2024-03-26.177
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1035,13 +1035,14 @@ doMutateField state = do
         vals -> do 
             let (state', obj, mutKey, newVal) = fsPop3 state 
             case (obj, mutKey) of 
-                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     let fs' = case (M.lookup name fs) of 
                             Just i -> if (compareTypesForMut i newVal) 
                                 then (M.insert name newVal fs) 
                                 else error ("Operator (mutateField) error.\nNew value for field " ++ name ++ " must match type of current field value!")
                             Nothing -> error ("Operator (mutateField) error.\nField " ++ name ++ " doesn't exist in given object!")
-                    return (fsPush Object{fields = fs'} state')
+                        ret = (\x -> return (fsPush Object{fields = x} state'))
+                    in ret $! fs'
                 (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
 
 --Reads in the contents of a file to a string.
@@ -1137,10 +1138,10 @@ doOp "printError" = doPrintError
 doOp "addField" = doAddField 
 doOp "removeField" = doRemoveField 
 doOp "getField" = doGetField 
-doOp "mutateField" = doMutateField --RIGHT HERE!!!
+doOp "mutateField" = doMutateField 
 
 --File IO Operators
-doOp "readFile" = doReadFile
+doOp "readFile" = doReadFile --RIGHT HERE!!!
 doOp "writeFile" = doWriteFile
 
 -- Error thrown if reached here.
