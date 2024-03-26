@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-26.213
+--Version: 2024-03-26.22
 --Toy Programming Language Named EcksDee
 
 {-
