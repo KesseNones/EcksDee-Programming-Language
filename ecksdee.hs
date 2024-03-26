@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-26.16
+--Version: 2024-03-26.168
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1014,12 +1014,13 @@ doGetField state = do
         vals -> do 
             let (state', obj, findKey) = fsPop2 state 
             case (obj, findKey) of 
-                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     let lkup = case (M.lookup name fs) of 
                             Just i -> i
                             Nothing -> error ("Operator (getField) error.\nField " ++ name ++ " doesn't exist in given object!")
                         state'' = fsPush Object{fields = fs} state'
-                    return (fsPush lkup state'')
+                        ret = (\x -> return (fsPush x state''))
+                    in ret $! lkup
                 (_, _) -> error "Operator (getField) error.\nOperands need to be type Object and String."
 
 --Mutates the value of a field in the object assuming the field exists 
@@ -1135,8 +1136,8 @@ doOp "printError" = doPrintError
 --Object Operators
 doOp "addField" = doAddField 
 doOp "removeField" = doRemoveField 
-doOp "getField" = doGetField --RIGHT HERE!!!
-doOp "mutateField" = doMutateField
+doOp "getField" = doGetField 
+doOp "mutateField" = doMutateField --RIGHT HERE!!!
 
 --File IO Operators
 doOp "readFile" = doReadFile
