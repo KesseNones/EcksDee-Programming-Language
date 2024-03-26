@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-25.23
+--Version: 2024-03-26.16
 --Toy Programming Language Named EcksDee
 
 {-
@@ -999,8 +999,9 @@ doRemoveField state = do
                 (Object{fields = fs}, String{chrs = name, len = l}) -> do 
                     let fs' = case (M.lookup name fs) of 
                             Just i -> (M.delete name fs)
-                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!") 
-                    return (fsPush Object{fields = fs'} state')
+                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!")
+                        ret = (\x -> return (fsPush Object{fields = x} state')) 
+                    ret $! fs'
                 (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String."
 
 --Grabs the value of a field in an object or throws an error if it doesn't exist.
@@ -1133,8 +1134,8 @@ doOp "printError" = doPrintError
 
 --Object Operators
 doOp "addField" = doAddField 
-doOp "removeField" = doRemoveField --RIGHT HERE!!!
-doOp "getField" = doGetField
+doOp "removeField" = doRemoveField 
+doOp "getField" = doGetField --RIGHT HERE!!!
 doOp "mutateField" = doMutateField
 
 --File IO Operators
