@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-26.177
+--Version: 2024-03-26.213
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1141,7 +1141,7 @@ doOp "getField" = doGetField
 doOp "mutateField" = doMutateField 
 
 --File IO Operators
-doOp "readFile" = doReadFile --RIGHT HERE!!!
+doOp "readFile" = doReadFile 
 doOp "writeFile" = doWriteFile
 
 -- Error thrown if reached here.
@@ -1235,6 +1235,7 @@ mutateVar state varName = do
             else error ("Variable Mut Error: Can't mutate variable " ++ varName ++ " to different type.")
         Nothing -> error ("Variable Mut Error: Variable " ++ varName ++ " doesn't exist or was deleted")
 
+--Defines a function as desired.
 funcDef :: EDState -> String -> AstNode -> EDState
 funcDef state funcName funcBod = 
     let look = M.lookup funcName (fns state)
@@ -1243,6 +1244,7 @@ funcDef state funcName funcBod =
         Nothing -> let fns' = M.insert funcName funcBod (fns state)
                    in EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
 
+--Calls a given function and runs it.
 funcCall :: EDState -> String -> (EDState, AstNode)
 funcCall state funcName = 
     let look = M.lookup funcName (fns state)
@@ -1292,7 +1294,10 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
 --Patterm matches function definition.
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
     case (astNodeToString cmd) of 
-        "def" -> doNode (Expression(rest)) (funcDef state (astNodeToString name) body)
+        "def" -> 
+            let dnode = (\x -> doNode (Expression(rest)) x) 
+            in dnode $! (funcDef state (astNodeToString name) body)
+
         "call" -> do 
                     let (state', funcBod) = funcCall state (astNodeToString name)
                     state'' <- (doNode funcBod (addFrame state') )
