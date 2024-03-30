@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-13.94
+--Version: 2024-03-26.22
 --Toy Programming Language Named EcksDee
 
 {-
@@ -21,6 +21,7 @@ import System.IO
 import System.Environment
 import qualified Data.Map.Strict as M
 import Control.DeepSeq
+import Control.Exception
 
 data Value =                                         
         BigInteger Integer
@@ -62,6 +63,8 @@ data AstNode =
     |   Variable {varName :: AstNode, varCmd :: AstNode}
 
     |   LocVar {name :: AstNode, cmd :: AstNode}
+
+    |   AttErr {attempt :: AstNode, onError :: AstNode}
 
     deriving ( Show )
 
@@ -132,7 +135,7 @@ doConcat' List {items = as, len = al} List {items = bs, len = bl} =
     let List{items = cs, len = cl} = doConcat'' List{items = as, len = al} List{items = M.empty, len = 0} 0 0
         List{items = ds, len = dl} = doConcat'' List{items = bs, len = bl} List{items = cs, len = cl} 0 al
     in List{items = ds, len = dl}
-doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists."
+doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists.\n Types also have to both be strings or lists!"
 
 --Concatentates two Strings/Lists together.
 doConcat :: EDState -> IO EDState
@@ -141,9 +144,10 @@ doConcat state = do
     case stck of 
         [] -> error "Operator (++) error. Concatenation requires two operands!"
         [x] -> error "Operator (++) error. Concatenation requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', a, b) = fsPop2 state
-            return (fsPush (doConcat' a b) state')
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (doConcat' a b)
 
 --Adds two values on stack if they can be added.
 doAdd :: EDState -> IO EDState
@@ -152,9 +156,10 @@ doAdd state = do
     case stck of 
         [] -> error "Operator (+) error. Addition requires two operands!"
         [x] -> error "Operator (+) error. Addition requires two operands!"
-        vals -> do 
+        vals ->  
             let (state', a, b) = fsPop2 state
-            return (fsPush (addVals a b) state')
+                ret = (\addRes -> return (fsPush addRes state'))
+            in ret $! (addVals a b)
 
 --Subtracts two values on stack if they can be subtracted.
 doSub :: EDState -> IO EDState
@@ -163,9 +168,10 @@ doSub state = do
     case stck of 
         [] -> error "Operator (-) error. Subtraction requires two operands!"
         [x] -> error "Operator (-) error. Subtraction requires two operands!"
-        vals -> do 
+        vals ->  
             let (state', b, a) = fsPop2 state
-            return (fsPush (subVals a b) state')
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (subVals a b)
 
 --Multiplies two values on top of stack if they can be multiplied.
 doMul :: EDState -> IO EDState
@@ -174,9 +180,10 @@ doMul state = do
     case stck of 
         [] -> error "Operator (*) error. Multiplication requires two operands!"
         [x] -> error "Operator (*) error. Multiplication requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', a, b) = fsPop2 state
-            return (fsPush (multVals a b) state')
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (multVals a b)
 
 --Divides two values on top of stack if they can be divided.
 --Errors out if problem happens.
@@ -186,9 +193,10 @@ doDiv state = do
     case stck of 
         [] -> error "Operator (/) error. Division requires two operands!"
         [x] -> error "Operator (/) error. Division requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state
-            return (fsPush (divideVals a b) state') 
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (divideVals a b)
 
 --Mods two values on top of stack if they can be modded.
 --Errors out if problem happens.
@@ -198,9 +206,10 @@ doModulo state = do
     case stck of 
         [] -> error "Operator (%) error. Modulo requires two operands!"
         [x] -> error "Operator (%) error. Modulo requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state
-            return (fsPush (modVals a b) state')
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (modVals a b)
 
 --Swaps the top two values at the top of the stack.
 doSwap :: EDState -> IO EDState
@@ -264,9 +273,10 @@ doEqual state = do
     case stck of 
         [] -> error "Operator (==) error. Equality comparison requires two operands!"
         [x] -> error "Operator (==) error. Equality comparison requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state
-            return (fsPush (doEqual' a b) state') 
+                ret = (\eqRes -> return (fsPush eqRes state'))
+            in ret $! (doEqual' a b)
 
 --Makes sure the types match and then performs the equality operation if so, 
 -- otherwise errors out.
@@ -289,9 +299,10 @@ doNotEqual state = do
     case stck of 
         [] -> error "Operator (/=) error. Inequality comparison requires two operands!"
         [x] -> error "Operator (/=) error. Inequality comparison requires two operands!"
-        vals -> do 
-            let (state', b, a) = fsPop2 state 
-            return (fsPush (doNotEqual' a b) state')
+        vals ->  
+            let (state', b, a) = fsPop2 state
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (doNotEqual' a b) 
 
 --Makes sure the types match and then performs the inequality operation if so, 
 -- otherwise errors out.
@@ -314,9 +325,10 @@ doGreaterThan state = do
     case stck of 
         [] -> error "Operator (>) error. Greater than comparison requires two operands!"
         [x] -> error "Operator (>) error. Greater than comparison requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state
-            return (fsPush (doGreaterThan' b a) state')
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (doGreaterThan' b a)
                 
 --Makes sure the types match and then performs the > operation if so, 
 -- otherwise errors out.
@@ -339,9 +351,10 @@ doLessThan state = do
     case stck of 
         [] -> error "Operator (<) error. Less than comparison requires two operands!"
         [x] -> error "Operator (<) error. Less than comparison requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state
-            return (fsPush (doLessThan' b a) state') 
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (doLessThan' b a) 
 
 --Makes sure the types match and then performs the < operation if so, 
 -- otherwise errors out.
@@ -364,9 +377,10 @@ doGreaterThanEqualTo state = do
     case stck of 
         [] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
         [x] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
-        vals -> do 
-            let (state', b, a) = fsPop2 state 
-            return (fsPush (doGreaterThanEqualTo' b a) state')
+        vals -> 
+            let (state', b, a) = fsPop2 state
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (doGreaterThanEqualTo' b a) 
 
 --Makes sure the types match and then performs the >= operation if so, 
 -- otherwise errors out.
@@ -389,9 +403,10 @@ doLessThanEqualTo state = do
     case stck of 
         [] -> error "Operator (<=) error. Less than comparison requires two operands!"
         [x] -> error "Operator (<=) error. Less than comparison requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state
-            return (fsPush (doLessThanEqualTo' b a) state')
+                ret = (\x -> return (fsPush x state'))
+            in ret $! (doLessThanEqualTo' b a)
 
 --Makes sure the types match and then performs the <= operation if so, 
 -- otherwise errors out.
@@ -414,9 +429,10 @@ doAnd state = do
     case stck of 
         [] -> error "Operator (and) error. Logical AND requires two operands!" 
         [x] -> error "Operator (and) error. Logical AND requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state 
-            return (doAnd' state' a b)
+                ret = (\x -> return x)
+            in ret $! (doAnd' state' a b)
 
 --Performs logical AND function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -435,9 +451,10 @@ doOr state = do
     case stck of 
         [] -> error "Operator (or) error. Logical OR requires two operands!" 
         [x] -> error "Operator (or) error. Logical OR requires two operands!"
-        vals -> do 
-            let (state', b, a) = fsPop2 state 
-            return (doOr' state' a b) 
+        vals -> 
+            let (state', b, a) = fsPop2 state
+                ret = (\x -> return x)
+            in ret $! (doOr' state' a b)  
 
 --Performs logical OR function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -456,9 +473,10 @@ doXor state = do
     case stck of 
         [] -> error "Operator (xor) error. Logical XOR requires two operands!" 
         [x] -> error "Operator (xor) error. Logical XOR requires two operands!"
-        vals -> do 
+        vals -> 
             let (state', b, a) = fsPop2 state 
-            return (doXor' state' a b) 
+                ret = (\x -> return x)
+            in ret $! (doXor' state' a b) 
 
 --Performs logical XOR function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -476,9 +494,10 @@ doNot state = do
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (not) error. Logical NOT operation requires one operand!"
-        vals -> do 
+        vals -> 
             let (state', top) = fsPop state
-            return (doNot' state' top) 
+                ret = (\x -> return x)
+            in ret $! (doNot' state' top) 
 
 --Performs negation if input value is of type boolean.
 doNot' :: EDState -> Value -> EDState
@@ -493,9 +512,10 @@ doPush state = do
     case stck of 
         [] -> error "Operator (push) error. Two operands required for push!"
         [x] -> error "Operator (push) error. Two operands required for push!"
-        vals -> do 
-            let (state', list, val) = fsPop2 state 
-            return (doPush' state' list val) 
+        vals ->  
+            let (state', list, val) = fsPop2 state
+                ret = (\x -> return x)
+            in ret $! (doPush' state' list val)  
 
 --Pushes item to list or string.
 doPush' :: EDState -> Value -> Value -> EDState
@@ -509,9 +529,10 @@ doPop state = do
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (pop) error. Pop operator needs a list to pop from!"
-        vals -> do 
+        vals -> 
             let (state', list) = fsPop state
-            return (doPop' state' list) 
+                ret = (\x -> return x)
+            in ret $! (doPop' state' list) 
 
 --Pops item from list and pushes it to stack.
 doPop' :: EDState -> Value -> EDState
@@ -537,9 +558,10 @@ doFpush state = do
     case stck of 
         [] -> error "Operator (fpush) error. Two operands required for fpush!"
         [x] -> error "Operator (fpush) error. Two operands required for fpush!"
-        vals -> do 
-            let (state', list, val) = fsPop2 state 
-            return (doFpush' state' list val) 
+        vals -> 
+            let (state', list, val) = fsPop2 state
+                ret = (\x -> return x)
+            in ret $! (doFpush' state' list val)  
 
 --Pushes item to list front.
 doFpush' :: EDState -> Value -> Value -> EDState
@@ -565,9 +587,10 @@ doFpop state = do
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (fpop) error. List needed!"
-        vals -> do 
+        vals -> 
             let (state', list) = fsPop state
-            return (doFpop' state' list)
+                ret = (\x -> return x)
+            in ret $! (doFpop' state' list)
 
 --Pops item from list and pushes it to stack.
 doFpop' :: EDState -> Value -> EDState
@@ -604,9 +627,10 @@ doIndex state = do
     case stck of 
         [] -> error "Operator (index) error. Two operands required for index!"
         [x] -> error "Operator (index) error. Two operands required for index!"
-        vals -> do 
-            let (state', list, index) = fsPop2 state 
-            return (doIndex' state' list index)
+        vals ->  
+            let (state', list, index) = fsPop2 state
+                ret = (\x -> return x)
+            in ret $! (doIndex' state' list index) 
 
 --Retrieves item at index in list or string.
 doIndex' :: EDState -> Value -> Value -> EDState
@@ -616,12 +640,18 @@ doIndex' state (List {items = is, len = l}) (Integer index) =
     let state' = fsPush (List {items = is, len = l}) state
         indexed = case (M.lookup index is) of 
             Just i -> i 
-            Nothing -> error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range.")
-    in fsPush indexed state'
+            Nothing -> error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range for list.")
+        push = (\x -> fsPush x state')
+    in push $! indexed
 --String case.
 doIndex' state (String {chrs = cs, len = l}) (Integer index) = 
     let state' = fsPush (String {chrs = cs, len = l}) state
-    in fsPush (Char $ cs !! index) state'
+        accessIndex = 
+            if (index > -1 && index < l) 
+                then index 
+                else error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range for string.")
+        push = (\x -> fsPush (Char $ cs !! x) state')
+    in push $! accessIndex
 doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/string and an index value. \n Index must use type Integer to perform an index"
 
 --Takes the length of a list or string at the top 
@@ -631,9 +661,10 @@ doLength state = do
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (length) error. Operand needed for length!"
-        vals -> do 
+        vals -> 
             let top = (fsTop state)
-            return (doLength' state top)
+                ret = (\x -> return x)
+            in ret $! (doLength' state top)
 
 --Performs actual length function.
 doLength' :: EDState -> Value -> EDState
@@ -648,9 +679,10 @@ doIsEmpty state = do
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (isEmpty) error. One operand needed!"
-        vals -> do 
+        vals -> 
             let top = (fsTop state)
-            return (doIsEmpty' state top) 
+                ret = (\x -> return x)
+            in ret $! (doIsEmpty' state top) 
 
 --Performs actual length function.
 doIsEmpty' :: EDState -> Value -> EDState
@@ -665,9 +697,10 @@ doClear state = do
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (clear) error. One operand needed!"
-        vals -> do 
+        vals ->  
             let (state', list) = fsPop state
-            return (doClear' state' list) 
+                ret = (\x -> return x)
+            in ret $! (doClear' state' list) 
 
 --Performs clear operation.
 doClear' :: EDState -> Value -> EDState
@@ -683,9 +716,10 @@ doCast state = do
     case stck of 
         [] -> error "Operator (cast) error. Two operands required for cast!"
         [x] -> error "Operator (cast) error. Two operands required for cast!"
-        vals -> do 
+        vals ->  
             let (state', val, castType) = fsPop2 state
-            return (doCast' state' val castType) 
+                ret = (\x -> return x)
+            in ret $! (doCast' state' val castType) 
 
 --Performs the actual cast operation.
 doCast' :: EDState -> Value -> Value -> EDState
@@ -746,28 +780,32 @@ doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _})
         parsed = case mbyInt of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Integer.")
-    in fsPush (Integer parsed) state
+        push = (\x -> fsPush (Integer x) state) 
+    in push $! parsed
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "BigInteger", len = _}) = 
     let mbyBigInt = readMaybe cs :: Maybe Integer
         parsed = case mbyBigInt of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type BigInteger.")
-    in fsPush (BigInteger parsed) state
+        push = (\x -> fsPush (BigInteger x) state)
+    in push $! parsed
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Float", len = _}) = 
     let mbyFlt = readMaybe cs :: Maybe Float
         parsed = case mbyFlt of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Float.")
-    in fsPush (Float parsed) state
+        push = (\x -> fsPush (Float x) state)
+    in push $! parsed
 
 doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) = 
     let mbyDbl = readMaybe cs :: Maybe Double
         parsed = case mbyDbl of 
                     Just val -> val 
                     Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Double.")
-    in fsPush (Double parsed) state
+        push = (\x -> fsPush (Double parsed) state)
+    in push $! parsed
 
 doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
     let listStr = ( "[" ++ (printList List {items = is, len = l} "" 0 False) ++ "]" )
@@ -872,24 +910,26 @@ doIsWhite state = do
             Char c -> return (fsPush (Boolean (isSpace c)) state)
             _ -> error "Operator (isWhitespace) error. Type to be analyzed needs to be type Char!"
 
---Determines if a list contains a member.
+--Determines if a list, string, 
+-- or object contains a value, char, or field, respectively.
 doContains :: EDState -> IO EDState
 doContains state = do 
     let stck = (stack state)
     case stck of 
         [] -> error "Operator (contains) error. Two operands on stack needed!"
         [x] -> error "Operator (contains) error. Two operands on stack needed!"
-        vals -> do 
+        vals -> 
             let (top, secondToTop) = ((head stck), (head $ tail stck))
-            let contains = case (top, secondToTop) of 
+                contains = case (top, secondToTop) of 
                                 (v, List {items = is, len = _}) -> v `elem` is
                                 (Char c, String {chrs = cs, len = _}) -> c `elem` cs
                                 (String{chrs = name, len = _}, Object{fields = fs}) -> 
                                     case (M.lookup name fs) of 
                                         Just _ -> True 
                                         Nothing -> False
-                                (_, _) -> error "Operator (contains) error. List or string needed to asses if item is contained within."
-            return (fsPush (Boolean contains) state)
+                                (_, _) -> error "Operator (contains) error.\nFirst pushed element must be List, String, or Object,\n and second item needs to be value, Char, or String, respectively."
+                ret = (\x -> return (fsPush (Boolean x) state) )
+            in ret $! contains
 
 --Changes an item at a given index in a list to a new item on the stack.
 doChangeItemAt :: EDState -> IO EDState
@@ -920,6 +960,7 @@ doPow state = do
                 (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
                 (_, _) -> error "Operator (pow) error.\nOperands need to be type Float Float or Double Double!\nCan't mix types and only Float or Double types are valid!"
 
+--Adds a field to a given object.
 doAddField :: EDState -> IO EDState
 doAddField state = do 
     let stck = stack state
@@ -927,18 +968,23 @@ doAddField state = do
         [] -> error "Operator (addField) error. Three operands needed!"
         [x] -> error "Operator (addField) error. Three operands needed!"
         [x, y] -> error "Operator (addField) error. Three operands needed!"
-        vals -> do 
+        vals ->  
             let (state', obj, fieldName, fieldVal) = fsPop3 state
-            case (obj, fieldName, fieldVal) of 
-                (Object {fields = fs}, String {chrs = name, len = l}, v) -> return (fsPush (doAddField' Object{fields = fs} name v) state')
-                (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+                obj' = case (obj, fieldName, fieldVal) of 
+                        (Object {fields = fs}, String {chrs = name, len = l}, v) ->
+                            (doAddField' Object{fields = fs} name v)  
+                        
+                        (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
+                ret = (\x -> return (fsPush x state'))
+            in ret $! obj'
 
 doAddField' :: Value -> String -> Value -> Value
 doAddField' Object{fields = fs} key val = 
     let fs' = case (M.lookup key fs) of 
             Just i -> error ("Operator (addField) error.\nField " ++ key ++ " already exists in given object!")
             Nothing -> M.insert key val fs
-    in Object{fields = fs'}
+        newObj = (\x -> Object{fields = x})
+    in newObj $! fs'
 
 --Removes a field from a given object. Does nothing if the field doesn't exist.
 doRemoveField :: EDState -> IO EDState
@@ -953,8 +999,9 @@ doRemoveField state = do
                 (Object{fields = fs}, String{chrs = name, len = l}) -> do 
                     let fs' = case (M.lookup name fs) of 
                             Just i -> (M.delete name fs)
-                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!") 
-                    return (fsPush Object{fields = fs'} state')
+                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!")
+                        ret = (\x -> return (fsPush Object{fields = x} state')) 
+                    ret $! fs'
                 (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String."
 
 --Grabs the value of a field in an object or throws an error if it doesn't exist.
@@ -967,12 +1014,13 @@ doGetField state = do
         vals -> do 
             let (state', obj, findKey) = fsPop2 state 
             case (obj, findKey) of 
-                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     let lkup = case (M.lookup name fs) of 
                             Just i -> i
                             Nothing -> error ("Operator (getField) error.\nField " ++ name ++ " doesn't exist in given object!")
                         state'' = fsPush Object{fields = fs} state'
-                    return (fsPush lkup state'')
+                        ret = (\x -> return (fsPush x state''))
+                    in ret $! lkup
                 (_, _) -> error "Operator (getField) error.\nOperands need to be type Object and String."
 
 --Mutates the value of a field in the object assuming the field exists 
@@ -987,13 +1035,14 @@ doMutateField state = do
         vals -> do 
             let (state', obj, mutKey, newVal) = fsPop3 state 
             case (obj, mutKey) of 
-                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     let fs' = case (M.lookup name fs) of 
                             Just i -> if (compareTypesForMut i newVal) 
                                 then (M.insert name newVal fs) 
                                 else error ("Operator (mutateField) error.\nNew value for field " ++ name ++ " must match type of current field value!")
                             Nothing -> error ("Operator (mutateField) error.\nField " ++ name ++ " doesn't exist in given object!")
-                    return (fsPush Object{fields = fs'} state')
+                        ret = (\x -> return (fsPush Object{fields = x} state'))
+                    in ret $! fs'
                 (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
 
 --Reads in the contents of a file to a string.
@@ -1064,7 +1113,7 @@ doOp "fpush" = doFpush
 doOp "fp" = doFpush --Alias for fpush
 doOp "fpop" = doFpop
 doOp "fpo" = doFpop --Alias for fpop
-doOp "index" = doIndex
+doOp "index" = doIndex 
 doOp "length" = doLength
 doOp "len" = doLength --Alias for length
 doOp "isEmpty" = doIsEmpty
@@ -1087,12 +1136,12 @@ doOp "printError" = doPrintError
 
 --Object Operators
 doOp "addField" = doAddField 
-doOp "removeField" = doRemoveField
-doOp "getField" = doGetField
-doOp "mutateField" = doMutateField
+doOp "removeField" = doRemoveField 
+doOp "getField" = doGetField 
+doOp "mutateField" = doMutateField 
 
 --File IO Operators
-doOp "readFile" = doReadFile
+doOp "readFile" = doReadFile 
 doOp "writeFile" = doWriteFile
 
 -- Error thrown if reached here.
@@ -1186,6 +1235,7 @@ mutateVar state varName = do
             else error ("Variable Mut Error: Can't mutate variable " ++ varName ++ " to different type.")
         Nothing -> error ("Variable Mut Error: Variable " ++ varName ++ " doesn't exist or was deleted")
 
+--Defines a function as desired.
 funcDef :: EDState -> String -> AstNode -> EDState
 funcDef state funcName funcBod = 
     let look = M.lookup funcName (fns state)
@@ -1194,6 +1244,7 @@ funcDef state funcName funcBod =
         Nothing -> let fns' = M.insert funcName funcBod (fns state)
                    in EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
 
+--Calls a given function and runs it.
 funcCall :: EDState -> String -> (EDState, AstNode)
 funcCall state funcName = 
     let look = M.lookup funcName (fns state)
@@ -1215,6 +1266,17 @@ removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs)} =
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
 
+--Attempt on Error doNode case where it tries to run code in attempt branch 
+-- and instead runs the code in on Error if there's a problem.
+doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame state)) handler 
+    where 
+        handler :: SomeException -> IO EDState
+        handler ex = 
+            let strErr = show ex
+                state' = fsPush (String {chrs = strErr, len = length strErr}) (addFrame state)
+            in doNode err (addFrame state')
+    
+
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
@@ -1232,7 +1294,10 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
 --Patterm matches function definition.
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
     case (astNodeToString cmd) of 
-        "def" -> doNode (Expression(rest)) (funcDef state (astNodeToString name) body)
+        "def" -> 
+            let dnode = (\x -> doNode (Expression(rest)) x) 
+            in dnode $! (funcDef state (astNodeToString name) body)
+
         "call" -> do 
                     let (state', funcBod) = funcCall state (astNodeToString name)
                     state'' <- (doNode funcBod (addFrame state') )
@@ -1388,15 +1453,22 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
             newParsed = alreadyParsed ++ [Function{funcCmd = cmd, funcName = name, funcBod = bod}]
         in parseExpression' newParsed remTokens terminators
 
+    --Parse basic variable case.
     | token == Word "var" = 
         let (varAct, variableName, remTokens) = parseVarAction tokens
             newParsed = alreadyParsed ++ [Variable{varName = variableName, varCmd = varAct}]
         in parseExpression' newParsed remTokens terminators
 
+    --Parse local variable.
     | token == Word "loc" =
         let (varAct, variableName, remTokens) = parseVarAction tokens
             newParsed = alreadyParsed ++ [LocVar{name = variableName, cmd = varAct}]
         in parseExpression' newParsed remTokens terminators
+
+    --Parse attErr block.
+    | token == Word "attempt" =
+        let (attemptBranch, errorBranch, remTokens) = parseAttErr tokens
+        in parseExpression' (alreadyParsed ++ [AttErr{attempt = attemptBranch, onError = errorBranch}]) remTokens terminators
         
     -- no special word found. We are parsing a list of operations. Keep doing this until 
     -- there aren't any. 
@@ -1411,6 +1483,21 @@ parseExpression tokens =
 --Custom trace function used during debugging. Made by Grant.
 traceThing :: (Show a) => a -> a 
 traceThing x = traceShow x x 
+
+--Parses an attErr code block into its appropriate expression.
+parseAttErr :: [Token] -> (AstNode, AstNode, [Token])
+parseAttErr tokens = 
+    let (attBranch, remainingTokens, terminator ) = parseExpression' [] tokens [ "onError", ";" ]
+        (errBranch, remTokens) = if terminator == (Just $ Word "onError") 
+            then parseErrorBranch remainingTokens 
+            else error "attempt onError Error:\n Branch onError branch missing.\nUSAGE: attempt CODE_TO_ATTEMPT onError CODE_TO_HANDLE_ERROR ;"
+    in (Expression(attBranch), errBranch, remTokens)
+
+--Parses the onError branch of attErr.
+parseErrorBranch :: [Token] -> (AstNode, [Token])
+parseErrorBranch tokens = 
+    let (errorHandleCode, remTokens, terminator) = parseExpression' [] tokens [";"]
+    in (Expression(errorHandleCode), remTokens)
 
 parseVarAction :: [Token] -> (AstNode, AstNode, [Token])
 parseVarAction (token:tokens) = 

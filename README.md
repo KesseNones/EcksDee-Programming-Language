@@ -2105,6 +2105,196 @@ or other potential use cases.
 
 TL;DR: Both work with `loc` often being more convenient unless you *really need* manual scoping.
 
+### The `attempt` `onError` Block (aka try-catch)
+An extremely powerful fancy operator that allows for error handling akin to try-catch in other languages.
+This code allows you to try to run some code and have code to run as backup if there's an error.
+
+The syntax looks like this:
+```
+attempt CODE_TO_ATTEMPT onError CODE_TO_RUN_IF_ERROR ;
+```
+
+`CODE_TO_ATTEMPT` is any amount of code to try to run without an error.
+If an error is thrown anywhere in `CODE_TO_ATTEMPT` then `CODE_TO_RUN_IF_ERROR`
+is run instead with the stack reset to before `CODE_TO_ATTEMPT` was run, with the exception
+of pushing the error string of the error that would've been thrown to the stack.
+
+Example Program Involving Casting:
+```
+attempt
+	"foo123"
+	"Integer"
+	cast
+onError
+	0	
+;
+```
+Final Stack:
+```
+String {chrs = "Operator (cast) error.\nFailed to convert String \"foo123\" to type Integer.\nCallStack (from HasCallStack):\n  error, called at ecksdee.hs:782:32 in main:Main", len = 154}
+Integer 0
+```
+
+As can be seen, the error string of the error that would've been thrown 
+was simply pushed onto the stack and the code in `onError` 
+was run which pushed a default value of `0` onto the stack.
+If the user wanted, they could've dropped the error string or thrown it. 
+That's the beauty of this: the user can do whatever they want, 
+rather than being forced into a thrown error by the system.
+
+A really cool way to use this fancy operator is in controling function input.
+With being able to handle errors, it's possible to ensure 
+that a function only has particular inputs.
+
+Example:
+```
+func def square
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	dup *
+;
+
+func call square ;
+```
+
+Stderr:
+```
+ecksdee: Error! Function square expects one argument!
+CallStack (from HasCallStack):
+  error, called at ecksdee.hs:867:47 in main:Main
+```
+
+This custom error was thrown because the function `square` 
+was called with nothing on the stack when it expected one thing.
+What triggered the error was trying to make a local variable `arg1` with an empty stack
+which caused an error that was caught. The original error string was dropped and replaced
+with the new custom error string which was then thrown via `printError`
+
+To fix this example, have something on the stack.
+
+Fixed Example:
+```
+func def square
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	dup *
+;
+
+45
+func call square ;
+```
+Final Stack:
+```
+Integer 2025
+```
+
+Not only can the count of arguments be checked via this method, 
+but so can the type. 
+
+Example:
+```
+func def square
+	/' Checks if one argument exists. '/
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	/' Checks to make sure type is numeric. '/
+	attempt
+		dup dup
+		"Integer"
+		cast
+		==
+		drop
+	onError
+		drop
+
+		"Error! Function needs argument of type Integer!"
+		printError
+
+	;
+
+	dup *
+;
+
+"Cheese"
+func call square ;
+```
+
+Stderr:
+```
+ecksdee: Error! Function needs argument of type Integer!
+CallStack (from HasCallStack):
+  error, called at ecksdee.hs:867:47 in main:Main
+```
+
+An error was thrown because the argument pushed to the stack was `"Cheese"` which is of type `String`.
+In this case, an error was thrown when trying to cast `"Cheese"` as an `Integer`. 
+The equality check is to ensure that the original matches the casted version, which ensures that
+the argument was of type `Integer` because a comparisson error would be thrown due to non-matching
+types otherwise.
+
+To fix the error thrown, have an argument on the stack of type `Integer`.
+
+Fixed Example:
+```
+func def square
+	/' Checks if one argument exists. '/
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	/' Checks to make sure type is numeric. '/
+	attempt
+		dup dup
+		"Integer"
+		cast
+		==
+		drop
+	onError
+		drop
+
+		"Error! Function needs argument of type Integer!"
+		printError
+
+	;
+
+	dup *
+;
+
+42
+func call square ;
+```
+
+Final Stack:
+```
+Integer 1764
+```
+
+These examples are by no means exhaustive in terms of the potential of this fancy operator!
+Any code that's put in the `attempt` block can be recovered from with the code in 
+the `onError` block in the event of an error. <br> The potential use cases for this are vast!
+
 ### Comments and Whitespace Information
 The way EcksDee largely tokenizes its code is by whitespace. 
 Meaning that almost every token, with the exception of pushing ```Char```s and ```String```s, 
