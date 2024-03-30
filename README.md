@@ -894,6 +894,53 @@ Double 3.1415929203539825
 Integer 3
 ```
 
+#### Operator: ```queryType```
+
+##### Performance:
+```
+O(1)
+```
+(Constant time)
+
+Given stack: `x` where `x` is of type `Value` the `queryType` operator pushes a `String` `s` onto the stack based on what type `x` is.
+This is useful for restricting the types of arguments in functions especially when paired with the `attempt onError` fancy operator
+discussed later on. This has other use cases too. Anything where you'd need to know the types of stuff you're dealing with.
+
+Example:
+```
+69b queryType
+42 queryType
+3.14 queryType
+1.414d queryType
+"foo" queryType
+'a' queryType
+False queryType
+[] queryType
+{} queryType
+```
+
+Final Stack:
+```
+BigInteger 69
+String {chrs = "BigInteger", len = 10}
+Integer 42
+String {chrs = "Integer", len = 7}
+Float 3.14
+String {chrs = "Float", len = 5}
+Double 1.414
+String {chrs = "Double", len = 6}
+String {chrs = "foo", len = 3}
+String {chrs = "String", len = 6}
+Char 'a'
+String {chrs = "Char", len = 4}
+Boolean False
+String {chrs = "Boolean", len = 7}
+[]
+String {chrs = "List", len = 4}
+{}
+String {chrs = "Object", len = 6}
+```
+
 #### Operator: ```print``` 
 
 ##### Performance: 
