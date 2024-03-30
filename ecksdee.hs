@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-26.22
+--Version: 2024-03-30.18
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1077,6 +1077,28 @@ doWriteFile state = do
                         return (state')
                 (_, _) -> error "Operator (writeFile) error.\nOperands need to be of type String and String."
 
+--Determines the type of an item on the stack.
+doQueryType :: EDState -> IO EDState
+doQueryType state =  
+    let stck = stack state
+    in case stck of 
+        [] -> error "Operator (queryType) error. One operand needed!"
+        vals -> 
+            let (state', val) = fsPop state
+            in return (fsPush (doQueryType' val) state)
+
+--Uses pattern matching to find type of given value.
+doQueryType' :: Value -> Value
+doQueryType' (BigInteger _) = String{chrs = "BigInteger", len = length "BigInteger"}
+doQueryType' (Integer _) = String{chrs = "Integer", len = length "Integer"}
+doQueryType' (Float _) = String{chrs = "Float", len = length "Float"}
+doQueryType' (Double _) = String{chrs = "Double", len = length "Double"}
+doQueryType' String{chrs = _, len = _} = String{chrs = "String", len = length "String"}
+doQueryType' (Char _) = String{chrs = "Char", len = length "Char"}
+doQueryType' (Boolean _) = String{chrs = "Boolean", len = length "Boolean"}
+doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "List"}
+doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1124,6 +1146,7 @@ doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
 
 --Type stuff
 doOp "cast" = doCast
+doOp "queryType" = doQueryType
 --IO stuff
 doOp "printLine" = doPrintLine
 doOp "readLine" = doReadLine
