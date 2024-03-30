@@ -2137,7 +2137,7 @@ Integer 0
 
 As can be seen, the error string of the error that would've been thrown 
 was simply pushed onto the stack and the code in `onError` 
-was run which pushed a default value of 0 onto the stack.
+was run which pushed a default value of `0` onto the stack.
 If the user wanted, they could've dropped the error string or thrown it. 
 That's the beauty of this: the user can do whatever they want, 
 rather than being forced into a thrown error by the system.
@@ -2200,7 +2200,7 @@ Final Stack:
 Integer 2025
 ```
 
-Not only can the count of arguments can be checked via this method, 
+Not only can the count of arguments be checked via this method, 
 but so can the type. 
 
 Example:
@@ -2245,12 +2245,12 @@ CallStack (from HasCallStack):
 ```
 
 An error was thrown because the argument pushed to the stack was `"Cheese"` which is of type `String`.
-In this case, an error was thrown when trying to cast `"Cheese"` as an `Integer` 
+In this case, an error was thrown when trying to cast `"Cheese"` as an `Integer`. 
 The equality check is to ensure that the original matches the casted version, which ensures that
 the argument was of type `Integer` because a comparisson error would be thrown due to non-matching
 types otherwise.
 
-To fix the error thrown, have an argument on the stack if type Integer.
+To fix the error thrown, have an argument on the stack of type `Integer`.
 
 Fixed Example:
 ```
@@ -2293,7 +2293,7 @@ Integer 1764
 
 These examples are by no means exhaustive in terms of the potential of this fancy operator!
 Any code that's put in the `attempt` block can be recovered from with the code in 
-the `onError` block in the event of an error. The use cases for this are vast!
+the `onError` block in the event of an error. <br> The potential use cases for this are vast!
 
 ### Comments and Whitespace Information
 The way EcksDee largely tokenizes its code is by whitespace. 
