@@ -894,6 +894,53 @@ Double 3.1415929203539825
 Integer 3
 ```
 
+#### Operator: ```queryType```
+
+##### Performance:
+```
+O(1)
+```
+(Constant time)
+
+Given stack: `x` where `x` is of type `Value` the `queryType` operator pushes a `String` `s` onto the stack based on what type `x` is.
+This is useful for restricting the types of arguments in functions especially when paired with the `attempt onError` fancy operator
+discussed later on. This has other use cases too. Anything where you'd need to know the types of stuff you're dealing with.
+
+Example:
+```
+69b queryType
+42 queryType
+3.14 queryType
+1.414d queryType
+"foo" queryType
+'a' queryType
+False queryType
+[] queryType
+{} queryType
+```
+
+Final Stack:
+```
+BigInteger 69
+String {chrs = "BigInteger", len = 10}
+Integer 42
+String {chrs = "Integer", len = 7}
+Float 3.14
+String {chrs = "Float", len = 5}
+Double 1.414
+String {chrs = "Double", len = 6}
+String {chrs = "foo", len = 3}
+String {chrs = "String", len = 6}
+Char 'a'
+String {chrs = "Char", len = 4}
+Boolean False
+String {chrs = "Boolean", len = 7}
+[]
+String {chrs = "List", len = 4}
+{}
+String {chrs = "Object", len = 6}
+```
+
 #### Operator: ```print``` 
 
 ##### Performance: 
@@ -2215,7 +2262,7 @@ func def square
 		printError
 	;
 
-	/' Checks to make sure type is numeric. '/
+	/' Checks to make sure type is an Integer. '/
 	attempt
 		dup dup
 		"Integer"
@@ -2264,7 +2311,7 @@ func def square
 		printError
 	;
 
-	/' Checks to make sure type is numeric. '/
+	/' Checks to make sure type is an Integer. '/
 	attempt
 		dup dup
 		"Integer"
@@ -2289,6 +2336,162 @@ func call square ;
 Final Stack:
 ```
 Integer 1764
+```
+
+Finally, as mentioned way back in the `queryType` operator section, the `queryType` operator
+is immensely useful when paired with `attempt onError`. This allows broader but more 
+understandable type restrictions.
+
+Example using `queryType`:
+```
+func def square
+	/' Checks if one argument exists. '/
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	/' Checks to make sure type is numeric. Numeric being an Integer,  '/
+	attempt
+		queryType
+		
+		loc mak argType ;
+		drop
+
+		/' 
+		Determines if the type of argument 
+		is any one of the numeric types. 
+		'/
+
+		loc get argType ;
+		"Integer" ==
+
+		loc get argType ;
+		"BigInteger" ==
+
+		loc get argType ;
+		"Float" == 
+
+		loc get argType ;
+		"Double" == 
+
+		or or or
+		not
+
+		/' Errors out if type isn't one of the four numeric types. '/
+		if 
+			"Error!"
+			printError
+		;
+		drop
+
+	onError
+		drop
+
+		"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
+		printError
+
+	;
+
+	dup *
+;
+
+"Cheese"
+func call square ;
+```
+
+Stderr:
+```
+ecksdee: Error! Function needs argument of type Integer, BigInteger, Float, or Double!
+CallStack (from HasCallStack):
+  error, called at ecksdee.hs:867:47 in main:Main
+```
+
+This function has a more lenient restriction since the input can be any of the numeric types 
+where before it was just an integer. Though you could restrict it to just an integer if you wanted!
+That's the beauty of using `attempt onError` and `queryType` in tandem!
+
+Fixed Example:
+```
+func def square
+	/' Checks if one argument exists. '/
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	/' Checks to make sure type is numeric. Numeric being an Integer,  '/
+	attempt
+		queryType
+		
+		loc mak argType ;
+		drop
+
+		/' 
+		Determines if the type of argument 
+		is any one of the numeric types. 
+		'/
+
+		loc get argType ;
+		"Integer" ==
+
+		loc get argType ;
+		"BigInteger" ==
+
+		loc get argType ;
+		"Float" == 
+
+		loc get argType ;
+		"Double" == 
+
+		or or or
+		not
+
+		/' Errors out if type isn't one of the four numeric types. '/
+		if 
+			"Error!"
+			printError
+		;
+		drop
+
+	onError
+		drop
+
+		"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
+		printError
+
+	;
+
+	dup *
+;
+
+42
+func call square ;
+
+69b
+func call square ;
+
+3.14
+func call square ;
+
+2.718d
+func call square ;
+
+/' Calls to this function with *any* other type would error out! '/
+```
+
+Final Stack:
+```
+Integer 1764
+BigInteger 4761
+Float 9.859601
+Double 7.387524
 ```
 
 These examples are by no means exhaustive in terms of the potential of this fancy operator!
