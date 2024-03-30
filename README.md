@@ -2262,7 +2262,7 @@ func def square
 		printError
 	;
 
-	/' Checks to make sure type is numeric. '/
+	/' Checks to make sure type is an Integer. '/
 	attempt
 		dup dup
 		"Integer"
@@ -2311,7 +2311,7 @@ func def square
 		printError
 	;
 
-	/' Checks to make sure type is numeric. '/
+	/' Checks to make sure type is an Integer. '/
 	attempt
 		dup dup
 		"Integer"
@@ -2336,6 +2336,162 @@ func call square ;
 Final Stack:
 ```
 Integer 1764
+```
+
+Finally, as mentioned way back in the `queryType` operator section, the `queryType` operator
+is immensely useful when paired with `attempt onError`. This allows broader but more 
+understandable type restrictions.
+
+Example using `queryType`:
+```
+func def square
+	/' Checks if one argument exists. '/
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	/' Checks to make sure type is numeric. Numeric being an Integer,  '/
+	attempt
+		queryType
+		
+		loc mak argType ;
+		drop
+
+		/' 
+		Determines if the type of argument 
+		is any one of the numeric types. 
+		'/
+
+		loc get argType ;
+		"Integer" ==
+
+		loc get argType ;
+		"BigInteger" ==
+
+		loc get argType ;
+		"Float" == 
+
+		loc get argType ;
+		"Double" == 
+
+		or or or
+		not
+
+		/' Errors out if type isn't one of the four numeric types. '/
+		if 
+			"Error!"
+			printError
+		;
+		drop
+
+	onError
+		drop
+
+		"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
+		printError
+
+	;
+
+	dup *
+;
+
+"Cheese"
+func call square ;
+```
+
+Stderr:
+```
+ecksdee: Error! Function needs argument of type Integer, BigInteger, Float, or Double!
+CallStack (from HasCallStack):
+  error, called at ecksdee.hs:867:47 in main:Main
+```
+
+This function has a more lenient restriction since the input can be any of the numeric types 
+where before it was just an integer. Though you could restrict it to just an integer if you wanted!
+That's the beauty of using `attempt onError` and `queryType` in tandem!
+
+Fixed Example:
+```
+func def square
+	/' Checks if one argument exists. '/
+	attempt
+		loc mak arg1 ;
+	onError
+		drop
+		"Error! Function square expects one argument!"
+		printError
+	;
+
+	/' Checks to make sure type is numeric. Numeric being an Integer,  '/
+	attempt
+		queryType
+		
+		loc mak argType ;
+		drop
+
+		/' 
+		Determines if the type of argument 
+		is any one of the numeric types. 
+		'/
+
+		loc get argType ;
+		"Integer" ==
+
+		loc get argType ;
+		"BigInteger" ==
+
+		loc get argType ;
+		"Float" == 
+
+		loc get argType ;
+		"Double" == 
+
+		or or or
+		not
+
+		/' Errors out if type isn't one of the four numeric types. '/
+		if 
+			"Error!"
+			printError
+		;
+		drop
+
+	onError
+		drop
+
+		"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
+		printError
+
+	;
+
+	dup *
+;
+
+42
+func call square ;
+
+69b
+func call square ;
+
+3.14
+func call square ;
+
+2.718d
+func call square ;
+
+/' Calls to this function with *any* other type would error out! '/
+```
+
+Final Stack:
+```
+Integer 1764
+BigInteger 4761
+Float 9.859601
+Double 7.387524
 ```
 
 These examples are by no means exhaustive in terms of the potential of this fancy operator!
