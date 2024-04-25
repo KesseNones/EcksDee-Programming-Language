@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-03-30.21
+--Version: 2024-04-25.98
 --Toy Programming Language Named EcksDee
 
 {-
@@ -542,7 +542,7 @@ doPop' state (List {items = is, len = l}) =
     let popped = case (M.lookup (l - 1) is) of 
             Just i -> i 
             Nothing -> error "Should never happen!!!"
-        newLs = M.delete l is
+        newLs = M.delete (l - 1) is
         state' = fsPush( List {items = newLs, len = l - 1}) state
     in fsPush popped state'
 doPop' state (String {chrs = "", len = 0}) = fsPush (String {chrs = "", len = 0}) state
