@@ -14,7 +14,7 @@ contexts:
     #   push: double_quoted_string
 
 
-    #Comments!
+    #Comments! Fix the precise syntax of this comment later!
     - match: "/' "
       scope: punctuation.definition.comment.begin.xd
       push:
@@ -26,26 +26,21 @@ contexts:
     - match: '"[^"]*"'
       scope: string.quoted.double.xd
 
-    #String!
-    # - match: "\""
-    #   scope: punctuation.definition.string.begin.example-c
-    #   push:
-    #     - meta_scope: comment.line.example-c
-    #     - match: "\""
-    #       scope: punctuation.definition.string.end.example-c
-    #       pop: true
-
     # Keywords are if, else for and while.
     # Note that blackslashes don't need to be escaped within single quoted
     # strings in YAML. When using single quoted strings, only single quotes
     # need to be escaped: this is done by using two single quotes next to each
     # other.
     - match: '\b(if|else|while)\b'
-      scope: keyword.control.example-c
+      scope: keyword.control.xd
 
     # Numbers
     - match: '\b(-)?[0-9.]+\b'
-      scope: constant.numeric.example-c
+      scope: constant.numeric.xd
+
+    #Operators
+    - match: '\+'
+      scope: keyword.operator.xd
 
   # # double_quoted_string:
     # - meta_scope: string.quoted.double.example-c
