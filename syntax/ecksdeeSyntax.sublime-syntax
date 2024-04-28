@@ -29,7 +29,13 @@ contexts:
     - match: 'func'
       scope: variable.function.xd
 
-    - match: 'def|call'
+    - match: '\b(def|call)\b'
+      scope: variable.parameter.xd
+
+    - match: '\b(var|loc)\b'
+      scope: variable.language.xd
+
+    - match: '\b(mak|get|mut|del)\b'
       scope: variable.parameter.xd
 
     - match: '"[^"]*"'
