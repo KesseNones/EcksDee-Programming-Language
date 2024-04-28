@@ -54,122 +54,139 @@ contexts:
       scope: constant.numeric.xd
 
     #Gross gigantic operators area.
-    - match: '\+'
+
+    #Addition
+    - match: '(?<![\w])\+(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '\-'
+    #Subtraction
+    - match: '(?<![\w])\-(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '\*'
+    #Multiplication
+    - match: '(?<![\w])\*(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '\/=|\/'
+    #Division
+    - match: '(?<![\w])\/(?![\w])'
       scope: keyword.operator.xd
 
-    - match: 'swap'
+    #Swap
+    - match: '\bswap\b'
       scope: keyword.operator.xd
 
-    - match: 'dropStack|drop'
+    #Drop/dropstack
+    - match: '\bdropStack|drop\b'
       scope: keyword.operator.xd
 
-    - match: 'rot'
+    #Rot
+    - match: '\brot\b'
       scope: keyword.operator.xd
 
-    - match: 'dup'
+    #Dup
+    - match: '\bdup\b'
       scope: keyword.operator.xd
 
-    - match: '=='
+    #Equals
+    - match: '(?<![\w])==(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '>=|>'
+    #Geq/greater than
+    - match: '(?<![\w])(>=|>)(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '<=|<'
+    #Leq/less than
+    - match: '(?<![\w])(<=|<)(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '%'
+    #Modulo
+    - match: '(?<![\w])%(?![\w])'
       scope: keyword.operator.xd
 
-    - match: '\+\+'
+    #Logical AND
+    - match: '\band\b'
       scope: keyword.operator.xd
 
-    - match: 'and'
+    #Logical XOR / OR
+    - match: '\b(xor|or)\b'
       scope: keyword.operator.xd
 
-    - match: 'xor|or'
+    #Logical NOT
+    - match: '\bnot\b'
       scope: keyword.operator.xd
 
-    - match: 'not'
+    #Exponent operator
+    - match: '\bpow\b'
       scope: keyword.operator.xd
 
-    - match: 'pow'
+    #List/String push operator
+    - match: '\b(push|p)\b'
       scope: keyword.operator.xd
 
-    - match: 'push|p'
+    #List/String pop
+    - match: '\b(pop|po)\b'
       scope: keyword.operator.xd
 
-    - match: 'pop|po'
+    #List/String front push
+    - match: '\b(fpush|fp)\b'
       scope: keyword.operator.xd
 
-    - match: 'fpush|fp'
+    #List/String front pop
+    - match: '\b(fpop|fpo)\b'
       scope: keyword.operator.xd
 
-    - match: 'fpop|fpo'
+    #List/String index
+    - match: '\bindex\b'
       scope: keyword.operator.xd
 
-    - match: 'index'
+    #List/String length
+    - match: '\b(length|len)\b'
       scope: keyword.operator.xd
 
-    - match: 'length|len'
+    #List/String/Object isEmpty
+    - match: '\bisEmpty\b'
       scope: keyword.operator.xd
 
-    - match: 'isEmpty'
+    #List/String clear
+    - match: '\bclear\b'
       scope: keyword.operator.xd
 
-    - match: 'clear'
+    #List/String/Object contains
+    - match: '\bcontains\b'
       scope: keyword.operator.xd
 
-    - match: 'contains'
+    #List/String change item at.
+    - match: '\bchangeItemAt\b'
       scope: keyword.operator.xd
 
-    - match: 'changeItemAt'
+    #Whitespace check
+    - match: '\bisWhitespace\b'
       scope: keyword.operator.xd
 
-    - match: 'isWhitespace'
+    #Caster
+    - match: '\bcast\b'
       scope: keyword.operator.xd
 
-    - match: 'cast'
+    #Queries type
+    - match: '\bqueryType\b'
       scope: keyword.operator.xd
 
-    - match: 'queryType'
+    #IO out
+    - match: '\b(printError|printLine|printChar|print)\b'
       scope: keyword.operator.xd
 
-    - match: 'printError|printLine|printChar|print'
+    #IO In
+    - match: '\b(readLine|readChar|read)\b'
       scope: keyword.operator.xd
 
-    - match: 'readLine|readChar|read'
+    #Field changers for object
+    - match: '\b(add|remove|get|mutate)Field\b'
       scope: keyword.operator.xd
 
-    - match: '(add|remove|get|mutate)Field'
+    #File IO in
+    - match: '\breadFile\b'
       scope: keyword.operator.xd
 
-    - match: 'readFile'
+    #File IO out
+    - match: '\bwriteFile\b'
       scope: keyword.operator.xd
-
-    - match: 'writeFile'
-      scope: keyword.operator.xd
-
-    # - match: '/='
-    #   scope: punctuation.definition.generic.xd
-
-    # - match: '=='
-    #   scope: punctuation.definition.generic.xd
-
-
-    # #Logic Operators (Needs a lot of work)
-    # # - match: '==|\/=|>|<|>=|<='
-    # #   scope: punctuation.definition.generic.xd
-
-    # #Basic operators.
-    # - match: '\+|\-|\*|\/|swap|dropStack|drop|rot|dup|%|\+\+|'
-    #   scope: keyword.operator.xd
