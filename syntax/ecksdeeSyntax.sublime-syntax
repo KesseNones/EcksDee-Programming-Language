@@ -53,12 +53,123 @@ contexts:
     - match: '\b(-)?[0-9.]+\b'
       scope: constant.numeric.xd
 
-    #Logic Operators (Needs a lot of work)
-    # - match: '==|\/=|>|<|>=|<='
-    #   scope: punctuation.definition.generic.xd
-
-    #Basic operators.
-    - match: '\+|\-|\*|\/|swap|dropStack|drop|rot|dup|%|\+\+|'
+    #Gross gigantic operators area.
+    - match: '\+'
       scope: keyword.operator.xd
 
+    - match: '\-'
+      scope: keyword.operator.xd
 
+    - match: '\*'
+      scope: keyword.operator.xd
+
+    - match: '\/=|\/'
+      scope: keyword.operator.xd
+
+    - match: 'swap'
+      scope: keyword.operator.xd
+
+    - match: 'dropStack|drop'
+      scope: keyword.operator.xd
+
+    - match: 'rot'
+      scope: keyword.operator.xd
+
+    - match: 'dup'
+      scope: keyword.operator.xd
+
+    - match: '=='
+      scope: keyword.operator.xd
+
+    - match: '>=|>'
+      scope: keyword.operator.xd
+
+    - match: '<=|<'
+      scope: keyword.operator.xd
+
+    - match: '%'
+      scope: keyword.operator.xd
+
+    - match: '\+\+'
+      scope: keyword.operator.xd
+
+    - match: 'and'
+      scope: keyword.operator.xd
+
+    - match: 'xor|or'
+      scope: keyword.operator.xd
+
+    - match: 'not'
+      scope: keyword.operator.xd
+
+    - match: 'pow'
+      scope: keyword.operator.xd
+
+    - match: 'push|p'
+      scope: keyword.operator.xd
+
+    - match: 'pop|po'
+      scope: keyword.operator.xd
+
+    - match: 'fpush|fp'
+      scope: keyword.operator.xd
+
+    - match: 'fpop|fpo'
+      scope: keyword.operator.xd
+
+    - match: 'index'
+      scope: keyword.operator.xd
+
+    - match: 'length|len'
+      scope: keyword.operator.xd
+
+    - match: 'isEmpty'
+      scope: keyword.operator.xd
+
+    - match: 'clear'
+      scope: keyword.operator.xd
+
+    - match: 'contains'
+      scope: keyword.operator.xd
+
+    - match: 'changeItemAt'
+      scope: keyword.operator.xd
+
+    - match: 'isWhitespace'
+      scope: keyword.operator.xd
+
+    - match: 'cast'
+      scope: keyword.operator.xd
+
+    - match: 'queryType'
+      scope: keyword.operator.xd
+
+    - match: 'printError|printLine|printChar|print'
+      scope: keyword.operator.xd
+
+    - match: 'readLine|readChar|read'
+      scope: keyword.operator.xd
+
+    - match: '(add|remove|get|mutate)Field'
+      scope: keyword.operator.xd
+
+    - match: 'readFile'
+      scope: keyword.operator.xd
+
+    - match: 'writeFile'
+      scope: keyword.operator.xd
+
+    # - match: '/='
+    #   scope: punctuation.definition.generic.xd
+
+    # - match: '=='
+    #   scope: punctuation.definition.generic.xd
+
+
+    # #Logic Operators (Needs a lot of work)
+    # # - match: '==|\/=|>|<|>=|<='
+    # #   scope: punctuation.definition.generic.xd
+
+    # #Basic operators.
+    # - match: '\+|\-|\*|\/|swap|dropStack|drop|rot|dup|%|\+\+|'
+    #   scope: keyword.operator.xd
