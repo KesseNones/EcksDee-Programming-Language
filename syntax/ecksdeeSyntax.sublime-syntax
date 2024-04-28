@@ -23,6 +23,15 @@ contexts:
           scope: punctuation.definition.comment.end.xd
           pop: true
 
+    - match: ';'
+      scope: punctuation.terminator.xd
+
+    - match: 'func'
+      scope: variable.function.xd
+
+    - match: 'def|call'
+      scope: variable.parameter.xd
+
     - match: '"[^"]*"'
       scope: string.quoted.double.xd
 
@@ -38,15 +47,12 @@ contexts:
     - match: '\b(-)?[0-9.]+\b'
       scope: constant.numeric.xd
 
+    #Logic Operators (Needs a lot of work)
+    # - match: '==|\/=|>|<|>=|<='
+    #   scope: punctuation.definition.generic.xd
+
     #Basic operators.
     - match: '\+|\-|\*|\/|swap|dropStack|drop|rot|dup|%|\+\+|'
       scope: keyword.operator.xd
 
-  # # double_quoted_string:
-    # - meta_scope: string.quoted.double.example-c
-    # - match: "\""
-    #   scope: constant.character.escape.example-c
-    # - match: '"'
-    #   scope: punctuation.definition.string.end.example-c
-    #   pop: true
 
