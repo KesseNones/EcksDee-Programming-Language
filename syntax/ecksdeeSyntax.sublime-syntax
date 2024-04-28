@@ -34,12 +34,12 @@ contexts:
     - match: '\b(if|else|while)\b'
       scope: keyword.control.xd
 
-    # Numbers
+    # Numbers (fix some syntax issues later!)
     - match: '\b(-)?[0-9.]+\b'
       scope: constant.numeric.xd
 
-    #Operators
-    - match: '\+'
+    #Basic operators.
+    - match: '\+|\-|\*|\/|swap|dropStack|drop|rot|dup|%|\+\+|'
       scope: keyword.operator.xd
 
   # # double_quoted_string:
