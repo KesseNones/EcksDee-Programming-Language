@@ -53,8 +53,8 @@ contexts:
     - match: '\b(if|else|while)\b'
       scope: keyword.control.xd
 
-    # Numbers (fix some syntax issues later!)
-    - match: '\b(-)?[0-9.]+\b'
+    # Numbers
+    - match: '\b(-)?[0-9.]+(e(\-)?[0-9.]+)?(d|b)?\b'
       scope: constant.numeric.xd
 
     #Gross gigantic operators area.
