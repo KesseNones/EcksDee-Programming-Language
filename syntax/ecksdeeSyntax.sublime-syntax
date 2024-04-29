@@ -42,7 +42,7 @@ contexts:
     - match: '\b(mak|get|mut|del)\b'
       scope: variable.parameter.xd
 
-    - match: '"[^"]*"'
+    - match: '(?<![\w])"[^"]*"(?![\w])'
       scope: string.quoted.double.xd
 
     # Keywords are if, else for and while.
