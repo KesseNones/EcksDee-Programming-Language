@@ -30,11 +30,25 @@ contexts:
     - match: ';'
       scope: punctuation.terminator.xd
 
-    - match: 'func'
-      scope: variable.function.xd
+    # - match: 'func'
+    #   scope: variable.function.xd
 
-    - match: '\b(def|call)\b'
-      scope: variable.parameter.xd
+    # - match: '\b(def|call)\b'
+    #   scope: variable.parameter.xd
+
+    #Fancier version of function parisng but it's a bit borked.
+    # - match: '(func)\s+(def|call)\s+(\w+)\s+(.*\s+)?(;)'
+    #   captures:
+    #     1: variable.function.xd
+    #     2: variable.parameter.xd
+    #     3: constant.character.xd
+
+    #Highlights functions.
+    - match: '(func)\s+(def|call)\s+(\w+)'
+      captures:
+        1: variable.function.xd
+        2: variable.parameter.xd
+        3: constant.language.infinity.xd
 
     - match: '\b(var|loc)\b'
       scope: variable.language.xd
