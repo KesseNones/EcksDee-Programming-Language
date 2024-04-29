@@ -42,8 +42,13 @@ contexts:
     - match: '\b(mak|get|mut|del)\b'
       scope: variable.parameter.xd
 
+    #Highlights strings.
     - match: '(?<![\w])"[^"]*"(?![\w])'
       scope: string.quoted.double.xd
+
+    #Char parsing
+    - match: "(?<![\\w])\'[\\\\]?.\'(?![\\w])"
+      scope: string.quoted.single.xd
 
     # Keywords are if, else for and while.
     # Note that blackslashes don't need to be escaped within single quoted
