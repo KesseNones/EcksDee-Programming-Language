@@ -15,13 +15,17 @@ contexts:
 
 
     #Comments! Fix the precise syntax of this comment later!
-    - match: "/' "
+    - match: "/'"
       scope: punctuation.definition.comment.begin.xd
       push:
-        - meta_scope: comment.line.xd
-        - match: " '/"
+        - meta_scope: comment.block.xd
+        - match: "'/"
           scope: punctuation.definition.comment.end.xd
           pop: true
+
+    #Try to figure out how to handle invalid comments later!!!
+    # - match: "[^\\s]?/\'[^\\s]?"
+    #   scope: invalid.xd
 
     - match: ';'
       scope: punctuation.terminator.xd
