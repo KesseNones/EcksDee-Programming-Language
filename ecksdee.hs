@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-04-25.98
+--Version: 2024-05-03.18
 --Toy Programming Language Named EcksDee
 
 {-
@@ -106,10 +106,10 @@ multVals _ _ = error "Operator (*) error. \n Can't multiply types together that 
 
 -- Divides two values. If the types can't be divided, throw an error.
 divideVals :: Value -> Value -> Value
-divideVals (BigInteger a) (BigInteger b) = BigInteger (b `div` a)
-divideVals (Integer a) (Integer b) = Integer (b `div` a)
-divideVals (Double a) (Double b) = Double (b / a)
-divideVals (Float a) (Float b) = Float (b / a)
+divideVals (BigInteger a) (BigInteger b) = if (a /= 0) then BigInteger (b `div` a) else error "Operator (/) error. Can't divide by zero for type BigInteger!"
+divideVals (Integer a) (Integer b) = if (a /= 0) then Integer (b `div` a) else error "Operator (/) error. Can't divide by zero for type Integer!"
+divideVals (Double a) (Double b) = if (a /= 0.0) then Double (b / a) else error "Operator (/) error. Can't divide by zero for type Double!"
+divideVals (Float a) (Float b) = if (a /= 0.0) then Float (b / a) else error "Operator (/) error. Can't divide by zero for type Float!"
 divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
 
 --Performs modulo operation on two values.
