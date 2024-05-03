@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-03.19
+--Version: 2024-05-03.82
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1102,10 +1102,12 @@ doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Objec
 --Prints stack to stdout when called.
 doDebugPrintStack :: EDState -> IO EDState
 doDebugPrintStack state = do 
+    putStrLn "----------------------------------------------\nDEBUG START"
     putStrLn "STACK START"
     printStack (stack state)
     putStrLn "STACK END"
     putStrLn ("STACK LENGTH: " ++ (show $ length $ stack state))
+    putStrLn "DEBUG END\n----------------------------------------------"
     return state
 
 -- performs the operation identified by the string. for example, doOp state "+"
