@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-03.18
+--Version: 2024-05-03.19
 --Toy Programming Language Named EcksDee
 
 {-
@@ -9,7 +9,7 @@
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
         -Standardize errors.
-        -Casting edge case may exist where BigInteger to Char works when it shouldn't!
+        -Casting edge case may exist where BigInteger to Char works when it shouldn't! (Fixed? Needs more testing.)
 -}
 
 import Data.List
@@ -1099,6 +1099,15 @@ doQueryType' (Boolean _) = String{chrs = "Boolean", len = length "Boolean"}
 doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "List"}
 doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
 
+--Prints stack to stdout when called.
+doDebugPrintStack :: EDState -> IO EDState
+doDebugPrintStack state = do 
+    putStrLn "STACK START"
+    printStack (stack state)
+    putStrLn "STACK END"
+    putStrLn ("STACK LENGTH: " ++ (show $ length $ stack state))
+    return state
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1155,7 +1164,11 @@ doOp "readChar" = doReadChar
 doOp "print" = doPrint
 doOp "read" = doRead
 
+--Error display
 doOp "printError" = doPrintError
+
+--Debug Operator
+doOp "debugPrintStack" = doDebugPrintStack
 
 --Object Operators
 doOp "addField" = doAddField 

@@ -1061,6 +1061,41 @@ Final Stack:<br>
 N/A Since program terminated early so what 
 the stack has does not matter
 
+#### Operator: ```debugPrintStack```
+##### Performance:
+```
+o(n)
+```
+(At least linear time badness but likely worse if there's nested data.)
+
+Debug operator that prints current stack to standard out as well as its length.
+Beyond debugging this doesn't have a ton of use cases but it's still useful.
+
+Example:
+```
+42 3.14 "cheese" 
+debugPrintStack
+dropStack
+```
+
+Stdout:
+```
+STACK START
+String {chrs = "cheese", len = 6}
+Float 3.14
+Integer 42
+STACK END
+STACK LENGTH: 3
+```
+
+Final Stack:
+```
+
+```
+
+As can be seen, the stack is empty but the stack contents are printed 
+to stdout showing what the stack was before the whole stack was dropped.
+
 #### Operator: ```read``` 
 
 ##### Performance: 
