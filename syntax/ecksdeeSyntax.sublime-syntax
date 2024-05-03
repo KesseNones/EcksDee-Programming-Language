@@ -88,6 +88,10 @@ contexts:
 
     #Gross gigantic operators area.
 
+    #Stack printing debug operator.
+    - match: '\bdebugPrintStack\b'
+      scope: keyword.operator.xd
+
     #Addition
     - match: '(?<![\w])\+(?![\w])'
       scope: keyword.operator.xd
