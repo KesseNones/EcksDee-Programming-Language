@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-03.82
+--Version: 2024-05-03.83
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1104,7 +1104,7 @@ doDebugPrintStack :: EDState -> IO EDState
 doDebugPrintStack state = do 
     putStrLn "----------------------------------------------\nDEBUG START"
     putStrLn "STACK START"
-    printStack (stack state)
+    printStack (reverse $ stack state)
     putStrLn "STACK END"
     putStrLn ("STACK LENGTH: " ++ (show $ length $ stack state))
     putStrLn "DEBUG END\n----------------------------------------------"
