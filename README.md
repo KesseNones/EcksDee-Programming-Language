@@ -2605,6 +2605,19 @@ in windows will be gathered and shared here later.
 There you have it. If you have a unix based system, a Haskell compiler, 
 and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
 
+## Random Cool Extra Thing: A Syntax Highlighter
+If you use Sublime Text there now exists a syntax highlighter useable for EcksDee!
+
+### To use it:
+1. Go to `Preferences` -> `Browse Packages...`
+2. Copy the `ecksdeeSyntax.sublime-syntax` file located in the `syntax` directory to the 
+   `User` folder located in the package browsing window.
+3. In the bottom right corner of the window in a `.xd` file, 
+   select `EcksDee` from the parsing options and the highlighting will appear.
+
+This makes EcksDee significantly nicer to code in since 
+it's easier to see mistakes and it just looks all around prettier.
+
 ## Conclusion:
 EcksDee has been a fun programming language to develop 
 from the very simple Forth interpretor it started as. 
