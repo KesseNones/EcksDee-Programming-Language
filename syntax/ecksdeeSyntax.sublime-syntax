@@ -1,0 +1,225 @@
+%YAML 1.2
+---
+name: EcksDee
+# See http://www.sublimetext.com/docs/syntax.html
+file_extensions:
+  - xd
+scope: source.xd
+contexts:
+  main:
+    # Strings begin and end with quotes, and use backslashes as an escape
+    # character
+    # - match: "\""
+    #   scope: punctuation.definition.string.begin.xd
+    #   push: double_quoted_string
+
+
+    #Comments! Fix the precise syntax of this comment later!
+    - match: "/'"
+      scope: punctuation.definition.comment.begin.xd
+      push:
+        - meta_scope: comment.block.xd
+        - match: "'/"
+          scope: punctuation.definition.comment.end.xd
+          pop: true
+
+    #Try to figure out how to handle invalid comments later!!!
+    # - match: "[^\\s]?/\'[^\\s]?"
+    #   scope: invalid.xd
+
+    - match: ';'
+      scope: punctuation.terminator.xd
+
+    #Fancier version of function parisng but it's a bit borked.
+    # - match: '(func)\s+(def|call)\s+(\w+)\s+(.*\s+)?(;)'
+    #   captures:
+    #     1: variable.function.xd
+    #     2: variable.parameter.xd
+    #     3: constant.character.xd
+
+    #Highlights functions.
+    - match: '\b(func)\s+(def|call)\s+(\w+)'
+      captures:
+        1: variable.function.xd
+        2: variable.parameter.xd
+        3: constant.language.infinity.xd
+
+    #Highlights variables local and global.
+    - match: '\b(var|loc)\s+(mak|get|mut|del)\s+(\w+)\s+(;)(?![\w])'
+      captures:
+        1: variable.language.xd
+        2: variable.parameter.xd
+        3: variable.function.xd
+
+    #Try to figure out try-catch highlighting later on!
+    # - match: '\b(attempt)\s*(onError)\s*;'
+    #   captures:
+    #     1: variable.function.xd
+    #     2: variable.function.xd
+
+
+    #Highlights strings.
+    - match: '(?<![\w])"[^"]*"(?![\w])'
+      scope: string.quoted.double.xd
+
+    #Char parsing
+    - match: "(?<![\\w])\'[\\\\]?.\'(?![\\w])"
+      scope: string.quoted.single.xd
+
+    #Boolean parsing
+    - match: '\b(true|True|false|False)\b'
+      scope: constant.character.xd
+
+    #Parses empty lists/objects
+    - match: '(?<![\w])(\[\]|{})(?![\w])'
+      scope: entity.other.inherited-class.xd
+
+    # Keywords are if, else for and while.
+    # Note that blackslashes don't need to be escaped within single quoted
+    # strings in YAML. When using single quoted strings, only single quotes
+    # need to be escaped: this is done by using two single quotes next to each
+    # other.
+    - match: '\b(if|else|while)\b'
+      scope: keyword.control.xd
+
+    # Numbers
+    - match: '\b(-)?[0-9.]+(e(\-)?[0-9.]+)?(d|b)?\b'
+      scope: constant.numeric.xd
+
+    #Gross gigantic operators area.
+
+    #Addition
+    - match: '(?<![\w])\+(?![\w])'
+      scope: keyword.operator.xd
+
+    #Subtraction
+    - match: '(?<![\w])\-(?![\w])'
+      scope: keyword.operator.xd
+
+    #Multiplication
+    - match: '(?<![\w])\*(?![\w])'
+      scope: keyword.operator.xd
+
+    #Division
+    - match: '(?<![\w])\/(?![\w])'
+      scope: keyword.operator.xd
+
+    #Swap
+    - match: '\bswap\b'
+      scope: keyword.operator.xd
+
+    #Drop/dropstack
+    - match: '\bdropStack|drop\b'
+      scope: keyword.operator.xd
+
+    #Rot
+    - match: '\brot\b'
+      scope: keyword.operator.xd
+
+    #Dup
+    - match: '\bdup\b'
+      scope: keyword.operator.xd
+
+    #Equals
+    - match: '(?<![\w])==(?![\w])'
+      scope: keyword.operator.xd
+
+    #Geq/greater than
+    - match: '(?<![\w])(>=|>)(?![\w])'
+      scope: keyword.operator.xd
+
+    #Leq/less than
+    - match: '(?<![\w])(<=|<)(?![\w])'
+      scope: keyword.operator.xd
+
+    #Modulo
+    - match: '(?<![\w])%(?![\w])'
+      scope: keyword.operator.xd
+
+    #Logical AND
+    - match: '\band\b'
+      scope: keyword.operator.xd
+
+    #Logical XOR / OR
+    - match: '\b(xor|or)\b'
+      scope: keyword.operator.xd
+
+    #Logical NOT
+    - match: '\bnot\b'
+      scope: keyword.operator.xd
+
+    #Exponent operator
+    - match: '\bpow\b'
+      scope: keyword.operator.xd
+
+    #List/String push operator
+    - match: '\b(push|p)\b'
+      scope: keyword.operator.xd
+
+    #List/String pop
+    - match: '\b(pop|po)\b'
+      scope: keyword.operator.xd
+
+    #List/String front push
+    - match: '\b(fpush|fp)\b'
+      scope: keyword.operator.xd
+
+    #List/String front pop
+    - match: '\b(fpop|fpo)\b'
+      scope: keyword.operator.xd
+
+    #List/String index
+    - match: '\bindex\b'
+      scope: keyword.operator.xd
+
+    #List/String length
+    - match: '\b(length|len)\b'
+      scope: keyword.operator.xd
+
+    #List/String/Object isEmpty
+    - match: '\bisEmpty\b'
+      scope: keyword.operator.xd
+
+    #List/String clear
+    - match: '\bclear\b'
+      scope: keyword.operator.xd
+
+    #List/String/Object contains
+    - match: '\bcontains\b'
+      scope: keyword.operator.xd
+
+    #List/String change item at.
+    - match: '\bchangeItemAt\b'
+      scope: keyword.operator.xd
+
+    #Whitespace check
+    - match: '\bisWhitespace\b'
+      scope: keyword.operator.xd
+
+    #Caster
+    - match: '\bcast\b'
+      scope: keyword.operator.xd
+
+    #Queries type
+    - match: '\bqueryType\b'
+      scope: keyword.operator.xd
+
+    #IO out
+    - match: '\b(printError|printLine|printChar|print)\b'
+      scope: keyword.operator.xd
+
+    #IO In
+    - match: '\b(readLine|readChar|read)\b'
+      scope: keyword.operator.xd
+
+    #Field changers for object
+    - match: '\b(add|remove|get|mutate)Field\b'
+      scope: keyword.operator.xd
+
+    #File IO in
+    - match: '\breadFile\b'
+      scope: keyword.operator.xd
+
+    #File IO out
+    - match: '\bwriteFile\b'
+      scope: keyword.operator.xd
