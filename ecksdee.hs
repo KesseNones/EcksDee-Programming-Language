@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-03.83
+--Version: 2024-05-07.90
 --Toy Programming Language Named EcksDee
 
 {-
@@ -605,11 +605,13 @@ doFpop' state (List {items = is, len = l}) =
     in fsPush (popped) state'
 
 --String case.
+doFpop' state (String {chrs = "", len = 0}) = fsPush (String {chrs = "", len = 0}) state
 doFpop' state (String {chrs = cs, len = l}) = 
     let state' = fsPush (String {chrs = tail cs, len = l - 1}) state
     in fsPush (Char $ head cs) state'
 doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
 
+--Builds new list after pop.
 doFpop'' :: Value -> Value -> Int -> Value
 doFpop'' List{items = as, len = al} List{items = bs, len = bl} index 
     |   index < al = 
