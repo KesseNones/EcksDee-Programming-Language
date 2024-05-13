@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-07.90
+--Version: 2024-05-13.24
 --Toy Programming Language Named EcksDee
 
 {-
@@ -84,7 +84,7 @@ instance Exception GeneralException
 
 --Used in throwing error.
 throwError :: String -> IO ()
-throwError msg = catch (throw $ GeneralException msg) errorHandler
+throwError msg = throw $ GeneralException msg
 
 --Used in handling errors to be displayed to user.
 errorHandler :: GeneralException -> IO ()
@@ -880,8 +880,8 @@ doPrintError :: EDState -> IO EDState
 doPrintError state = do 
     let stck = stack state
     case stck of 
-        ((String{chrs = err, len = _}):xs) -> error err
-        _ -> error "\nOperator (printError) error.\nString needed on top of stack for error to print."
+        ((String{chrs = err, len = _}):xs) -> throwError err >> return state
+        _ -> throwError "\nOperator (printError) error.\nString needed on top of stack for error to print." >> return state
 
 --Reads a multi-line string from stdin until 
 -- an empty string is read or EOF is hit.
@@ -1324,10 +1324,9 @@ doNode :: AstNode -> EDState -> IO EDState
 -- and instead runs the code in on Error if there's a problem.
 doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame state)) handler 
     where 
-        handler :: SomeException -> IO EDState
-        handler ex = 
-            let strErr = show ex
-                state' = fsPush (String {chrs = strErr, len = length strErr}) (addFrame state)
+        handler :: GeneralException -> IO EDState
+        handler (GeneralException msg) = 
+            let state' = fsPush (String {chrs = msg, len = length msg}) (addFrame state)
             in doNode err (addFrame state')
     
 
