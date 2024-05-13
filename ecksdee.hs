@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-13.25
+--Version: 2024-05-13.27
 --Toy Programming Language Named EcksDee
 
 {-
@@ -86,15 +86,22 @@ instance Exception GeneralException
 throwError :: String -> EDState -> IO EDState
 throwError msg = throw $ GeneralException msg
 
+findTypeStrsForError :: Value -> Value -> (String, String)
+findTypeStrsForError x y = (chrs $ doQueryType' x, chrs $ doQueryType' y)
+
 --Adds two values together. If the types can't be added, throw an error.
 --Can also act as an OR operator for Boolean type.
-addVals :: Value -> Value -> Value
-addVals (BigInteger a) (BigInteger b) = BigInteger (a + b)
-addVals (Integer a) (Integer b) = Integer (a + b)
-addVals (Double a) (Double b) = Double (a + b)
-addVals (Float a) (Float b) = Float (a + b)
-addVals (Boolean a) (Boolean b) = Boolean (a || b)
-addVals _ _ = error "Operator (+) error. \n Can't add types together that aren't BigIntegers, Integers, Floats, or Booleans. \n Data types also need to match."
+addVals :: Value -> Value -> Either Value String 
+addVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a + b)
+addVals (Integer a) (Integer b) = Left $ Integer (a + b)
+addVals (Double a) (Double b) = Left $ Double (a + b)
+addVals (Float a) (Float b) = Left $ Float (a + b)
+addVals (Boolean a) (Boolean b) = Left $ Boolean (a || b)
+addVals a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (+) error. Can't add types together that are not types of BigIntegers, Integers, Floats, or Booleans! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 -- Subtracts two values. If the types can't be subtracted, throw an error.
 subVals :: Value -> Value -> Value
@@ -163,12 +170,14 @@ doAdd :: EDState -> IO EDState
 doAdd state = do 
     let stck = (stack state)
     case stck of 
-        [] -> error "Operator (+) error. Addition requires two operands!"
-        [x] -> error "Operator (+) error. Addition requires two operands!"
+        [] -> throwError "Operator (+) error. Addition requires two operands!" state
+        [x] -> throwError "Operator (+) error. Addition requires two operands!" state
         vals ->  
             let (state', a, b) = fsPop2 state
-                ret = (\addRes -> return (fsPush addRes state'))
-            in ret $! (addVals a b)
+                addRes = addVals a b
+            in case addRes of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Subtracts two values on stack if they can be subtracted.
 doSub :: EDState -> IO EDState
