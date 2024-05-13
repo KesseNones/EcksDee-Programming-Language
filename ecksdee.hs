@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-13.24
+--Version: 2024-05-13.25
 --Toy Programming Language Named EcksDee
 
 {-
@@ -83,12 +83,8 @@ data GeneralException = GeneralException String deriving (Show, Typeable)
 instance Exception GeneralException
 
 --Used in throwing error.
-throwError :: String -> IO ()
+throwError :: String -> EDState -> IO EDState
 throwError msg = throw $ GeneralException msg
-
---Used in handling errors to be displayed to user.
-errorHandler :: GeneralException -> IO ()
-errorHandler (GeneralException msg) = putStrLn msg
 
 --Adds two values together. If the types can't be added, throw an error.
 --Can also act as an OR operator for Boolean type.
@@ -155,9 +151,8 @@ doConcat :: EDState -> IO EDState
 doConcat state = do 
     let stck = (stack state)
     case stck of 
-        [] -> throwError "Operator (++) error. Concatenation requires two operands!" >>
-              return state
-        [x] -> error "Operator (++) error. Concatenation requires two operands!"
+        [] -> throwError "Operator (++) error. Concatenation requires two operands!" state 
+        [x] -> throwError "Operator (++) error. Concatenation requires two operands!" state
         vals -> 
             let (state', a, b) = fsPop2 state
                 ret = (\x -> return (fsPush x state'))
@@ -880,8 +875,8 @@ doPrintError :: EDState -> IO EDState
 doPrintError state = do 
     let stck = stack state
     case stck of 
-        ((String{chrs = err, len = _}):xs) -> throwError err >> return state
-        _ -> throwError "\nOperator (printError) error.\nString needed on top of stack for error to print." >> return state
+        ((String{chrs = err, len = _}):xs) -> throwError err state
+        _ -> throwError "\nOperator (printError) error.\nString needed on top of stack for error to print." state
 
 --Reads a multi-line string from stdin until 
 -- an empty string is read or EOF is hit.
