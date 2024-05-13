@@ -22,6 +22,7 @@ import System.Environment
 import qualified Data.Map.Strict as M
 import Control.DeepSeq
 import Control.Exception
+import Data.Typeable
 
 data Value =                                         
         BigInteger Integer
@@ -76,6 +77,18 @@ data EDState = EDState {
     vars :: M.Map String Value,
     frames :: [M.Map String Value]
 }
+
+data GeneralException = GeneralException String deriving (Show, Typeable)
+
+instance Exception GeneralException
+
+--Used in throwing error.
+throwError :: String -> IO ()
+throwError msg = catch (throw $ GeneralException msg) errorHandler
+
+--Used in handling errors to be displayed to user.
+errorHandler :: GeneralException -> IO ()
+errorHandler (GeneralException msg) = putStrLn msg
 
 --Adds two values together. If the types can't be added, throw an error.
 --Can also act as an OR operator for Boolean type.
@@ -142,7 +155,8 @@ doConcat :: EDState -> IO EDState
 doConcat state = do 
     let stck = (stack state)
     case stck of 
-        [] -> error "Operator (++) error. Concatenation requires two operands!"
+        [] -> throwError "Operator (++) error. Concatenation requires two operands!" >>
+              return state
         [x] -> error "Operator (++) error. Concatenation requires two operands!"
         vals -> 
             let (state', a, b) = fsPop2 state
