@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-13.27
+--Version: 2024-05-14.12
 --Toy Programming Language Named EcksDee
 
 {-
@@ -99,17 +99,21 @@ addVals (Float a) (Float b) = Left $ Float (a + b)
 addVals (Boolean a) (Boolean b) = Left $ Boolean (a || b)
 addVals a b =
     let (aType, bType) = findTypeStrsForError a b  
-    in Right ("Operator (+) error. Can't add types together that are not types of BigIntegers, Integers, Floats, or Booleans! " 
+    in Right ("Operator (+) error. Can't add types together that are not types of BigIntegers, Integers, Floats, Doubles, or Booleans! " 
         ++ "Attempted types were: " 
         ++ aType ++ " and " ++ bType)
 
 -- Subtracts two values. If the types can't be subtracted, throw an error.
-subVals :: Value -> Value -> Value
-subVals (BigInteger a) (BigInteger b) = BigInteger (b - a)
-subVals (Integer a) (Integer b) = Integer (b - a)
-subVals (Double a) (Double b) = Double (b - a)
-subVals (Float a) (Float b) = Float (b - a)
-subVals _ _ = error "Operator (-) error. \n Can't subtract types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match."
+subVals :: Value -> Value -> Either Value String
+subVals (BigInteger a) (BigInteger b) = Left $ BigInteger (b - a)
+subVals (Integer a) (Integer b) = Left $ Integer (b - a)
+subVals (Double a) (Double b) = Left $ Double (b - a)
+subVals (Float a) (Float b) = Left $ Float (b - a)
+subVals a b =
+    let (bType, aType) = findTypeStrsForError b a  
+    in Right ("Operator (-) error. Can't subtract types that are not types of BigIntegers, Integers, Floats, or Doubles! " 
+        ++ "Attempted types were: " 
+        ++ bType ++ " and " ++ aType)
 
 --Multiplies two values together. If the types can't be multiplied, throw an error.
 multVals :: Value -> Value -> Value
@@ -167,11 +171,11 @@ doConcat state = do
 
 --Adds two values on stack if they can be added.
 doAdd :: EDState -> IO EDState
-doAdd state = do 
+doAdd state = 
     let stck = (stack state)
-    case stck of 
-        [] -> throwError "Operator (+) error. Addition requires two operands!" state
-        [x] -> throwError "Operator (+) error. Addition requires two operands!" state
+    in case stck of 
+        [] -> throwError "Operator (+) error. Addition requires two operands; none provided!" state
+        [x] -> throwError "Operator (+) error. Addition requires two operands; only one provided!" state
         vals ->  
             let (state', a, b) = fsPop2 state
                 addRes = addVals a b
@@ -181,15 +185,16 @@ doAdd state = do
 
 --Subtracts two values on stack if they can be subtracted.
 doSub :: EDState -> IO EDState
-doSub state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (-) error. Subtraction requires two operands!"
-        [x] -> error "Operator (-) error. Subtraction requires two operands!"
+doSub state = 
+    case (stack state) of 
+        [] -> throwError "Operator (-) error. Subtraction requires two operands; none provided!" state
+        [x] -> throwError "Operator (-) error. Subtraction requires two operands; only one provided!" state
         vals ->  
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (subVals a b)
+                subRes = subVals a b
+            in case subRes of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Multiplies two values on top of stack if they can be multiplied.
 doMul :: EDState -> IO EDState
