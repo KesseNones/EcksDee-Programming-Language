@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.18
+--Version: 2024-05-14.19
 --Toy Programming Language Named EcksDee
 
 {-
@@ -391,28 +391,33 @@ doGreaterThan' a b =
 --Checks if second to top element is less than top element of stack.
 --Pushes True if true and false if not.
 doLessThan :: EDState -> IO EDState
-doLessThan state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (<) error. Less than comparison requires two operands!"
-        [x] -> error "Operator (<) error. Less than comparison requires two operands!"
+doLessThan state = 
+    case (stack state) of 
+        [] -> throwError "Operator (<) error. Less than comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (<) error. Less than comparison requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (doLessThan' b a) 
+            in case (doLessThan' b a) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Makes sure the types match and then performs the < operation if so, 
 -- otherwise errors out.
-doLessThan' :: Value -> Value -> Value
-doLessThan' (BigInteger a) (BigInteger b) = Boolean (a < b)
-doLessThan' (Integer a) (Integer b) = Boolean (a < b)
-doLessThan' (Float a) (Float b) = Boolean (a < b)
-doLessThan' (Double a) (Double b) = Boolean (a < b)
-doLessThan' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs < bcs)
-doLessThan' (Char a) (Char b) = Boolean (a < b)
-doLessThan' (Boolean a) (Boolean b) = Boolean (a < b)
-doLessThan' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as < bs)
-doLessThan' _ _ = error "Operator (<) error. Operand types must match for valid comparison!"
+doLessThan' :: Value -> Value -> Either Value String
+doLessThan' (BigInteger a) (BigInteger b) = Left $ Boolean (a < b)
+doLessThan' (Integer a) (Integer b) = Left $ Boolean (a < b)
+doLessThan' (Float a) (Float b) = Left $ Boolean (a < b)
+doLessThan' (Double a) (Double b) = Left $ Boolean (a < b)
+doLessThan' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean (acs < bcs)
+doLessThan' (Char a) (Char b) = Left $ Boolean (a < b)
+doLessThan' (Boolean a) (Boolean b) = Left $ Boolean (a < b)
+doLessThan' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as < bs)
+doLessThan' a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (<) error. Can't compare types that are not both types of" 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Checks if second to top element is greater than equal to the top element of stack.
 --Pushes True if true and false if not.
