@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.976
+--Version: 2024-05-14.990
 --Toy Programming Language Named EcksDee
 
 {-
@@ -587,21 +587,24 @@ doNot' x =
 
 --Pushes an item to the end of a list on the stack.
 doPush :: EDState -> IO EDState
-doPush state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (push) error. Two operands required for push!"
-        [x] -> error "Operator (push) error. Two operands required for push!"
+doPush state = 
+    case (stack state) of 
+        [] -> throwError "Operator (push) error. Two operands required for push; none provided!" state
+        [x] -> throwError "Operator (push) error. Two operands required for push; only one provided!" state
         vals ->  
             let (state', list, val) = fsPop2 state
-                ret = (\x -> return x)
-            in ret $! (doPush' state' list val)  
+            in case (doPush' list val) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
---Pushes item to list or string.
-doPush' :: EDState -> Value -> Value -> EDState
-doPush' state (List {items = is, len = l}) valToPush = fsPush ( List {items = (M.insert l valToPush is), len = l + 1} ) state
-doPush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = cs ++ [c], len = l + 1}) state
-doPush' _ _ _ = error "Operator (push) error. Push operator needs a list or string and a value or char to be pushed!"
+--Pushes item/char to list/string
+doPush' :: Value -> Value -> Either Value String
+doPush' (List {items = is, len = l}) valToPush = Left $ List {items = (M.insert l valToPush is), len = l + 1}
+doPush' (String {chrs = cs, len = l}) (Char c) = Left $ String {chrs = cs ++ [c], len = l + 1}
+doPush' a b = 
+        let (aType, bType) = findTypeStrsForError a b 
+        in Right ("Operator (push) error. Push operator needs a list/string and a value/char to be pushed. Attempted types: " 
+            ++ aType ++ " and " ++ bType)
 
 --Pops an item from the list or string and pushes it to the stack.
 doPop :: EDState -> IO EDState
