@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.967
+--Version: 2024-05-14.976
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1030,17 +1030,19 @@ doChangeItemAt state = do
 --Raises one Float or Double to another Float or Double 
 --and returns as such, consuming the original two numbers.
 doPow :: EDState -> IO EDState
-doPow state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (pow) error. Two operands needed!"
-        [x] -> error "Operator (pow) error. Two operands needed!"
-        vals -> do 
+doPow state =  
+    case (stack state) of 
+        [] -> throwError "Operator (pow) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (pow) error. Two operands needed; only one provided!" state
+        vals ->  
             let (state', base, expnt) = fsPop2 state
-            case (base, expnt) of 
+            in case (base, expnt) of 
                 (Float bs, Float ex) -> return (fsPush (Float (bs ** ex)) state')
                 (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
-                (_, _) -> error "Operator (pow) error.\nOperands need to be type Float Float or Double Double!\nCan't mix types and only Float or Double types are valid!"
+                (a, b) ->
+                    let (aType, bType) = findTypeStrsForError a b
+                    in throwError ("Operator (pow) error. Operands need to be both of type Float or Double. Attempted types: " 
+                        ++ aType ++ " and " ++ bType) state' 
 
 --Adds a field to a given object.
 doAddField :: EDState -> IO EDState
