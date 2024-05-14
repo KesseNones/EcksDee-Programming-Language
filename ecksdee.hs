@@ -257,11 +257,12 @@ doSwap state =
 
 --Removes top value from stack.
 doDrop :: EDState -> IO EDState
-doDrop state = do 
-    let stck = (stack state)
-    if null stck then return (state)
+doDrop state = 
+    if null (stack state) 
+    then 
+        return (state)
     else 
-        let (state', a) = fsPop state
+        let (state', _) = fsPop state
         in return (state')
 
 --Clears the entire stack to empty. 
