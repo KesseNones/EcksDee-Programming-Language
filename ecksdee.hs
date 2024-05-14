@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.944
+--Version: 2024-05-14.958
 --Toy Programming Language Named EcksDee
 
 {-
@@ -542,24 +542,28 @@ doOr' a b =
 --Performs logical XOR function on top two elements of stack.
 --If the operands are booleans, then XOR is performed.
 doXor :: EDState -> IO EDState
-doXor state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (xor) error. Logical XOR requires two operands!" 
-        [x] -> error "Operator (xor) error. Logical XOR requires two operands!"
+doXor state = 
+    case (stack state) of 
+        [] -> throwError "Operator (xor) error. Logical XOR requires two operands; none provided!" state 
+        [x] -> throwError "Operator (xor) error. Logical XOR requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state 
-                ret = (\x -> return x)
-            in ret $! (doXor' state' a b) 
+            in case (doXor' a b) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Performs logical XOR function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
-doXor' :: EDState -> Value -> Value -> EDState
-doXor' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
-doXor' state (Boolean False) (Boolean True) = fsPush (Boolean True) state
-doXor' state (Boolean True) (Boolean False) = fsPush (Boolean True) state
-doXor' state (Boolean True) (Boolean True) = fsPush (Boolean False) state
-doXor' _ _ _ = error "Operator (xor) error. Logical XOR requires two boolean types!"
+doXor' :: Value -> Value -> Either Value String
+doXor' (Boolean True) (Boolean True) = Left $ Boolean False
+doXor' (Boolean False) (Boolean False) = Left $ Boolean False
+doXor' (Boolean _) (Boolean _) = Left $ Boolean True
+doXor' a b =
+    let (aType, bType) = findTypeStrsForError b a  
+    in Right ("Operator (xor) error. Can't logically XOR two items that are not both types of" 
+        ++ " Boolean! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Performs the logical NOT operator on given boolean 
 -- and throws errors when things go wrong.
