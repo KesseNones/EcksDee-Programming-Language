@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.15
+--Version: 2024-05-14.16
 --Toy Programming Language Named EcksDee
 
 {-
@@ -298,28 +298,33 @@ doDup state =
 --Checks equality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
 doEqual :: EDState -> IO EDState
-doEqual state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (==) error. Equality comparison requires two operands!"
-        [x] -> error "Operator (==) error. Equality comparison requires two operands!"
+doEqual state = 
+    case (stack state) of 
+        [] -> throwError "Operator (==) error. Equality comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (==) error. Equality comparison requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\eqRes -> return (fsPush eqRes state'))
-            in ret $! (doEqual' a b)
+            in case (doEqual' a b) of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Makes sure the types match and then performs the equality operation if so, 
--- otherwise errors out.
-doEqual' :: Value -> Value -> Value
-doEqual' (BigInteger a) (BigInteger b) = Boolean (a == b)
-doEqual' (Integer a) (Integer b) = Boolean (a == b)
-doEqual' (Float a) (Float b) = Boolean (a == b)
-doEqual' (Double a) (Double b) = Boolean (a == b)
-doEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean ((al == bl) && (acs == bcs))
-doEqual' (Char a) (Char b) = Boolean (a == b)
-doEqual' (Boolean a) (Boolean b) = Boolean (a == b)
-doEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean ((al == bl) && (as == bs))
-doEqual' _ _ = error "Operator (==) error. Operand types must match for valid comparison!"
+-- otherwise returns error string.
+doEqual' :: Value -> Value -> Either Value String
+doEqual' (BigInteger a) (BigInteger b) = Left $ Boolean (a == b)
+doEqual' (Integer a) (Integer b) = Left $ Boolean (a == b)
+doEqual' (Float a) (Float b) = Left $ Boolean (a == b)
+doEqual' (Double a) (Double b) = Left $ Boolean (a == b)
+doEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean ((al == bl) && (acs == bcs))
+doEqual' (Char a) (Char b) = Left $ Boolean (a == b)
+doEqual' (Boolean a) (Boolean b) = Left $ Boolean (a == b)
+doEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean ((al == bl) && (as == bs))
+doEqual' a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (==) error. Can't compare types that are not both types of" 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ "Attempted types were: " 
+        ++ bType ++ " and " ++ aType)
 
 --Checks inequality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
