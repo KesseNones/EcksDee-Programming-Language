@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.933
+--Version: 2024-05-14.937
 --Toy Programming Language Named EcksDee
 
 {-
@@ -502,14 +502,11 @@ doAnd state =
                 Left v -> return (fsPush v state')
                 Right err -> throwError err state'
 
-
 --Performs logical AND function on two operands and returns an updated EDState.
 -- On failure, an error is returned.
 doAnd' :: Value -> Value -> Either Value String
-doAnd' (Boolean False) (Boolean False) = Left $ Boolean False
-doAnd' (Boolean False) (Boolean True) = Left $ Boolean False
-doAnd' (Boolean True) (Boolean False) = Left $ Boolean False
 doAnd' (Boolean True) (Boolean True) = Left $ Boolean True
+doAnd' (Boolean _) (Boolean _) = Left $ Boolean False
 doAnd' a b =
     let (aType, bType) = findTypeStrsForError b a  
     in Right ("Operator (and) error. Can't logically AND two items that are not both types of" 
