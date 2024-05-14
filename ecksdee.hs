@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.19
+--Version: 2024-05-14.198
 --Toy Programming Language Named EcksDee
 
 {-
@@ -422,28 +422,33 @@ doLessThan' a b =
 --Checks if second to top element is greater than equal to the top element of stack.
 --Pushes True if true and false if not.
 doGreaterThanEqualTo :: EDState -> IO EDState
-doGreaterThanEqualTo state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
-        [x] -> error "Operator (>=) error. Greater than equal to comparison requires two operands!"
+doGreaterThanEqualTo state = 
+    case (stack state) of 
+        [] -> throwError "Operator (>=) error. Greater than equal to comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (>=) error. Greater than equal to comparison requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (doGreaterThanEqualTo' b a) 
+            in case (doGreaterThanEqualTo' b a) of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Makes sure the types match and then performs the >= operation if so, 
 -- otherwise errors out.
-doGreaterThanEqualTo' :: Value -> Value -> Value
-doGreaterThanEqualTo' (BigInteger a) (BigInteger b) = Boolean (a >= b)
-doGreaterThanEqualTo' (Integer a) (Integer b) = Boolean (a >= b)
-doGreaterThanEqualTo' (Float a) (Float b) = Boolean (a >= b)
-doGreaterThanEqualTo' (Double a) (Double b) = Boolean (a >= b)
-doGreaterThanEqualTo' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs >= bcs)
-doGreaterThanEqualTo' (Char a) (Char b) = Boolean (a >= b)
-doGreaterThanEqualTo' (Boolean a) (Boolean b) = Boolean (a >= b)
-doGreaterThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as >= bs)
-doGreaterThanEqualTo' _ _ = error "Operator (>=) error. Operand types must match for valid comparison!"
+doGreaterThanEqualTo' :: Value -> Value -> Either Value String
+doGreaterThanEqualTo' (BigInteger a) (BigInteger b) = Left $ Boolean (a >= b)
+doGreaterThanEqualTo' (Integer a) (Integer b) = Left $ Boolean (a >= b)
+doGreaterThanEqualTo' (Float a) (Float b) = Left $ Boolean (a >= b)
+doGreaterThanEqualTo' (Double a) (Double b) = Left $ Boolean (a >= b)
+doGreaterThanEqualTo' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean (acs >= bcs)
+doGreaterThanEqualTo' (Char a) (Char b) = Left $ Boolean (a >= b)
+doGreaterThanEqualTo' (Boolean a) (Boolean b) = Left $ Boolean (a >= b)
+doGreaterThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as >= bs)
+doGreaterThanEqualTo' a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (>=) error. Can't compare types that are not both types of" 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Checks if second to top element is less than equal to top element of stack.
 --Pushes True if true and false if not.
