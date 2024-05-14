@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.13
+--Version: 2024-05-14.15
 --Toy Programming Language Named EcksDee
 
 {-
@@ -288,14 +288,12 @@ doRot state =
 
 --Duplicates top element of stack or does nothing.
 doDup :: EDState -> IO EDState
-doDup state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        vals -> do 
-            let (state', top) = fsPop state
-            let state'' = fsPush top state'
-            return (fsPush top state'')
+doDup state = 
+    case (stack state) of 
+        [] -> return state
+        vals ->  
+            let (_, top) = fsPop state
+            in return (fsPush top state)
 
 --Checks equality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
