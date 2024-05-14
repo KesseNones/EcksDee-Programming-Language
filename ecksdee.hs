@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.220
+--Version: 2024-05-14.933
 --Toy Programming Language Named EcksDee
 
 {-
@@ -492,24 +492,30 @@ doLessThanEqualTo' a b =
 --Performs logical AND function on top two elements of stack.
 --If the operands are booleans, then AND is performed.
 doAnd :: EDState -> IO EDState
-doAnd state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (and) error. Logical AND requires two operands!" 
-        [x] -> error "Operator (and) error. Logical AND requires two operands!"
+doAnd state = 
+    case (stack state) of 
+        [] -> throwError "Operator (and) error. Logical AND requires two operands; none provided!" state 
+        [x] -> throwError "Operator (and) error. Logical AND requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state 
-                ret = (\x -> return x)
-            in ret $! (doAnd' state' a b)
+            in case (doAnd' a b) of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
+
 
 --Performs logical AND function on two operands and returns an updated EDState.
--- On failure, an error is thrown.
-doAnd' :: EDState -> Value -> Value -> EDState
-doAnd' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
-doAnd' state (Boolean False) (Boolean True) = fsPush (Boolean False) state
-doAnd' state (Boolean True) (Boolean False) = fsPush (Boolean False) state
-doAnd' state (Boolean True) (Boolean True) = fsPush (Boolean True) state
-doAnd' _ _ _ = error "Operator (and) error. Logical AND requires two boolean types."
+-- On failure, an error is returned.
+doAnd' :: Value -> Value -> Either Value String
+doAnd' (Boolean False) (Boolean False) = Left $ Boolean False
+doAnd' (Boolean False) (Boolean True) = Left $ Boolean False
+doAnd' (Boolean True) (Boolean False) = Left $ Boolean False
+doAnd' (Boolean True) (Boolean True) = Left $ Boolean True
+doAnd' a b =
+    let (aType, bType) = findTypeStrsForError b a  
+    in Right ("Operator (and) error. Can't logically AND two items that are not both types of" 
+        ++ " Boolean! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Performs logical OR function on top two elements of stack.
 --If the operands are booleans, then OR is performed.
