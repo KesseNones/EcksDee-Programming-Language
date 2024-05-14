@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.198
+--Version: 2024-05-14.203
 --Toy Programming Language Named EcksDee
 
 {-
@@ -453,28 +453,33 @@ doGreaterThanEqualTo' a b =
 --Checks if second to top element is less than equal to top element of stack.
 --Pushes True if true and false if not.
 doLessThanEqualTo :: EDState -> IO EDState
-doLessThanEqualTo state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (<=) error. Less than comparison requires two operands!"
-        [x] -> error "Operator (<=) error. Less than comparison requires two operands!"
+doLessThanEqualTo state = 
+    case (stack state) of 
+        [] -> throwError "Operator (<=) error. Less than comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (<=) error. Less than comparison requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (doLessThanEqualTo' b a)
+            in case (doLessThanEqualTo' b a) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Makes sure the types match and then performs the <= operation if so, 
 -- otherwise errors out.
-doLessThanEqualTo' :: Value -> Value -> Value
-doLessThanEqualTo' (BigInteger a) (BigInteger b) = Boolean (a <= b)
-doLessThanEqualTo' (Integer a) (Integer b) = Boolean (a <= b)
-doLessThanEqualTo' (Float a) (Float b) = Boolean (a <= b)
-doLessThanEqualTo' (Double a) (Double b) = Boolean (a <= b)
-doLessThanEqualTo' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs <= bcs)
-doLessThanEqualTo' (Char a) (Char b) = Boolean (a <= b)
-doLessThanEqualTo' (Boolean a) (Boolean b) = Boolean (a <= b)
-doLessThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as <= bs)
-doLessThanEqualTo' _ _ = error "Operator (<=) error. Operand types must match for valid comparison!"
+doLessThanEqualTo' :: Value -> Value -> Either Value String
+doLessThanEqualTo' (BigInteger a) (BigInteger b) = Left $ Boolean (a <= b)
+doLessThanEqualTo' (Integer a) (Integer b) = Left $ Boolean (a <= b)
+doLessThanEqualTo' (Float a) (Float b) = Left $ Boolean (a <= b)
+doLessThanEqualTo' (Double a) (Double b) = Left $ Boolean (a <= b)
+doLessThanEqualTo' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean (acs <= bcs)
+doLessThanEqualTo' (Char a) (Char b) = Left $ Boolean (a <= b)
+doLessThanEqualTo' (Boolean a) (Boolean b) = Left $ Boolean (a <= b)
+doLessThanEqualTo' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as <= bs)
+doLessThanEqualTo' a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (<=) error. Can't compare types that are not both types of" 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Performs logical AND function on top two elements of stack.
 --If the operands are booleans, then AND is performed.
