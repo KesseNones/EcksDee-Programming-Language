@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.12
+--Version: 2024-05-14.13
 --Toy Programming Language Named EcksDee
 
 {-
@@ -99,7 +99,7 @@ addVals (Float a) (Float b) = Left $ Float (a + b)
 addVals (Boolean a) (Boolean b) = Left $ Boolean (a || b)
 addVals a b =
     let (aType, bType) = findTypeStrsForError a b  
-    in Right ("Operator (+) error. Can't add types together that are not types of BigIntegers, Integers, Floats, Doubles, or Booleans! " 
+    in Right ("Operator (+) error. Can't add types together that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! " 
         ++ "Attempted types were: " 
         ++ aType ++ " and " ++ bType)
 
@@ -111,18 +111,22 @@ subVals (Double a) (Double b) = Left $ Double (b - a)
 subVals (Float a) (Float b) = Left $ Float (b - a)
 subVals a b =
     let (bType, aType) = findTypeStrsForError b a  
-    in Right ("Operator (-) error. Can't subtract types that are not types of BigIntegers, Integers, Floats, or Doubles! " 
+    in Right ("Operator (-) error. Can't subtract types that are not both types of BigIntegers, Integers, Floats, or Doubles! " 
         ++ "Attempted types were: " 
         ++ bType ++ " and " ++ aType)
 
 --Multiplies two values together. If the types can't be multiplied, throw an error.
-multVals :: Value -> Value -> Value
-multVals (BigInteger a) (BigInteger b) = BigInteger (a * b)
-multVals (Integer a) (Integer b) = Integer (a * b)
-multVals (Double a) (Double b) = Double (a * b)
-multVals (Float a) (Float b) = Float (a * b)
-multVals (Boolean a) (Boolean b) = Boolean (a && b)
-multVals _ _ = error "Operator (*) error. \n Can't multiply types together that aren't BigIntegers, Integers, Floats, Doubles, or Booleans. \n Data types also need to match."
+multVals :: Value -> Value -> Either Value String
+multVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a * b)
+multVals (Integer a) (Integer b) = Left $ Integer (a * b)
+multVals (Double a) (Double b) = Left $ Double (a * b)
+multVals (Float a) (Float b) = Left $ Float (a * b)
+multVals (Boolean a) (Boolean b) = Left $ Boolean (a && b)
+multVals a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (*) error. Can't multiply types that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 -- Divides two values. If the types can't be divided, throw an error.
 divideVals :: Value -> Value -> Value
@@ -198,15 +202,16 @@ doSub state =
 
 --Multiplies two values on top of stack if they can be multiplied.
 doMul :: EDState -> IO EDState
-doMul state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (*) error. Multiplication requires two operands!"
-        [x] -> error "Operator (*) error. Multiplication requires two operands!"
+doMul state =  
+    case (stack state) of 
+        [] -> throwError "Operator (*) error. Multiplication requires two operands; none provided!" state
+        [x] -> throwError "Operator (*) error. Multiplication requires two operands; only one provided!" state
         vals -> 
             let (state', a, b) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (multVals a b)
+                mulRes = multVals a b
+            in case mulRes of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Divides two values on top of stack if they can be divided.
 --Errors out if problem happens.
