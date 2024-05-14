@@ -275,17 +275,16 @@ doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDSt
 --2 Items is identical to swap.
 --3 items performs the rotation.
 doRot :: EDState -> IO EDState
-doRot state = do 
-    let stck = (stack state)
-    case stck of 
+doRot state = 
+    case (stack state) of 
         [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
         [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
         [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        vals -> do 
+        vals -> 
             let (state', c, b, a) = fsPop3 state
-            let state'' = fsPush a state'
-            let state''' = fsPush c state''
-            return (fsPush b state''') 
+                state'' = fsPush a state'
+                state''' = fsPush c state''
+            in return (fsPush b state''') 
 
 --Duplicates top element of stack or does nothing.
 doDup :: EDState -> IO EDState
