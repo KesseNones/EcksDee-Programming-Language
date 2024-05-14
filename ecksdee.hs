@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.211
+--Version: 2024-05-14.220
 --Toy Programming Language Named EcksDee
 
 {-
@@ -161,25 +161,29 @@ doConcat'' List{items = is, len = l} List{items = accs, len = accLen} index offs
     |   otherwise = List{items = accs, len = accLen}
 
 --Concatenates two Strings or Lists.
-doConcat' :: Value -> Value -> Value
-doConcat' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = String {chrs = acs ++ bcs, len = al + bl}
+doConcat' :: Value -> Value -> Either Value String
+doConcat' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ String {chrs = acs ++ bcs, len = al + bl}
 doConcat' List {items = as, len = al} List {items = bs, len = bl} = 
     let List{items = cs, len = cl} = doConcat'' List{items = as, len = al} List{items = M.empty, len = 0} 0 0
         List{items = ds, len = dl} = doConcat'' List{items = bs, len = bl} List{items = cs, len = cl} 0 al
-    in List{items = ds, len = dl}
-doConcat' _ _ = error "Operator (++) error. \n Can't perform concatenation on types that aren't Strings or Lists.\n Types also have to both be strings or lists!"
+    in Left $ List{items = ds, len = dl}
+doConcat' a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (++) error. Can't concatenate types that are not both types of List or String! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Concatentates two Strings/Lists together.
 doConcat :: EDState -> IO EDState
-doConcat state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> throwError "Operator (++) error. Concatenation requires two operands!" state 
-        [x] -> throwError "Operator (++) error. Concatenation requires two operands!" state
+doConcat state = 
+    case (stack state) of 
+        [] -> throwError "Operator (++) error. Concatenation requires two operands; none provided!" state 
+        [x] -> throwError "Operator (++) error. Concatenation requires two operands; only one provided!" state
         vals -> 
             let (state', a, b) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (doConcat' a b)
+            in case (doConcat' a b) of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Adds two values on stack if they can be added.
 doAdd :: EDState -> IO EDState
