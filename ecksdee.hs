@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.958
+--Version: 2024-05-14.967
 --Toy Programming Language Named EcksDee
 
 {-
@@ -568,20 +568,22 @@ doXor' a b =
 --Performs the logical NOT operator on given boolean 
 -- and throws errors when things go wrong.
 doNot :: EDState -> IO EDState
-doNot state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (not) error. Logical NOT operation requires one operand!"
+doNot state = 
+    case (stack state) of 
+        [] -> throwError "Operator (not) error. Logical NOT operation requires one operand; none provided!" state
         vals -> 
             let (state', top) = fsPop state
-                ret = (\x -> return x)
-            in ret $! (doNot' state' top) 
+            in case (doNot' top) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state' 
 
 --Performs negation if input value is of type boolean.
-doNot' :: EDState -> Value -> EDState
-doNot' state (Boolean False) = fsPush (Boolean True) state
-doNot' state (Boolean True) = fsPush (Boolean False) state
-doNot' _ _ = error "Operator (not) error. Logical NOT requires one boolean type operand!"
+doNot' :: Value -> Either Value String
+doNot' (Boolean b) = Left $ Boolean $ not b 
+doNot' x = 
+    let xType = chrs $ doQueryType' x
+    in Right ("Operator (not) error. Can't logically NOT item that isn't type Boolean! " 
+        ++ "Attempted type was: " ++ xType)
 
 --Pushes an item to the end of a list on the stack.
 doPush :: EDState -> IO EDState
