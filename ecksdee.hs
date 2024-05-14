@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.16
+--Version: 2024-05-14.17
 --Toy Programming Language Named EcksDee
 
 {-
@@ -329,28 +329,33 @@ doEqual' a b =
 --Checks inequality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
 doNotEqual :: EDState -> IO EDState
-doNotEqual state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (/=) error. Inequality comparison requires two operands!"
-        [x] -> error "Operator (/=) error. Inequality comparison requires two operands!"
+doNotEqual state = 
+    case (stack state) of 
+        [] -> throwError "Operator (/=) error. Inequality comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (/=) error. Inequality comparison requires two operands; only one provided!" state
         vals ->  
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (doNotEqual' a b) 
+            in case (doNotEqual' a b) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state' 
 
 --Makes sure the types match and then performs the inequality operation if so, 
 -- otherwise errors out.
-doNotEqual' :: Value -> Value -> Value
-doNotEqual' (BigInteger a) (BigInteger b) = Boolean (a /= b)
-doNotEqual' (Integer a) (Integer b) = Boolean (a /= b)
-doNotEqual' (Float a) (Float b) = Boolean (a /= b)
-doNotEqual' (Double a) (Double b) = Boolean (a /= b)
-doNotEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Boolean (acs /= bcs)
-doNotEqual' (Char a) (Char b) = Boolean (a /= b)
-doNotEqual' (Boolean a) (Boolean b) = Boolean (a /= b)
-doNotEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Boolean (as /= bs)
-doNotEqual' _ _ = error "Operator (/=) error. Operand types must match for valid comparison!"
+doNotEqual' :: Value -> Value -> Either Value String
+doNotEqual' (BigInteger a) (BigInteger b) = Left $ Boolean (a /= b)
+doNotEqual' (Integer a) (Integer b) = Left $ Boolean (a /= b)
+doNotEqual' (Float a) (Float b) = Left $ Boolean (a /= b)
+doNotEqual' (Double a) (Double b) = Left $ Boolean (a /= b)
+doNotEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean (acs /= bcs)
+doNotEqual' (Char a) (Char b) = Left $ Boolean (a /= b)
+doNotEqual' (Boolean a) (Boolean b) = Left $ Boolean (a /= b)
+doNotEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as /= bs)
+doNotEqual' a b =
+    let (aType, bType) = findTypeStrsForError a b  
+    in Right ("Operator (/=) error. Can't compare types that are not both types of" 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ "Attempted types were: " 
+        ++ bType ++ " and " ++ aType)
 
 --Checks if second to top element is greater than top element of stack.
 --Pushes True if true and false if not.
