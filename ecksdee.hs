@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.203
+--Version: 2024-05-14.211
 --Toy Programming Language Named EcksDee
 
 {-
@@ -141,10 +141,14 @@ divideVals a b =
         ++ bType ++ " and " ++ aType)
 
 --Performs modulo operation on two values.
-modVals :: Value -> Value -> Value
-modVals (BigInteger a) (BigInteger b) = BigInteger (b `mod` a)
-modVals (Integer a) (Integer b) = Integer (b `mod` a)
-modVals _ _ = error "Operator (%) error. \n Can't perform modulo on types that aren't BigIntegers or Integers. \n Data types also have to match."
+modVals :: Value -> Value -> Either Value String
+modVals (BigInteger a) (BigInteger b) = Left $ BigInteger (b `mod` a)
+modVals (Integer a) (Integer b) = Left $ Integer (b `mod` a)
+modVals a b =
+    let (bType, aType) = findTypeStrsForError b a  
+    in Right ("Operator (%) error. Can't modulo types that are not both types of BigIntegers, or Integers! " 
+        ++ "Attempted types were: " 
+        ++ bType ++ " and " ++ aType)
 
 doConcat'' :: Value -> Value -> Int -> Int -> Value
 doConcat'' List{items = is, len = l} List{items = accs, len = accLen} index offset 
@@ -234,15 +238,15 @@ doDiv state =
 --Mods two values on top of stack if they can be modded.
 --Errors out if problem happens.
 doModulo :: EDState -> IO EDState
-doModulo state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (%) error. Modulo requires two operands!"
-        [x] -> error "Operator (%) error. Modulo requires two operands!"
+doModulo state = 
+    case (stack state) of 
+        [] -> throwError "Operator (%) error. Modulo requires two operands; none provided!" state
+        [x] -> throwError "Operator (%) error. Modulo requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (modVals a b)
+            in case (modVals a b) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Swaps the top two values at the top of the stack.
 doSwap :: EDState -> IO EDState
