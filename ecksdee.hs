@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.937
+--Version: 2024-05-14.944
 --Toy Programming Language Named EcksDee
 
 {-
@@ -517,24 +517,27 @@ doAnd' a b =
 --Performs logical OR function on top two elements of stack.
 --If the operands are booleans, then OR is performed.
 doOr :: EDState -> IO EDState
-doOr state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (or) error. Logical OR requires two operands!" 
-        [x] -> error "Operator (or) error. Logical OR requires two operands!"
+doOr state = 
+    case (stack state) of 
+        [] -> throwError "Operator (or) error. Logical OR requires two operands; none provided!" state 
+        [x] -> throwError "Operator (or) error. Logical OR requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return x)
-            in ret $! (doOr' state' a b)  
+            in case (doOr' a b) of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Performs logical OR function on two operands and returns an updated EDState.
--- On failure, an error is thrown.
-doOr' :: EDState -> Value -> Value -> EDState
-doOr' state (Boolean False) (Boolean False) = fsPush (Boolean False) state
-doOr' state (Boolean False) (Boolean True) = fsPush (Boolean True) state
-doOr' state (Boolean True) (Boolean False) = fsPush (Boolean True) state
-doOr' state (Boolean True) (Boolean True) = fsPush (Boolean True) state
-doOr' _ _ _ = error "Operator (or) error. Logical OR requires two boolean types."
+-- On failure, an error is returned.
+doOr' :: Value -> Value -> Either Value String
+doOr' (Boolean False) (Boolean False) = Left $ Boolean False
+doOr' (Boolean _) (Boolean _) = Left $ Boolean True
+doOr' a b =
+    let (aType, bType) = findTypeStrsForError b a  
+    in Right ("Operator (or) error. Can't logically OR two items that are not both types of" 
+        ++ " Boolean! " 
+        ++ "Attempted types were: " 
+        ++ aType ++ " and " ++ bType)
 
 --Performs logical XOR function on top two elements of stack.
 --If the operands are booleans, then XOR is performed.
