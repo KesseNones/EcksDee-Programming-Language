@@ -246,15 +246,14 @@ doModulo state = do
 
 --Swaps the top two values at the top of the stack.
 doSwap :: EDState -> IO EDState
-doSwap state = do 
-    let stck = (stack state)
-    case stck of 
+doSwap state = 
+    case (stack state) of 
         [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
         [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        vals -> do 
+        vals ->  
             let (state', b, a) = fsPop2 state
-            let state'' = fsPush a state' 
-            return (fsPush b state'')
+                state'' = fsPush a state' 
+            in return (fsPush b state'')
 
 --Removes top value from stack.
 doDrop :: EDState -> IO EDState
