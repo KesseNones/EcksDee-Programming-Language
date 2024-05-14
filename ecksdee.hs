@@ -129,12 +129,16 @@ multVals a b =
         ++ aType ++ " and " ++ bType)
 
 -- Divides two values. If the types can't be divided, throw an error.
-divideVals :: Value -> Value -> Value
-divideVals (BigInteger a) (BigInteger b) = if (a /= 0) then BigInteger (b `div` a) else error "Operator (/) error. Can't divide by zero for type BigInteger!"
-divideVals (Integer a) (Integer b) = if (a /= 0) then Integer (b `div` a) else error "Operator (/) error. Can't divide by zero for type Integer!"
-divideVals (Double a) (Double b) = if (a /= 0.0) then Double (b / a) else error "Operator (/) error. Can't divide by zero for type Double!"
-divideVals (Float a) (Float b) = if (a /= 0.0) then Float (b / a) else error "Operator (/) error. Can't divide by zero for type Float!"
-divideVals _ _ = error "Operator (/) error. \n Can't divide types that aren't BigIntegers, Integers, or Floats. \n Data types also need to match"
+divideVals :: Value -> Value -> Either Value String
+divideVals (BigInteger a) (BigInteger b) = if (a /= 0) then Left $ BigInteger (b `div` a) else Right "Operator (/) error. Can't divide by zero for type BigInteger!"
+divideVals (Integer a) (Integer b) = if (a /= 0) then Left $ Integer (b `div` a) else Right "Operator (/) error. Can't divide by zero for type Integer!"
+divideVals (Double a) (Double b) = if (a /= 0.0) then Left $ Double (b / a) else Right "Operator (/) error. Can't divide by zero for type Double!"
+divideVals (Float a) (Float b) = if (a /= 0.0) then Left $ Float (b / a) else Right "Operator (/) error. Can't divide by zero for type Float!"
+divideVals a b =
+    let (bType, aType) = findTypeStrsForError b a  
+    in Right ("Operator (/) error. Can't divide types that are not both types of BigIntegers, Integers, Floats, or Doubles! " 
+        ++ "Attempted types were: " 
+        ++ bType ++ " and " ++ aType)
 
 --Performs modulo operation on two values.
 modVals :: Value -> Value -> Value
@@ -216,15 +220,16 @@ doMul state =
 --Divides two values on top of stack if they can be divided.
 --Errors out if problem happens.
 doDiv :: EDState -> IO EDState
-doDiv state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (/) error. Division requires two operands!"
-        [x] -> error "Operator (/) error. Division requires two operands!"
+doDiv state =  
+    case (stack state) of 
+        [] -> throwError "Operator (/) error. Division requires two operands; none provided!" state
+        [x] -> throwError "Operator (/) error. Division requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
-                ret = (\x -> return (fsPush x state'))
-            in ret $! (divideVals a b)
+                divRes = divideVals a b
+            in case divRes of
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state'
 
 --Mods two values on top of stack if they can be modded.
 --Errors out if problem happens.
