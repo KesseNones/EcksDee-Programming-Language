@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.907
+--Version: 2024-05-15.988
 --Toy Programming Language Named EcksDee
 
 {-
@@ -826,113 +826,108 @@ doClear' x =
 
 --Used to turn a value of one type into another.
 doCast :: EDState -> IO EDState
-doCast state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (cast) error. Two operands required for cast!"
-        [x] -> error "Operator (cast) error. Two operands required for cast!"
+doCast state = 
+    case (stack state) of 
+        [] -> throwError "Operator (cast) error. Two operands required for cast; none provided!" state
+        [x] -> throwError "Operator (cast) error. Two operands required for cast; only one provided!" state
         vals ->  
             let (state', val, castType) = fsPop2 state
-                ret = (\x -> return x)
-            in ret $! (doCast' state' val castType) 
+            in case (doCast' val castType) of 
+                Left v -> return (fsPush v state')
+                Right err -> throwError err state' 
 
 --Performs the actual cast operation.
-doCast' :: EDState -> Value -> Value -> EDState
+doCast' :: Value -> Value -> Either Value String
 
-doCast' state (Boolean b) (String {chrs = "Integer", len = _}) = fsPush (Integer (if b then 1 else 0)) state
-doCast' state (Boolean b) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (if b then 1 else 0)) state
-doCast' state (Boolean b) (String {chrs = "String", len = _}) = fsPush (String {chrs = show b, len = length $ show b}) state
-doCast' state (Boolean b) (String {chrs = "Boolean", len = _}) = fsPush (Boolean b) state --Do nothing case.
+doCast' (Boolean b) String{chrs = "Integer", len = _} = Left $ Integer $ if b then 1 else 0
+doCast' (Boolean b) String{chrs = "BigInteger", len = _} = Left $ BigInteger $ if b then 1 else 0
+doCast' (Boolean b) String{chrs = "String", len = _} = Left $ let boolStr = show b in String {chrs = boolStr, len = length boolStr}
+doCast' (Boolean b) String{chrs = "Boolean", len = _} = Left $ Boolean b --Do nothing since it's already boolean.
 
-doCast' state (BigInteger n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
-doCast' state (BigInteger n) (String {chrs = "Integer", len = _}) = fsPush (Integer (fromIntegral n :: Int)) state
-doCast' state (BigInteger n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger n) state --Do nothing case.
-doCast' state (BigInteger n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
-doCast' state (BigInteger n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
-doCast' state (BigInteger n) (String{chrs = "Char", len = _}) =
+doCast' (BigInteger n) String{chrs = "String", len = _} = Left $ let bigIntStr = show n in String{chrs = bigIntStr, len = length bigIntStr}
+doCast' (BigInteger n) String{chrs = "Integer", len = _} = Left $ Integer (fromIntegral n :: Int)
+doCast' (BigInteger n) String{chrs = "BigInteger", len = _} = Left $ BigInteger n --Do nothing case since it's already bigint.
+doCast' (BigInteger n) String{chrs = "Float", len = _} = Left $ Float (fromIntegral n :: Float)
+doCast' (BigInteger n) String{chrs = "Double", len = _} = Left $ Double (fromIntegral n :: Double)
+doCast' (BigInteger n) String{chrs = "Char", len = _} =
     let nInt = fromIntegral n :: Int
-    in if validIntToChar nInt 
-        then fsPush (Char $ chr nInt) state
-        else error ("\nOperator (cast) error. " 
+    in if validIntToChar nInt
+        then Left $ Char $ chr nInt
+        else Right ("Operator (cast) error. " 
             ++ "Failed to convert type BigInteger to Char." ++ 
-            "\nTry making sure the Integer is in the UTF-8 numerical range.\n"
-            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
+            " Try making sure the Integer is in the UTF-8 numerical range."
+            ++ " Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
 
-doCast' state (Integer n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
-doCast' state (Integer n) (String {chrs = "Integer", len = _}) = fsPush (Integer n) state --Do nothing case
-doCast' state (Integer n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (fromIntegral n :: Integer)) state 
-doCast' state (Integer n) (String {chrs = "Float", len = _}) = fsPush (Float (fromIntegral n :: Float)) state
-doCast' state (Integer n) (String {chrs = "Double", len = _}) = fsPush (Double (fromIntegral n :: Double)) state
-doCast' state (Integer n) (String{chrs = "Char", len = _}) = 
+doCast' (Integer n) String{chrs = "String", len = _} = Left $ let intStr = show n in String {chrs = intStr, len = length intStr}
+doCast' (Integer n) String{chrs = "Integer", len = _} = Left $ Integer n --Do nothing case.
+doCast' (Integer n) String{chrs = "BigInteger", len = _} = Left $ BigInteger (fromIntegral n :: Integer)
+doCast' (Integer n) String{chrs = "Float", len = _} = Left $ Float (fromIntegral n :: Float)
+doCast' (Integer n) String{chrs = "Double", len = _} = Left $ Double (fromIntegral n :: Double)
+doCast' (Integer n) String{chrs = "Char", len = _} =
     if validIntToChar n 
-        then fsPush (Char $ chr n) state
-        else error ("\nOperator (cast) error. " 
+        then Left $ Char $ chr n
+        else Right ("Operator (cast) error. " 
             ++ "Failed to convert type Integer to Char." ++ 
-            "\nTry making sure the Integer is in the UTF-8 numerical range.\n"
-            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".") 
+            " Try making sure the Integer is in the UTF-8 numerical range. "
+            ++ "Given value: " ++ (show n) ++ " valid numbers are " ++ (show $ ord minBound) ++ " to " ++ (show $ ord maxBound) ++ ".")
 
-doCast' state (Float n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
-doCast' state (Float n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
-doCast' state (Float n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (floor n :: Integer)) state 
-doCast' state (Float n) (String {chrs = "Float", len = _}) = fsPush (Float n) state --Do nothing case.
-doCast' state (Float n) (String {chrs = "Double", len = _}) = fsPush (Double (realToFrac n :: Double)) state
+doCast' (Float n) String{chrs = "String", len = _} = Left $ let floatStr = show n in String{chrs = floatStr, len = length floatStr}
+doCast' (Float n) String{chrs = "Integer", len = _} = Left $ Integer $ truncate n
+doCast' (Float n) String{chrs = "BigInteger", len = _} = Left $ BigInteger (floor n :: Integer)
+doCast' (Float n) String{chrs = "Float", len = _} = Left $ Float n --Do nothing!
+doCast' (Float n) String{chrs = "Double", len = _} = Left $ Double (realToFrac n :: Double) --Has errors that crop up!
 
-doCast' state (Double n) (String {chrs = "String", len = _}) = fsPush (String {chrs = show n, len = length $ show n}) state
-doCast' state (Double n) (String {chrs = "Integer", len = _}) = fsPush (Integer (truncate n)) state
-doCast' state (Double n) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (floor n :: Integer)) state 
-doCast' state (Double n) (String {chrs = "Float", len = _}) = fsPush (Float (realToFrac n :: Float)) state
-doCast' state (Double n) (String {chrs = "Double", len = _}) = fsPush (Double n) state --Do nothing case.
+doCast' (Double n) String{chrs = "String", len = _} = Left $ let dbStr = show n in String{chrs = dbStr, len = length dbStr}
+doCast' (Double n) String{chrs = "Integer", len = _} = Left $ Integer (truncate n)
+doCast' (Double n) String{chrs = "BigInteger", len = _} = Left $ BigInteger (floor n :: Integer)
+doCast' (Double n) String{chrs = "Float", len = _} = Left $ Float (realToFrac n :: Float)
+doCast' (Double n) String{chrs = "Double", len = _} = Left $ Double n --Do nothing here!
 
-doCast' state (String {chrs = cs, len = l}) (String {chrs = "String", len = _}) = fsPush (String {chrs = cs, len = l}) state --Do nothing case.
+doCast' String{chrs = cs, len = l} String{chrs = "String", len = _} = Left $ String{chrs = cs, len = l} --Do nothing since it's string to string.
 
-doCast' state (Char c) (String {chrs = "String", len = _}) = fsPush ( String {chrs = ("" ++ [c]), len = length ("" ++ [c])} ) state --Char to string cast.
+doCast' (Char c) String{chrs = "String", len = _} = Left $ let cStr = [c] in String{chrs = cStr, len = length cStr}
+doCast' (Char c) String{chrs = "Integer", len = _} = Left $ Integer $ ord c
+doCast' (Char c) String{chrs = "BigInteger", len = _} = Left $ BigInteger (fromIntegral (ord c) :: Integer)
 
-doCast' state (Char c) (String {chrs = "Integer", len = _}) = fsPush (Integer $ ord c) state
-doCast' state (Char c) (String {chrs = "BigInteger", len = _}) = fsPush (BigInteger (fromIntegral (ord c) :: Integer)) state
+doCast' String{chrs = cs, len = l} String{chrs = "Integer", len = _} =
+    case (readMaybe cs :: Maybe Int) of 
+        Just v -> Left $ Integer v
+        Nothing -> Right ("Operator (cast) error. Failed to convert String \"" ++ cs ++ "\" to type Integer.")
 
-doCast' state (String {chrs = cs, len = l}) (String {chrs = "Integer", len = _}) = 
-    let mbyInt = readMaybe cs :: Maybe Int
-        parsed = case mbyInt of 
-                    Just val -> val 
-                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Integer.")
-        push = (\x -> fsPush (Integer x) state) 
-    in push $! parsed
+doCast' String{chrs = cs, len = l} String{chrs = "BigInteger", len = _} =
+    case (readMaybe cs :: Maybe Integer) of 
+        Just v -> Left $ BigInteger v
+        Nothing -> Right ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type BigInteger.")
 
-doCast' state (String {chrs = cs, len = l}) (String {chrs = "BigInteger", len = _}) = 
-    let mbyBigInt = readMaybe cs :: Maybe Integer
-        parsed = case mbyBigInt of 
-                    Just val -> val 
-                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type BigInteger.")
-        push = (\x -> fsPush (BigInteger x) state)
-    in push $! parsed
+doCast' String{chrs = cs, len = l} String{chrs = "Float", len = _} =
+    case (readMaybe cs :: Maybe Float) of 
+        Just v -> Left $ Float v
+        Nothing -> Right ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Float.")
 
-doCast' state (String {chrs = cs, len = l}) (String {chrs = "Float", len = _}) = 
-    let mbyFlt = readMaybe cs :: Maybe Float
-        parsed = case mbyFlt of 
-                    Just val -> val 
-                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Float.")
-        push = (\x -> fsPush (Float x) state)
-    in push $! parsed
+doCast' String{chrs = cs, len = l} String{chrs = "Double", len = _} =
+    case (readMaybe cs :: Maybe Double) of
+        Just v -> Left $ Double v
+        Nothing -> Right ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Double.")
 
-doCast' state (String {chrs = cs, len = l}) (String {chrs = "Double", len = _}) = 
-    let mbyDbl = readMaybe cs :: Maybe Double
-        parsed = case mbyDbl of 
-                    Just val -> val 
-                    Nothing -> error ("Operator (cast) error.\nFailed to convert String \"" ++ cs ++ "\" to type Double.")
-        push = (\x -> fsPush (Double parsed) state)
-    in push $! parsed
+doCast' List{items = is, len = l} String{chrs = "String", len = _} =
+    let listStr = "[" ++ (printList List{items = is, len = l} "" 0 False) ++ "]"
+        listStrLen = length listStr
+    in Left String{chrs = listStr, len = listStrLen}
 
-doCast' state (List{items = is, len = l}) (String{chrs = "String", len = _}) = 
-    let listStr = ( "[" ++ (printList List {items = is, len = l} "" 0 False) ++ "]" )
-        listStrLen = length listStr 
-    in fsPush (String{chrs = listStr, len = listStrLen}) state
-
-doCast' state (Object{fields = fs}) (String{chrs = "String", len = _}) = 
-    let objStr = ("{" ++ (printObj (M.toList fs) "") ++ "}")
+doCast' Object{fields = fs} String{chrs = "String", len = _} =
+    let objStr = "{" ++ (printObj (M.toList fs) "") ++ "}"
         objStrLen = length objStr
-    in fsPush (String{chrs = objStr, len = objStrLen}) state
+    in Left String{chrs = objStr, len = objStrLen}
 
-doCast' state val _ = error "Operator (cast) error.\nSecond argument of cast needs to be string or invalid cast configuration was given."
+doCast' a String{chrs = typeCastStr, len = _} =
+    let aType = chrs $ doQueryType' a 
+    in Right ("Operator (cast) error. Invalid casting configuration given! Tried to cast "
+        ++ aType ++ " to type " ++ typeCastStr)
+
+doCast' a b =
+    let (aType, bType) = findTypeStrsForError a b
+    in Right("Operator (cast) error. Types of Value and String required for cast to occur. Attempted types: "
+        ++ aType ++ " and " ++ bType)
 
 --Determines if the number is 
 -- in the valid UTF-8 character number range for casting.
