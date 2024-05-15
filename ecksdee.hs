@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.160
+--Version: 2024-05-15.188
 --Toy Programming Language Named EcksDee
 
 {-
@@ -645,21 +645,24 @@ doPop' x =
 
 --Pushes an item to the front of a list on the stack.
 doFpush :: EDState -> IO EDState
-doFpush state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (fpush) error. Two operands required for fpush!"
-        [x] -> error "Operator (fpush) error. Two operands required for fpush!"
+doFpush state = 
+    case (stack state) of 
+        [] -> throwError "Operator (fpush) error. Two operands required for fpush; none provided!" state
+        [x] -> throwError "Operator (fpush) error. Two operands required for fpush; only one provided!" state
         vals -> 
-            let (state', list, val) = fsPop2 state
-                ret = (\x -> return x)
-            in ret $! (doFpush' state' list val)  
+            let (state', collection, val) = fsPop2 state
+            in case (doFpush' collection val) of
+                Left collection' -> return (fsPush collection' state')
+                Right err -> throwError err state'
 
---Pushes item to list front.
-doFpush' :: EDState -> Value -> Value -> EDState
-doFpush' state (List {items = is, len = l}) valToPush = fsPush ( doFpush'' List {items = is, len = l} 0 valToPush ) state
-doFpush' state (String {chrs = cs, len = l}) (Char c) = fsPush (String {chrs = (c : cs), len = l + 1}) state
-doFpush' _ _ _ = error "Operator (fpush) error. Operator fpush needs a list/string and a value/char to be pushed to front."
+--Pushes item to front.
+doFpush' :: Value -> Value -> Either Value String
+doFpush' (List {items = is, len = l}) valToPush = Left $ doFpush'' List {items = is, len = l} 0 valToPush
+doFpush' (String{chrs = cs, len = l}) (Char c) = Left String {chrs = (c : cs), len = l + 1}
+doFpush' a b = 
+    let (aType, bType) = findTypeStrsForError a b
+    in Right ("Operator (fpush) error. Operator fpush needs List/String and a Value/Char to be pushed to front. Attempted Types: "
+        ++ aType ++ " and " ++ bType) 
 
 doFpush'' :: Value -> Int -> Value -> Value
 doFpush'' List{items = is, len = l} index insVal 
