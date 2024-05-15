@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.988
+--Version: 2024-05-15.992
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1209,9 +1209,8 @@ doWriteFile state = do
 --Determines the type of an item on the stack.
 doQueryType :: EDState -> IO EDState
 doQueryType state =  
-    let stck = stack state
-    in case stck of 
-        [] -> error "Operator (queryType) error. One operand needed!"
+    case (stack state) of 
+        [] -> throwError "Operator (queryType) error. One operand needed; none provided!" state
         vals -> 
             let (state', val) = fsPop state
             in return (fsPush (doQueryType' val) state)
