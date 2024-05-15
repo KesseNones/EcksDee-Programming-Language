@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.188
+--Version: 2024-05-15.224
 --Toy Programming Language Named EcksDee
 
 {-
@@ -678,33 +678,42 @@ doFpush'' List{items = is, len = l} index insVal
 
 --Pops an item from the front of the list and pushes it to the stack.
 doFpop :: EDState -> IO EDState
-doFpop state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (fpop) error. List needed!"
+doFpop state = 
+    case (stack state) of 
+        [] -> throwError "Operator (fpop) error. Needs one operand to work; none provided!" state
         vals -> 
             let (state', list) = fsPop state
-                ret = (\x -> return x)
-            in ret $! (doFpop' state' list)
+            in case (doFpop' list) of 
+                Left (list', Just v) -> 
+                    let state'' = fsPush list' state'
+                    in return (fsPush v state'')
+                Left (list', Nothing) -> return (fsPush list' state')
+                Right err -> throwError err state'
 
---Pops item from list and pushes it to stack.
-doFpop' :: EDState -> Value -> EDState
---Nothing happens if list is empty.
-doFpop' state (List {items = is, len = 0}) = fsPush (List {items = is, len = 0}) state
-doFpop' state (List {items = is, len = l}) = 
-    let popped = case (M.lookup 0 is) of 
-            Just i -> i 
-            Nothing -> error "Should NEVER get here!!!"
-        List{items = newLs, len = newLen} = doFpop'' List{items = is, len = l} List{items = M.empty, len = 0} 1
-        state' = fsPush (List{items = newLs, len = newLen}) state
-    in fsPush (popped) state'
+--Pops item and pushes to stack if exists.
+doFpop' :: Value -> Either (Value, Maybe Value) String
 
---String case.
-doFpop' state (String {chrs = "", len = 0}) = fsPush (String {chrs = "", len = 0}) state
-doFpop' state (String {chrs = cs, len = l}) = 
-    let state' = fsPush (String {chrs = tail cs, len = l - 1}) state
-    in fsPush (Char $ head cs) state'
-doFpop' _ _ = error "Operator (fpop) error. Pop operator needs a list to pop items from."
+doFpop' List {items = is, len = 0} = Left (List{items = is, len = 0}, Nothing)
+
+doFpop' List {items = is, len = l} =
+    let popped = case (M.lookup 0 is) of
+            Just i -> i
+            Nothing -> error "Shouldn't EVER get here!"
+        --Builds new list without front item which is why it starts at index 1 here.
+        newLs = doFpop'' List{items = is, len = l} List{items = M.empty, len = 0} 1
+    in Left (newLs, Just popped)
+
+doFpop' String{chrs = "", len = 0} = Left (String{chrs = "", len = 0}, Nothing)
+
+doFpop' String{chrs = cs, len = l} =
+    let string' = String{chrs = tail cs, len = l - 1}
+        popped = Char $ head cs
+    in Left (string', Just popped)
+
+doFpop' x = 
+    let xType = chrs $ doQueryType' x
+    in Right ("Operator (fpop) error. Popping from front requires a List/String to pop from. Attempted type: "
+        ++ xType)
 
 --Builds new list after pop.
 doFpop'' :: Value -> Value -> Int -> Value
