@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.900
+--Version: 2024-05-15.907
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1017,13 +1017,15 @@ doReadChar state = do
 -- of the stack is a whitespace character, 
 -- pushes true if yes and false if no.
 doIsWhite :: EDState -> IO EDState
-doIsWhite state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (isWhitespace) error. Operand on stack needed!"
+doIsWhite state = 
+    case (stack state) of 
+        [] -> throwError "Operator (isWhitespace) error. Operand on stack needed; none provided!" state
         vals -> case (head vals) of 
             Char c -> return (fsPush (Boolean (isSpace c)) state)
-            _ -> error "Operator (isWhitespace) error. Type to be analyzed needs to be type Char!"
+            x -> 
+                let xType = chrs $ doQueryType' x
+                in throwError ("Operator (isWhitespace) error. Type on stack top needs to be of type Char. Attempted type: "
+                    ++ xType) state
 
 --Determines if a list, string, 
 -- or object contains a value, char, or field, respectively.
