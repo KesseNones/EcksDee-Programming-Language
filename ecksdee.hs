@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-14.990
+--Version: 2024-05-15.160
 --Toy Programming Language Named EcksDee
 
 {-
@@ -608,31 +608,40 @@ doPush' a b =
 
 --Pops an item from the list or string and pushes it to the stack.
 doPop :: EDState -> IO EDState
-doPop state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (pop) error. Pop operator needs a list to pop from!"
+doPop state = 
+    case (stack state) of 
+        [] -> throwError "Operator (pop) error. Pop operator needs a list to pop from; none provided!" state
         vals -> 
             let (state', list) = fsPop state
-                ret = (\x -> return x)
-            in ret $! (doPop' state' list) 
+            in case (doPop' list) of 
+                Left (list', Just v) -> 
+                    let state'' = fsPush list' state'
+                    in return (fsPush v state'')
+                Left (list', Nothing) -> return (fsPush list' state')
+                Right err -> throwError err state'
 
---Pops item from list and pushes it to stack.
-doPop' :: EDState -> Value -> EDState
+--Pops item/char from list and returns new list with popped item if it exists.
+doPop' :: Value -> Either (Value, Maybe Value) String
 --Nothing happens if list is empty.
-doPop' state (List {items = is, len = 0}) = fsPush (List {items = is, len = 0}) state
-doPop' state (List {items = is, len = l}) = 
+doPop' (List {items = is, len = 0}) = Left (List {items = is, len = 0}, Nothing)
+--General list pop case.
+doPop' (List {items = is, len = l}) = 
     let popped = case (M.lookup (l - 1) is) of 
             Just i -> i 
             Nothing -> error "Should never happen!!!"
         newLs = M.delete (l - 1) is
-        state' = fsPush( List {items = newLs, len = l - 1}) state
-    in fsPush popped state'
-doPop' state (String {chrs = "", len = 0}) = fsPush (String {chrs = "", len = 0}) state
-doPop' state (String {chrs = cs, len = l}) = 
-    let state' = fsPush (String {chrs = init cs, len = l - 1}) state
-    in fsPush (Char $ last cs) state'
-doPop' _ _ = error "Operator (pop) error. Pop operator needs a list or string to pop items from."
+    in Left (List {items = newLs, len = l - 1}, Just popped)
+--Empty string case.
+doPop' (String {chrs = "", len = 0}) = Left (String {chrs = "", len = 0}, Nothing) 
+--General string pop case.
+doPop' (String {chrs = cs, len = l}) = 
+    let newStr = String{chrs = init cs, len = l - 1}
+        poppedChar = Char $ last cs
+    in Left (newStr, Just poppedChar) 
+doPop' x = 
+    let xType = chrs $ doQueryType' x
+    in Right ("Operator (pop) error. Pop operator needs a List/String to pop items on. Attempted type: "
+        ++ xType)
 
 --Pushes an item to the front of a list on the stack.
 doFpush :: EDState -> IO EDState
