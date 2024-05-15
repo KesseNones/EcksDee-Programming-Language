@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.992
+--Version: 2024-05-15.997
 --Toy Programming Language Named EcksDee
 
 {-
@@ -936,14 +936,16 @@ validIntToChar num = (num >= (ord minBound)) && (num <= (ord maxBound))
 
 --Prints top element of stack. This element must be a string or it freaks out.
 doPrintLine :: EDState -> IO EDState
-doPrintLine state = do 
-    let stck = (stack state)
-    if (null stck) 
-        then error "Operator (printLine) error. Can't print from empty stack!"
-        else case (head stck) of 
-            String {chrs = cs, len = l} -> putStrLn cs 
-            _ -> error "Operator (printLine) error. Top of stack must be a String to be printed!"
-    return state
+doPrintLine state = 
+    if (null $ stack state) 
+        then throwError "Operator (printLine) error. Can't print from empty stack!" state
+        else 
+            case (fsTop state) of 
+                String {chrs = cs, len = l} -> putStrLn cs >> return state
+                x ->
+                    let xType = chrs $ doQueryType' x
+                    in throwError ("Operator (printLine) error. Top of stack needs to be type String! Attempted type: "
+                        ++ xType) state 
 
 --Writes a string to stdout without adding a newline automatically to the end.
 doPrint :: EDState -> IO EDState
