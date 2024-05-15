@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.224
+--Version: 2024-05-15.250
 --Toy Programming Language Named EcksDee
 
 {-
@@ -728,37 +728,37 @@ doFpop'' List{items = as, len = al} List{items = bs, len = bl} index
 
 --Fetches an item from a list of a specific index.
 doIndex :: EDState -> IO EDState
-doIndex state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (index) error. Two operands required for index!"
-        [x] -> error "Operator (index) error. Two operands required for index!"
+doIndex state = 
+    case (stack state) of 
+        [] -> throwError "Operator (index) error. Two operands required for index; none provided!" state
+        [x] -> throwError "Operator (index) error. Two operands required for index; only one provided!" state
         vals ->  
             let (state', list, index) = fsPop2 state
-                ret = (\x -> return x)
-            in ret $! (doIndex' state' list index) 
+            in case (doIndex' list index) of
+                Left v -> 
+                    let state'' = fsPush list state'
+                    in return (fsPush v state'')
+                Right err -> throwError err state' 
 
 --Retrieves item at index in list or string.
-doIndex' :: EDState -> Value -> Value -> EDState
-doIndex' state (List {items = _, len = 0}) _ = error "Can't index into empty list."
-doIndex' state (String {chrs = "", len = 0}) _ = error "Can't index into empty string."
-doIndex' state (List {items = is, len = l}) (Integer index) = 
-    let state' = fsPush (List {items = is, len = l}) state
-        indexed = case (M.lookup index is) of 
-            Just i -> i 
-            Nothing -> error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range for list.")
-        push = (\x -> fsPush x state')
-    in push $! indexed
---String case.
-doIndex' state (String {chrs = cs, len = l}) (Integer index) = 
-    let state' = fsPush (String {chrs = cs, len = l}) state
-        accessIndex = 
-            if (index > -1 && index < l) 
-                then index 
-                else error ("Operator (index) error. Index " ++ (show index) ++ " out of valid range for string.")
-        push = (\x -> fsPush (Char $ cs !! x) state')
-    in push $! accessIndex
-doIndex' _ _ _ = error "Operator (index) error. Index operator needs a list/string and an index value. \n Index must use type Integer to perform an index"
+doIndex' :: Value -> Value -> Either Value String
+
+--Standard list index case.
+doIndex' List{items = is, len = l} (Integer i) =
+    case (M.lookup i is) of 
+        Just el -> Left el
+        Nothing -> Right ("Operator (index) error. Index " ++ (show i) ++ " out of valid range for List of size " ++ (show l) ++ "!")
+
+--Standard string index case.
+doIndex' String{chrs = cs, len = l} (Integer i) 
+    |   (i > -1 && i < l) = Left $ Char $ cs !! i
+    |   otherwise = Right ("Operator (index) error. Index " ++ (show i) ++ " out of valid range for String of size " ++ (show l) ++ "!") 
+
+--Type error case.
+doIndex' a b = 
+    let (aType, bType) = findTypeStrsForError a b
+    in Right ("Operator (index) error. Index operator needs a List/String and an index value of type Integer. Attempted types: "
+        ++ aType ++ " and " ++ bType)
 
 --Takes the length of a list or string at the top 
 -- of the stack and pushes resulting length to top of stack.
