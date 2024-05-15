@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.268
+--Version: 2024-05-15.279
 --Toy Programming Language Named EcksDee
 
 {-
@@ -805,21 +805,24 @@ doIsEmpty' x =
 
 --Sets the string or list at the top of the stack to empty.
 doClear :: EDState -> IO EDState
-doClear state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (clear) error. One operand needed!"
+doClear state = 
+    case (stack state) of 
+        [] -> throwError "Operator (clear) error. One operand needed; none provided!" state
         vals ->  
-            let (state', list) = fsPop state
-                ret = (\x -> return x)
-            in ret $! (doClear' state' list) 
+            let (state', items) = fsPop state
+            in case (doClear' items) of
+                Left items' -> return (fsPush items' state')
+                Right err -> throwError err state'
 
 --Performs clear operation.
-doClear' :: EDState -> Value -> EDState
-doClear' state (List {items = _, len = _}) = fsPush (List {items = M.empty, len = 0}) state
-doClear' state (String {chrs = _, len = _}) = fsPush (String {chrs = "", len = 0}) state
-doClear' state (Object{fields = _}) = fsPush (Object{fields = M.empty}) state
-doClear' state _ = error "Operator (clear) error. List or string is needed for clear to occur."
+doClear' :: Value -> Either Value String
+doClear' List{items = _, len = _} = Left List{items = M.empty, len = 0}
+doClear' String{chrs = _, len = _} = Left String{chrs = "", len = 0} 
+doClear' Object{fields = _} = Left Object{fields = M.empty}
+doClear' x =
+    let xType = chrs $ doQueryType' x
+    in Right ("Operator (clear) error. Only type List/String/Object is valid for clear. Attempted type: "
+        ++ xType)
 
 --Used to turn a value of one type into another.
 doCast :: EDState -> IO EDState
