@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.279
+--Version: 2024-05-15.294
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1028,23 +1028,26 @@ doIsWhite state = do
 --Determines if a list, string, 
 -- or object contains a value, char, or field, respectively.
 doContains :: EDState -> IO EDState
-doContains state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (contains) error. Two operands on stack needed!"
-        [x] -> error "Operator (contains) error. Two operands on stack needed!"
+doContains state = 
+    case (stack state) of 
+        [] -> throwError "Operator (contains) error. Two operands on stack needed; none provided!" state
+        [x] -> throwError "Operator (contains) error. Two operands on stack needed; only one provided!" state
         vals -> 
-            let (top, secondToTop) = ((head stck), (head $ tail stck))
-                contains = case (top, secondToTop) of 
-                                (v, List {items = is, len = _}) -> v `elem` is
-                                (Char c, String {chrs = cs, len = _}) -> c `elem` cs
-                                (String{chrs = name, len = _}, Object{fields = fs}) -> 
-                                    case (M.lookup name fs) of 
-                                        Just _ -> True 
-                                        Nothing -> False
-                                (_, _) -> error "Operator (contains) error.\nFirst pushed element must be List, String, or Object,\n and second item needs to be value, Char, or String, respectively."
-                ret = (\x -> return (fsPush (Boolean x) state) )
-            in ret $! contains
+            let (state', secondToTop, top) = fsPop2 state
+            in case (top, secondToTop) of 
+                (v, List {items = is, len = _}) -> return (fsPush (Boolean $ v `elem` is) state)
+                (Char c, String {chrs = cs, len = _}) -> return (fsPush (Boolean $ c `elem` cs) state)
+                (String{chrs = name, len = _}, Object{fields = fs}) -> 
+                    let contains = case (M.lookup name fs) of 
+                            Just _ -> True 
+                            Nothing -> False
+                    in return (fsPush (Boolean contains) state)
+                (a, b) -> 
+                    let (aType, bType) = findTypeStrsForError b a
+                    in throwError ("Operator (contains) error." 
+                        ++ " First pushed element must be List/String/Object " 
+                        ++ "and second item needs to be Value, Char, or String, respectively. "
+                        ++ "Attempted types: " ++ aType ++ " and " ++ bType ) state
 
 --Changes an item at a given index in a list to a new item on the stack.
 doChangeItemAt :: EDState -> IO EDState
