@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.250
+--Version: 2024-05-15.258
 --Toy Programming Language Named EcksDee
 
 {-
@@ -763,20 +763,23 @@ doIndex' a b =
 --Takes the length of a list or string at the top 
 -- of the stack and pushes resulting length to top of stack.
 doLength :: EDState -> IO EDState
-doLength state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (length) error. Operand needed for length!"
+doLength state = 
+    case (stack state) of 
+        [] -> throwError "Operator (length) error. Operand needed for length; none provided!" state
         vals -> 
             let top = (fsTop state)
-                ret = (\x -> return x)
-            in ret $! (doLength' state top)
+            in case (doLength' top) of
+                Left v -> return (fsPush v state)
+                Right err -> throwError err state
 
 --Performs actual length function.
-doLength' :: EDState -> Value -> EDState
-doLength' state (List {items = _, len = l}) = fsPush (Integer l) state
-doLength' state (String {chrs = _, len = l}) = fsPush (Integer l) state
-doLength' state _ = error "Operator (length) error. List or string type is needed for length function to work."
+doLength' :: Value -> Either Value String
+doLength' List{items = _, len = l} = Left $ Integer l
+doLength' String {chrs = _, len = l} = Left $ Integer l
+doLength' x = 
+    let xType = chrs $ doQueryType' x
+    in Right ("Operator (length) error. List/String type is needed for length operator to work. Attempted type: "
+        ++ xType)
 
 --Determines if the list or string at the top
 -- of the stack is empty or not.
