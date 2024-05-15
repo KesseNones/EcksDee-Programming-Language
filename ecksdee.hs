@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.258
+--Version: 2024-05-15.268
 --Toy Programming Language Named EcksDee
 
 {-
@@ -784,21 +784,24 @@ doLength' x =
 --Determines if the list or string at the top
 -- of the stack is empty or not.
 doIsEmpty :: EDState -> IO EDState
-doIsEmpty state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (isEmpty) error. One operand needed!"
+doIsEmpty state = 
+    case (stack state) of 
+        [] -> throwError "Operator (isEmpty) error. One operand needed; none provided!" state
         vals -> 
             let top = (fsTop state)
-                ret = (\x -> return x)
-            in ret $! (doIsEmpty' state top) 
+            in case (doIsEmpty' top) of 
+                Left v -> return (fsPush v state)
+                Right err -> throwError err state
 
 --Performs actual length function.
-doIsEmpty' :: EDState -> Value -> EDState
-doIsEmpty' state (List {items = is, len = l}) = fsPush (Boolean $ l == 0) state
-doIsEmpty' state (String {chrs = cs, len = l}) = fsPush (Boolean $ null cs) state
-doIsEmpty' state Object{fields = fs} = fsPush (Boolean $ M.null fs) state 
-doIsEmpty' state _ = error "Operator (isEmpty) error. List or string type is needed to test for emptyness."
+doIsEmpty' :: Value -> Either Value String
+doIsEmpty' List{items = is, len = l} = Left $ Boolean $ l == 0
+doIsEmpty' String{chrs = cs, len = l} = Left $ Boolean $ l == 0
+doIsEmpty' Object{fields = fs} = Left $ Boolean $ M.null fs
+doIsEmpty' x =
+    let xType = chrs $ doQueryType' x 
+    in Right ("Operator (isEmpty) error. This operator is only valid for types of List/String/Object. Attempted type: "
+        ++ xType)
 
 --Sets the string or list at the top of the stack to empty.
 doClear :: EDState -> IO EDState
