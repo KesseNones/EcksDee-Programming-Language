@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.294
+--Version: 2024-05-15.900
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1051,17 +1051,29 @@ doContains state =
 
 --Changes an item at a given index in a list to a new item on the stack.
 doChangeItemAt :: EDState -> IO EDState
-doChangeItemAt state = do 
-    let stck = (stack state)
-    case stck of 
-        [] -> error "Operator (changeItemAt) error. Three operands needed!"
-        [x] -> error "Operator (changeItemAt) error. Three operands needed!"
-        [x, y] -> error "Operator (changeItemAt) error. Three operands needed!"
-        vals -> do 
+doChangeItemAt state = 
+    case (stack state) of 
+        [] -> throwError "Operator (changeItemAt) error. Three operands needed; none provided!" state
+        [x] -> throwError "Operator (changeItemAt) error. Three operands needed; only one provided!" state
+        [x, y] -> throwError "Operator (changeItemAt) error. Three operands needed; only two provided!" state
+        vals ->  
             let (state', chngLs, chngItem, index) = fsPop3 state
-            case (chngLs, chngItem, index) of 
-                (List {items = is, len = l}, v, Integer i) -> return (fsPush ( List { items = M.insert i v is, len = l } ) state')
-                (_, _, _) -> error "Operator (changeItemAt) error. List, value, and Integer type in that order needed on stack."
+            in case (chngLs, chngItem, index) of 
+                (List {items = is, len = l}, v, Integer i) -> 
+                    if (i > -1 && i < l) 
+                        then 
+                            return (fsPush ( List { items = M.insert i v is, len = l } ) state')
+                        else 
+                            throwError ("Operator (changeItemAt) error. Index " 
+                                ++ (show i) ++ " out of range for list of size " 
+                                ++ (show l) 
+                                ++ "!") state'
+                (a, b, c) -> 
+                    let (aType, bType, cType) = (chrs $ doQueryType' a, chrs $ doQueryType' b, chrs $ doQueryType' c)
+                    in throwError ("Operator (changeItemAt) error."
+                    ++ " Top three items of stack need to be of type: "
+                    ++ "List Value Integer (ordered from bottom to top). Attempted types: "
+                    ++ aType ++ ", " ++ bType ++ ", and " ++ cType) state'
 
 --Raises one Float or Double to another Float or Double 
 --and returns as such, consuming the original two numbers.
