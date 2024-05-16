@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.276
+--Version: 2024-05-16.278
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1364,11 +1364,11 @@ makeVar state varName =
     let lkup = M.lookup varName (vars state)
     --Throw error if variable exists. Otherwise, make variable by inserting it into hash table.
     in case lkup of
-        Just _ -> error ("Variable Mak Error: Variable " ++ varName ++ " already exists.")
-        Nothing -> do 
+        Just _ -> throwError ("Variable Mak Error. Variable " ++ varName ++ " already exists.") state
+        Nothing -> 
             let top = fsTop state
-            let vars' = M.insert varName top (vars state)
-            return (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
+                vars' = M.insert varName top (vars state)
+            in return (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
 
 --Recursively builds a new list of stack frames with the mutated variable in it.
 mutateLoc' :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
