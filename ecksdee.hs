@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.027
+--Version: 2024-05-16.045
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1094,29 +1094,31 @@ doPow state =
 
 --Adds a field to a given object.
 doAddField :: EDState -> IO EDState
-doAddField state = do 
-    let stck = stack state
-    case stck of 
-        [] -> error "Operator (addField) error. Three operands needed!"
-        [x] -> error "Operator (addField) error. Three operands needed!"
-        [x, y] -> error "Operator (addField) error. Three operands needed!"
+doAddField state =
+    case (stack state) of 
+        [] -> throwError "Operator (addField) error. Three operands needed; none provided!" state
+        [x] -> throwError "Operator (addField) error. Three operands needed; only one provided!" state
+        [x, y] -> throwError "Operator (addField) error. Three operands needed; only two provided!" state
         vals ->  
             let (state', obj, fieldName, fieldVal) = fsPop3 state
-                obj' = case (obj, fieldName, fieldVal) of 
-                        (Object {fields = fs}, String {chrs = name, len = l}, v) ->
-                            (doAddField' Object{fields = fs} name v)  
-                        
-                        (_, _, _) -> error "Operator (addField) error.\nOperands need to be type Object String Value!"
-                ret = (\x -> return (fsPush x state'))
-            in ret $! obj'
+            in case (doAddField' obj fieldName fieldVal) of 
+                Left obj' -> return (fsPush obj' state')
+                Right err -> throwError err state' 
 
-doAddField' :: Value -> String -> Value -> Value
-doAddField' Object{fields = fs} key val = 
-    let fs' = case (M.lookup key fs) of 
-            Just i -> error ("Operator (addField) error.\nField " ++ key ++ " already exists in given object!")
-            Nothing -> M.insert key val fs
-        newObj = (\x -> Object{fields = x})
-    in newObj $! fs'
+--Adds field to object.
+doAddField' :: Value -> Value -> Value -> Either Value String
+
+doAddField' Object{fields = fs} String{chrs = name, len = _} val =
+    case (M.lookup name fs) of
+        Just i -> Right ("Operator (addField) error. Field " 
+            ++ name 
+            ++ " already exists in given object!")
+        Nothing -> Left $ Object{fields = M.insert name val fs}
+
+doAddField' a b c =
+    let (aType, bType, cType) = (chrs $ doQueryType' a, chrs $ doQueryType' b, chrs $ doQueryType' c)
+    in Right ("Operator (addField) error. Operands need to be Object String Value. Attempted types: "
+        ++ aType ++ ", " ++ bType ++ ", and " ++ cType)
 
 --Removes a field from a given object. Does nothing if the field doesn't exist.
 doRemoveField :: EDState -> IO EDState
