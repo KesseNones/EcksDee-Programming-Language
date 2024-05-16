@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.261
+--Version: 2024-05-16.263
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1332,7 +1332,7 @@ doOp "readFile" = doReadFile
 doOp "writeFile" = doWriteFile
 
 -- Error thrown if reached here.
-doOp op = error $ "unrecognized word: " ++ op 
+doOp op = throwError ("Unrecognized operator: " ++ op)  
 
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
