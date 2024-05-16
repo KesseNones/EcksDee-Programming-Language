@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.015
+--Version: 2024-05-16.018
 --Toy Programming Language Named EcksDee
 
 {-
@@ -960,8 +960,7 @@ doPrint state = do
 
 --Reads a line from stdin, and pushes it onto stack.
 doReadLine :: EDState -> IO EDState
-doReadLine state = 
-    getLine >>= (\input -> return (fsPush (String{chrs = input, len = length input}) state))
+doReadLine state = getLine >>= (\input -> return (fsPush (String{chrs = input, len = length input}) state))
 
 --Reads a multi-line string from stdin.
 doRead :: EDState -> IO EDState
@@ -1007,10 +1006,7 @@ doPrintChar state =
                 
 --Reads a Char from stdin and pushes it to the stack.
 doReadChar :: EDState -> IO EDState 
-doReadChar state = do 
-    let stck = stack state
-    inChar <- getChar 
-    return (fsPush (Char inChar) state)
+doReadChar state = getChar >>= (\inChar -> return (fsPush (Char inChar) state))
 
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
