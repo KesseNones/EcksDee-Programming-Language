@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-15.997
+--Version: 2024-05-16.007
 --Toy Programming Language Named EcksDee
 
 {-
@@ -960,10 +960,8 @@ doPrint state = do
 
 --Reads a line from stdin, and pushes it onto stack.
 doReadLine :: EDState -> IO EDState
-doReadLine state = do 
-    let stck = (stack state)
-    input <- getLine
-    return (fsPush (String{chrs = input, len = length input}) state)
+doReadLine state = 
+    getLine >>= (\input -> return (fsPush (String{chrs = input, len = length input}) state))
 
 --Reads a multi-line string from stdin.
 doRead :: EDState -> IO EDState
