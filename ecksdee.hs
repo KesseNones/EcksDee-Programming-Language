@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.045
+--Version: 2024-05-16.184
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1122,21 +1122,21 @@ doAddField' a b c =
 
 --Removes a field from a given object. Does nothing if the field doesn't exist.
 doRemoveField :: EDState -> IO EDState
-doRemoveField state = do 
-    let stck = stack state
-    case stck of 
-        [] -> error "Operator (removeField) error. Two operands needed!"
-        [x] -> error "Operator (removeField) error. Two operands needed!"
-        vals -> do 
+doRemoveField state = 
+    case (stack state) of 
+        [] -> throwError "Operator (removeField) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (removeField) error. Two operands needed; only one provided!" state
+        vals ->  
             let (state', obj, removalKey) = fsPop2 state
-            case (obj, removalKey) of 
-                (Object{fields = fs}, String{chrs = name, len = l}) -> do 
-                    let fs' = case (M.lookup name fs) of 
-                            Just i -> (M.delete name fs)
-                            Nothing -> error ("Operator (removeField) error.\nField " ++ name ++ " doesn't exist in given object!")
-                        ret = (\x -> return (fsPush Object{fields = x} state')) 
-                    ret $! fs'
-                (_, _) -> error "Operator (removeField) error.\nOperands need to be type Object and String."
+            in case (obj, removalKey) of 
+                (Object{fields = fs}, String{chrs = name, len = l}) -> 
+                    case (M.lookup name fs) of 
+                            Just i -> return (fsPush  Object{fields = M.delete name fs} state')
+                            Nothing -> throwError ("Operator (removeField) error. Field " ++ name ++ " doesn't exist in given object!") state'
+                (a, b) -> 
+                    let (aType, bType) = findTypeStrsForError a b
+                    in throwError ("Operator (removeField) error. Operands need to be of type Object and String. Attempted types: "
+                        ++ aType ++ " and " ++ bType) state
 
 --Grabs the value of a field in an object or throws an error if it doesn't exist.
 doGetField :: EDState -> IO EDState
