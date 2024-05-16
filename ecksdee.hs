@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.263
+--Version: 2024-05-16.276
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1343,11 +1343,11 @@ makeLoc :: EDState -> String -> IO EDState
 makeLoc state name = 
     let look = M.lookup name (head $ frames state)
     in case look of 
-        Just _ -> error ("Loc Mak Error:\nlocal Variable " ++ name ++ " already exists in current scope.") 
-        Nothing -> do 
+        Just _ -> throwError ("Loc Mak Error. Local Variable " ++ name ++ " already exists in current scope.") state
+        Nothing ->  
             let top = fsTop state
-            let frame' = M.insert name top (head $ frames state)
-            return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))})
+                frame' = M.insert name top (head $ frames state)
+            in return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))})
 
 --Performs a lookup through all stack frames to find desired variable name.
 --If found, returns it, else returns Nothing.
