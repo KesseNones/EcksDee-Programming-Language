@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.191
+--Version: 2024-05-16.216
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1160,24 +1160,27 @@ doGetField state =
 --Mutates the value of a field in the object assuming the field exists 
 -- and the types match for the old and new values.
 doMutateField :: EDState -> IO EDState
-doMutateField state = do 
-    let stck = stack state 
-    case stck of 
-        [] -> error "Operator (mutateField) error. Three operands needed!"
-        [x] -> error "Operator (mutateField) error. Three operands needed!"
-        [x, y] -> error "Operator (mutateField) error. Three operands needed!"
-        vals -> do 
+doMutateField state = 
+    case (stack state) of 
+        [] -> throwError "Operator (mutateField) error. Three operands needed; none provided!" state
+        [x] -> throwError "Operator (mutateField) error. Three operands needed; only one provided!" state
+        [x, y] -> throwError "Operator (mutateField) error. Three operands needed; only two provided!" state
+        vals ->
             let (state', obj, mutKey, newVal) = fsPop3 state 
-            case (obj, mutKey) of 
+            in case (obj, mutKey) of 
                 (Object{fields = fs}, String{chrs = name, len = l}) -> 
-                    let fs' = case (M.lookup name fs) of 
-                            Just i -> if (compareTypesForMut i newVal) 
-                                then (M.insert name newVal fs) 
-                                else error ("Operator (mutateField) error.\nNew value for field " ++ name ++ " must match type of current field value!")
-                            Nothing -> error ("Operator (mutateField) error.\nField " ++ name ++ " doesn't exist in given object!")
-                        ret = (\x -> return (fsPush Object{fields = x} state'))
-                    in ret $! fs'
-                (_, _) -> error "Operator (mutateField) error.\nOperands need to be type Object and String."
+                    case (M.lookup name fs) of 
+                        Just i -> if (compareTypesForMut i newVal) 
+                            then return $ fsPush Object{fields = (M.insert name newVal fs)} state' 
+                            else throwError ("Operator (mutateField) error. New value is of type: "
+                                ++ (chrs $ doQueryType' newVal) ++ " which doesn't match field " 
+                                ++ name ++ " of type " ++ (chrs $ doQueryType' i) ++ ". The types must match for consistency!") state'
+
+                        Nothing -> throwError ("Operator (mutateField) error. Field " ++ name ++ " doesn't exist in given object!") state'
+                (a, b) -> 
+                    let (aType, bType) = findTypeStrsForError a b
+                    in throwError ("Operator (mutateField) error. Operands need to be of type Object String Value. Attempted types: "
+                        ++ aType ++ ", " ++ bType ++ ", and " ++ (chrs $ doQueryType' newVal)) state'
 
 --Reads in the contents of a file to a string.
 doReadFile :: EDState -> IO EDState 
