@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.241
+--Version: 2024-05-16.261
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1195,7 +1195,7 @@ doReadFile state =
                     (String{chrs = cs, len = l}) -> do 
                         openResult <- tryIOError $ openFile cs ReadMode
                         case openResult of
-                            Left e -> throwError ("Operator (readFile) error. Failed to open file " ++ cs ++ " because: " ++ (show e)) state
+                            Left e -> throwError ("Operator (readFile) error. Failed to open file " ++ cs ++ " because: " ++ (show e)) state'
                             Right handle -> do
                                 fileStr <- hGetContents handle
                                 let state'' = fsPush (String{chrs = fileStr, len = length fileStr}) state'
@@ -1207,19 +1207,25 @@ doReadFile state =
 
 --Writes the desired string to a given file name.
 doWriteFile :: EDState -> IO EDState
-doWriteFile state = do 
-    let stck = stack state
-    case stck of 
-        [] -> error "Operator (writeFile) error. Two operands needed!"
-        [x] -> error "Operator (writeFile) error. Two operands needed!"
-        vals -> do 
+doWriteFile state = 
+    case (stack state) of 
+        [] -> throwError "Operator (writeFile) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (writeFile) error. Two operands needed; only one provided!" state
+        vals ->  
             let (state', fileName, writeContents) = fsPop2 state
-            case (fileName, writeContents) of 
+            in case (fileName, writeContents) of 
                 (String{chrs = name, len = _}, String{chrs = contents, len = l}) -> do 
-                    withFile name WriteMode $ \file -> do 
-                        hPutStr file contents  
-                        return (state')
-                (_, _) -> error "Operator (writeFile) error.\nOperands need to be of type String and String."
+                    openResult <- tryIOError $ openFile name WriteMode
+                    case openResult of
+                        Left err -> throwError ("Operator (writeFile) error. Failed to open file " ++ name ++ " to write because: " ++ (show err)) state'
+                        Right handle -> do
+                            hPutStr handle contents
+                            hClose handle 
+                            return (state')
+                (a, b) -> 
+                    let (aType, bType) = findTypeStrsForError a b 
+                    in throwError ("Operator (writeFile) error. Operands need to be of type String and String. Attempted types: "
+                        ++ aType ++ " and " ++ bType) state' 
 
 --Determines the type of an item on the stack.
 doQueryType :: EDState -> IO EDState
