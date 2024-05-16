@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.278
+--Version: 2024-05-16.292
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1384,16 +1384,17 @@ mutateLoc' (f:fs) acc mutVal name =
 --Mutates a given local variable.
 mutateLoc :: EDState -> String -> IO EDState
 mutateLoc state name =
-    let locVarToChange = case (getLoc (frames state) name) of 
-            Just v -> v 
-            Nothing -> error ("Loc Mut Error:\nLocal Variable " ++ name ++ " not defined for mutation.")
-        newVal = fsTop state
+    case (getLoc (frames state) name) of 
+        Just val ->
+            if (compareTypesForMut (fsTop state) val)
+                then
+                    return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (mutateLoc' (frames state) [] (fsTop state) name)})
+                else
+                    throwError ("Loc Mut Error. Can't mutate local variable " 
+                        ++ name ++ " of type " ++ (chrs $ doQueryType' val) 
+                        ++ " to different type " ++ (chrs $ doQueryType' (fsTop state))) state
 
-    in if (compareTypesForMut newVal locVarToChange) 
-            then
-                return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (mutateLoc' (frames state) [] newVal name)})
-            else error ("Loc Mut Error:\nCan't mutate local variable " ++ name ++ " to different type.")
-
+        Nothing -> throwError ("Loc Mut Error. Local Variable " ++ name ++ " not defined for mutation.") state
 
 --Comapres types in order to enforce static typing when mutating variables.
 compareTypesForMut :: Value -> Value -> Bool
