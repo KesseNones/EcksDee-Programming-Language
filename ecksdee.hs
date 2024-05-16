@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.216
+--Version: 2024-05-16.241
 --Toy Programming Language Named EcksDee
 
 {-
@@ -23,6 +23,7 @@ import qualified Data.Map.Strict as M
 import Control.DeepSeq
 import Control.Exception
 import Data.Typeable
+import System.IO.Error (tryIOError)
 
 data Value =                                         
         BigInteger Integer
@@ -1184,19 +1185,25 @@ doMutateField state =
 
 --Reads in the contents of a file to a string.
 doReadFile :: EDState -> IO EDState 
-doReadFile state = do 
-    let stck = stack state
-    case stck of 
-        [] -> error "Operator (readFile) error. One operand needed!"
-        vals -> do 
+doReadFile state = 
+    case (stack state) of 
+        [] -> throwError "Operator (readFile) error. One operand needed; none provided!" state
+        vals ->  
             let (state', fileName) = fsPop state 
-            case (fileName) of 
+            in case (fileName) of
+                    --(In Mr Bean voice) Magic (chuckles snortily) 
                     (String{chrs = cs, len = l}) -> do 
-                        withFile cs ReadMode $ \file -> do 
-                            fileStr <- hGetContents file
-                            let state'' = fsPush (String{chrs = fileStr, len = length fileStr}) state' 
-                            fileStr `deepseq` return (state'')
-                    _ -> error "Operator (readFile) error.\nOperand needs to be of type String."
+                        openResult <- tryIOError $ openFile cs ReadMode
+                        case openResult of
+                            Left e -> throwError ("Operator (readFile) error. Failed to open file " ++ cs ++ " because: " ++ (show e)) state
+                            Right handle -> do
+                                fileStr <- hGetContents handle
+                                let state'' = fsPush (String{chrs = fileStr, len = length fileStr}) state'
+                                fileStr `deepseq` (hClose handle >> return (state''))
+                    x -> 
+                        let xType = chrs $ doQueryType' x
+                        in throwError ("Operator (readFile) error. Operand needs to be of type String. Attempted type: "
+                            ++ xType) state
 
 --Writes the desired string to a given file name.
 doWriteFile :: EDState -> IO EDState
