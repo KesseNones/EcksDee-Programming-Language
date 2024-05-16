@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.007
+--Version: 2024-05-16.015
 --Toy Programming Language Named EcksDee
 
 {-
@@ -992,15 +992,19 @@ doRead' acc = do
 
 --Prints a char to stdout given at top of stack.
 doPrintChar :: EDState -> IO EDState
-doPrintChar state = do 
-    let stck = stack state
-    if (null stck)
-        then error "Operator (printChar) error. Can't print empty stack!"
-        else case (head stck) of 
-            Char c -> putChar c 
-            _ -> error "Operator (printChar) error. Top of stack must be type Char when printed!"
-    return state
-
+doPrintChar state = 
+    if (null $ stack state)
+        then 
+            throwError "Operator (printChar) error. Can't print Char from empty stack!" state
+        else 
+            case (fsTop state) of 
+                Char c -> putChar c >> return state 
+                x -> 
+                    let xType = chrs $ doQueryType' x
+                    in throwError ("Operator (printChar) error. " 
+                        ++ "Top of stack must be of type Char! Attempted type: " 
+                        ++ xType) state
+                
 --Reads a Char from stdin and pushes it to the stack.
 doReadChar :: EDState -> IO EDState 
 doReadChar state = do 
