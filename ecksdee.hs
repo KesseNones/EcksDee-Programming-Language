@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.024
+--Version: 2024-05-16.027
 --Toy Programming Language Named EcksDee
 
 {-
@@ -974,11 +974,10 @@ doRead state = do
 
 --Prints a desired error to stdout.
 doPrintError :: EDState -> IO EDState
-doPrintError state = do 
-    let stck = stack state
-    case stck of 
+doPrintError state = 
+    case (stack state) of 
         ((String{chrs = err, len = _}):xs) -> throwError err state
-        _ -> throwError "\nOperator (printError) error.\nString needed on top of stack for error to print." state
+        _ -> throwError "Operator (printError) error. String needed on top of stack for error to print." state
 
 --Reads a multi-line string from stdin until 
 -- an empty string is read or EOF is hit.
