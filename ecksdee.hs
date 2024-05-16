@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.184
+--Version: 2024-05-16.191
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1140,22 +1140,22 @@ doRemoveField state =
 
 --Grabs the value of a field in an object or throws an error if it doesn't exist.
 doGetField :: EDState -> IO EDState
-doGetField state = do 
-    let stck = stack state
-    case stck of 
-        [] -> error "Operator (getField) error. Two operands needed!"
-        [x] -> error "Operator (getField) error. Two operands needed!"
-        vals -> do 
+doGetField state = 
+    case (stack state) of 
+        [] -> throwError "Operator (getField) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (getField) error. Two operands needed; only one provided!" state
+        vals ->  
             let (state', obj, findKey) = fsPop2 state 
-            case (obj, findKey) of 
+            in case (obj, findKey) of 
                 (Object{fields = fs}, String{chrs = name, len = l}) -> 
-                    let lkup = case (M.lookup name fs) of 
-                            Just i -> i
-                            Nothing -> error ("Operator (getField) error.\nField " ++ name ++ " doesn't exist in given object!")
-                        state'' = fsPush Object{fields = fs} state'
-                        ret = (\x -> return (fsPush x state''))
-                    in ret $! lkup
-                (_, _) -> error "Operator (getField) error.\nOperands need to be type Object and String."
+                    case (M.lookup name fs) of 
+                        Just i -> return (fsPush i state')
+                        Nothing -> throwError ("Operator (getField) error. Field " ++ name ++ " doesn't exist in given object!") state
+
+                (a, b) ->
+                    let (aType, bType) = findTypeStrsForError a b
+                    in throwError ("Operator (getField) error. Operands need to be type Object and String. Attempted types: "
+                        ++ aType ++ " and " ++ bType) state
 
 --Mutates the value of a field in the object assuming the field exists 
 -- and the types match for the old and new values.
