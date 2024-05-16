@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.292
+--Version: 2024-05-16.298
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1392,7 +1392,7 @@ mutateLoc state name =
                 else
                     throwError ("Loc Mut Error. Can't mutate local variable " 
                         ++ name ++ " of type " ++ (chrs $ doQueryType' val) 
-                        ++ " to different type " ++ (chrs $ doQueryType' (fsTop state))) state
+                        ++ " to different type: " ++ (chrs $ doQueryType' (fsTop state))) state
 
         Nothing -> throwError ("Loc Mut Error. Local Variable " ++ name ++ " not defined for mutation.") state
 
@@ -1411,17 +1411,23 @@ compareTypesForMut _ _ = False
 
 --Changes variable to new value if it can be mutated.
 mutateVar :: EDState -> String -> IO EDState
-mutateVar state varName = do 
+mutateVar state varName = 
     let lkupVal = M.lookup varName (vars state)
-    let newVal = fsTop state
+        newVal = fsTop state
     
     --If variable exists it can be mutated. Otherwise, an error is thrown.
-    case lkupVal of
-        Just value -> if compareTypesForMut value newVal then 
-            let vars' = M.insert varName newVal (vars state)
-            in return ( EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} )
-            else error ("Variable Mut Error: Can't mutate variable " ++ varName ++ " to different type.")
-        Nothing -> error ("Variable Mut Error: Variable " ++ varName ++ " doesn't exist or was deleted")
+    in case lkupVal of
+        Just value -> 
+            if compareTypesForMut value newVal 
+                then 
+                    let vars' = M.insert varName newVal (vars state)
+                    in return ( EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} )
+            else 
+                throwError ("Variable Mut Error. Can't mutate variable " 
+                    ++ varName ++ " of type " ++ (chrs $ doQueryType' value) 
+                    ++ " to different type: " ++ (chrs $ doQueryType' newVal)) state
+        
+        Nothing -> throwError ("Variable Mut Error. Variable " ++ varName ++ " doesn't exist or was deleted") state
 
 --Defines a function as desired.
 funcDef :: EDState -> String -> AstNode -> EDState
