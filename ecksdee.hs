@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.018
+--Version: 2024-05-16.024
 --Toy Programming Language Named EcksDee
 
 {-
@@ -949,14 +949,18 @@ doPrintLine state =
 
 --Writes a string to stdout without adding a newline automatically to the end.
 doPrint :: EDState -> IO EDState
-doPrint state = do 
-    let stck = stack state
-    if (null stck)
-        then error "Operator (print) error. One operand needed for print!"
-        else case (head stck) of 
-            String{chrs = cs, len = l} -> putStr cs 
-            _ -> error "Operator (print) error. Top of stack needs to be a Sring to be printed!"
-    return state
+doPrint state = 
+    if (null $ stack state)
+        then 
+            throwError "Operator (print) error. One operand needed for print; none provided!" state
+        else 
+            case (fsTop state) of 
+                String{chrs = cs, len = l} -> putStr cs >> return state 
+                x -> 
+                    let xType = chrs $ doQueryType' x
+                    in throwError ("Operator (print) error. " 
+                        ++ "Top of stack needs to be a Sring to be printed! "
+                        ++ "Attempted type: " ++ xType) state
 
 --Reads a line from stdin, and pushes it onto stack.
 doReadLine :: EDState -> IO EDState
