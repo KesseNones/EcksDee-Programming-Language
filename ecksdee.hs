@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-17.933
+--Version: 2024-05-17.950
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1454,19 +1454,20 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
-doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
-    let isStackEmpty = (null (stack state))
-    let top = if isStackEmpty 
-        then error "If statement error:\nNo boolean value for if to check because stack is empty." 
-        else fsTop state
+doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
+    if (null $ stack state)
+        then
+            throwError "If statement error. No Boolean for if to check because stack is empty!" state
+        else
+            case (fsTop state) of 
+                (Boolean True) -> doNode trueBranch (addFrame state)
+                (Boolean False) -> doNode falseBranch (addFrame state)
+                x ->
+                    let xType = chrs $ doQueryType' x
+                    in throwError ("If statement error. If statement requires top of the stack" 
+                        ++ " to be type Boolean to branch! Attempted type: " ++ xType) state
 
-    --Runs true branch if top is true, false if false, and errors out otherwise.
-    case top of 
-        (Boolean True) -> doNode trueBranch (addFrame state)
-        (Boolean False) -> doNode falseBranch (addFrame state)
-        _ -> error "If statement error:\nIf statement requires top of stack to be type Boolean to perform valid branching!"
-
---Patterm matches function definition.
+--Pattern matches function def and call.
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
     case (astNodeToString cmd) of 
         "def" -> 
