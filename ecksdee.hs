@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-16.298
+--Version: 2024-05-17.933
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1429,23 +1429,6 @@ mutateVar state varName =
         
         Nothing -> throwError ("Variable Mut Error. Variable " ++ varName ++ " doesn't exist or was deleted") state
 
---Defines a function as desired.
-funcDef :: EDState -> String -> AstNode -> EDState
-funcDef state funcName funcBod = 
-    let look = M.lookup funcName (fns state)
-    in case look of 
-        Just bod -> error ("Function Def Error: Function of same name \"" ++ funcName ++ "\" already exists") 
-        Nothing -> let fns' = M.insert funcName funcBod (fns state)
-                   in EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
-
---Calls a given function and runs it.
-funcCall :: EDState -> String -> (EDState, AstNode)
-funcCall state funcName = 
-    let look = M.lookup funcName (fns state)
-    in case look of 
-        Just body -> (state, body)
-        Nothing -> error ("Function Call Error: Function \"" ++ funcName ++ "\" isn't defined.")
-
 --Used to add a stack frame when the scope increases. 
 addFrame :: EDState -> EDState
 addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state))}
@@ -1488,14 +1471,22 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = do
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
     case (astNodeToString cmd) of 
         "def" -> 
-            let dnode = (\x -> doNode (Expression(rest)) x) 
-            in dnode $! (funcDef state (astNodeToString name) body)
+            let fName = astNodeToString name
+            in case (M.lookup fName (fns state)) of 
+                    Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
+                    Nothing ->
+                        let fns' = M.insert fName body (fns state)
+                        in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
 
-        "call" -> do 
-                    let (state', funcBod) = funcCall state (astNodeToString name)
-                    state'' <- (doNode funcBod (addFrame state') )
-                    doNode (Expression(rest)) state''
-        other -> error ("Function Error: Invalid function command given.\nGiven: " ++ other ++ "\nValid: def, call")
+        "call" -> 
+            let fName = astNodeToString name
+            in case (M.lookup fName (fns state)) of
+                Just bod -> 
+                    (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
+                
+                Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
+
+        other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
 
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
