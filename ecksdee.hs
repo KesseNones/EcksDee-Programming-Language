@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-17.985
+--Version: 2024-05-17.987
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1510,7 +1510,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 
                         Nothing -> throwError ("Variable (var) Mut Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
-        other -> error ("Variable Command Error: Invalid variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut, del")
+        other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
 
 --Runs all the different cases of local variable actions.
 doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
