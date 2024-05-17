@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-17.970
+--Version: 2024-05-17.985
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1398,26 +1398,6 @@ compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = Tru
 compareTypesForMut Object{fields = _} Object{fields = _} = True 
 compareTypesForMut _ _ = False
 
---Changes variable to new value if it can be mutated.
-mutateVar :: EDState -> String -> IO EDState
-mutateVar state varName = 
-    let lkupVal = M.lookup varName (vars state)
-        newVal = fsTop state
-    
-    --If variable exists it can be mutated. Otherwise, an error is thrown.
-    in case lkupVal of
-        Just value -> 
-            if compareTypesForMut value newVal 
-                then 
-                    let vars' = M.insert varName newVal (vars state)
-                    in return ( EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} )
-            else 
-                throwError ("Variable Mut Error. Can't mutate variable " 
-                    ++ varName ++ " of type " ++ (chrs $ doQueryType' value) 
-                    ++ " to different type: " ++ (chrs $ doQueryType' newVal)) state
-        
-        Nothing -> throwError ("Variable Mut Error. Variable " ++ varName ++ " doesn't exist or was deleted") state
-
 --Used to add a stack frame when the scope increases. 
 addFrame :: EDState -> EDState
 addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state))}
@@ -1480,6 +1460,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
+        --Used in making a new variable in vars.
         "mak" ->
             let vName = astNodeToString name
             in if (null $ stack state)
@@ -1492,12 +1473,14 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                             let vars' = M.insert vName (fsTop state) (vars state)
                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
                            
+        --Pushes variable value to stack.
         "get" -> 
             let vName = astNodeToString name
             in case (M.lookup vName (vars state)) of
                 Just v -> doNode (Expression rest) (fsPush v state)
                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
+        --Removes variable from existence since var is manually scoped.
         "del" -> 
             let vName = astNodeToString name
             in case (M.lookup vName (vars state)) of 
@@ -1506,13 +1489,26 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                     in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} 
                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
-        "mut" -> do 
-            let stackIsEmpty = null (stack state)
-            if stackIsEmpty
-                then error ("Variable Mut Error: Can't mutate variable when stack is empty.\nAttempted variable name: " ++ (astNodeToString name))
-                else do 
-                    state' <- (mutateVar state (astNodeToString name))
-                    doNode (Expression rest) state'
+        --Alters variable to new value on top of stack if the types match.
+        "mut" -> 
+            let vName = astNodeToString name
+            in if (null $ stack state)
+                then
+                    throwError ("Variable (var) Mut Error. Can't mutate variable when stack is empty! Attempted variable name: " ++ vName) state
+                else
+                    let newVal = fsTop state
+                    in case (M.lookup vName (vars state)) of 
+                        Just v -> 
+                            if (compareTypesForMut v newVal)
+                                then 
+                                    let vars' = M.insert vName newVal (vars state)
+                                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
+                                else
+                                    throwError ("Variable (var) Mut Error. Can't mutate variable " 
+                                        ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
+                                        ++ " to different type: " ++ (chrs $ doQueryType' newVal)) state
+
+                        Nothing -> throwError ("Variable (var) Mut Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
         other -> error ("Variable Command Error: Invalid variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut, del")
 
