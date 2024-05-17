@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-17.950
+--Version: 2024-05-17.961
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1359,17 +1359,6 @@ getLoc (f:fs) name =
         Just v -> Just v
         Nothing -> getLoc fs name  
 
-makeVar :: EDState -> String -> IO EDState
-makeVar state varName = 
-    let lkup = M.lookup varName (vars state)
-    --Throw error if variable exists. Otherwise, make variable by inserting it into hash table.
-    in case lkup of
-        Just _ -> throwError ("Variable Mak Error. Variable " ++ varName ++ " already exists.") state
-        Nothing -> 
-            let top = fsTop state
-                vars' = M.insert varName top (vars state)
-            in return (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
-
 --Recursively builds a new list of stack frames with the mutated variable in it.
 mutateLoc' :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
 mutateLoc' [] acc mutVal name = error ("SHOULD NEVER GET HERE!!!!!!")
@@ -1491,13 +1480,17 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
 --Runs all the different cases of variable actions.
 doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
-        "mak" -> do 
-            let stackIsEmpty = null (stack state)
-            if stackIsEmpty
-                then error ("Variable Mak Error: Can't create variable when stack is empty.\nAttempted variable name: " ++ (astNodeToString name))
-                else do
-                    state' <- (makeVar state (astNodeToString name))
-                    doNode (Expression rest) state'
+        "mak" ->
+            let vName = astNodeToString name
+            in if (null $ stack state)
+                then 
+                    throwError ("Variable (var) Mak Error. Can't create variable when stack is empty. Attempted variable name: " ++ vName) state 
+                else
+                    case (M.lookup vName (vars state)) of
+                        Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
+                        Nothing -> 
+                            let vars' = M.insert vName (fsTop state) (vars state)
+                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
                            
         "get" -> let lkup = M.lookup (astNodeToString name) (vars state) 
                  in case lkup of
