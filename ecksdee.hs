@@ -1450,8 +1450,7 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
         handler :: GeneralException -> IO EDState
         handler (GeneralException msg) = 
             let state' = fsPush (String {chrs = msg, len = length msg}) (addFrame state)
-            in doNode err (addFrame state')
-    
+            in doNode err state'
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
