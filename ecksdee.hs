@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-17.966
+--Version: 2024-05-17.970
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1498,11 +1498,13 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                 Just v -> doNode (Expression rest) (fsPush v state)
                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
-        "del" -> let lkup = M.lookup (astNodeToString name) (vars state) 
-                 in case lkup of
-                    Just value -> let vars' = M.delete (astNodeToString name) (vars state)
-                           in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)})
-                    Nothing -> error ("Variable Del Error: Variable " ++ (astNodeToString name) ++ " doesn't exist.") 
+        "del" -> 
+            let vName = astNodeToString name
+            in case (M.lookup vName (vars state)) of 
+                Just v -> 
+                    let vars' = M.delete vName (vars state)
+                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} 
+                Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
         "mut" -> do 
             let stackIsEmpty = null (stack state)
