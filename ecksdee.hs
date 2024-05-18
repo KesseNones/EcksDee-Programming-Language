@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.222
+--Version: 2024-05-18.248
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1523,32 +1523,31 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
 
         other -> throwError ("Local Variable (loc) Command Error. Invalid local variable command given! Given: " ++ other ++ " valid: mak, get, mut") state
 
---Runs while loop.                                                                                                                      
-doNode ( While loopBody ) state = do
-    let stackIsEmpty = null (stack state)
-    let top = if stackIsEmpty 
-        then error "While Loop error:\nNo boolean value for while loop to check because stack is empty." 
-        else fsTop state
+--This code looks sus but basically it runs the loop body 
+-- and then runs the whole loop recursion if it needs to run again.                                                                                                                      
+doNode ( While loopBody ) state = 
+    if (null $ stack state)
+        then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+        else do 
+            newState <- case (fsTop state) of 
+                Boolean True -> doNode loopBody (addFrame state)
+                Boolean False -> return state
+                x -> 
+                    let xType = chrs $ doQueryType' x 
+                    in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+                        ++ xType) state
 
-    --Creates new state if loop body runs.
-    -- Otherwise newState is same as state.
-    -- Errors out if top of stack isn't a boolean type.
-    newState <- case top of 
-        (Boolean True) -> doNode (loopBody) (addFrame state)
-        (Boolean False) -> return state
-        _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
-
-    let stackIsEmpty' = null (stack newState)
-    let top' = if stackIsEmpty'
-        then error "While Loop error:\nNo boolean value for while loop to check because stack is empty."
-        else fsTop newState
-
-    --If loop ran and can run again, it's run again, 
-    -- otherwise, newState is returned.
-    case top' of 
-        (Boolean True) -> doNode (While loopBody) newState
-        (Boolean False) -> return newState
-        _ -> error "While Loop error:\nTop of stack needs to be type Boolean for loop to see if it needs to run again!"
+            --Checks to see if loop can run again or not.
+            if (null $ stack newState)
+                then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+                else 
+                    case (fsTop newState) of 
+                        Boolean True -> doNode (While loopBody) newState
+                        Boolean False -> return newState
+                        x -> 
+                            let xType = chrs $ doQueryType' x 
+                            in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+                                ++ xType) newState
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
