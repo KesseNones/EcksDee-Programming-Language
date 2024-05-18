@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.950
+--Version: 2024-05-18.981
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1150,7 +1150,7 @@ doGetField state =
             in case (obj, findKey) of 
                 (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     case (M.lookup name fs) of 
-                        Just i -> return (fsPush i state')
+                        Just i -> return (fsPush i (fsPush obj state'))
                         Nothing -> throwError ("Operator (getField) error. Field " ++ name ++ " doesn't exist in given object!") state
 
                 (a, b) ->

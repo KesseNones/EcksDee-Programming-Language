@@ -1310,7 +1310,7 @@ O(log(n))
 
 Given a stack ```x y``` where ```x``` is type ```Object``` and ```y``` is type ```String```,
 pops the two values from the stack, looks up the field named by ```String``` ```y``` and pushes the value ```z``` contained by field ```y```
-to the stack, yielding stack: ```x y z```. An error happens if the field doesn't exist in the object.
+to the stack, yielding stack: ```x z```. An error happens if the field doesn't exist in the object.
 
 Example Program:
 ```
