@@ -1054,7 +1054,7 @@ printError
 
 Stdout:
 ```
-Custom Error!!!
+ecksdee: GeneralException "Custom Error!!!"
 ```
 
 Final Stack:<br>
@@ -1500,20 +1500,19 @@ Integer 10
 
 The most common error one will face dealing with while loops is the error: <br> 
 ```
-While Loop error: 
-Top of stack needs to be type Boolean for loop 
-to see if it needs to run again!"
+ecksdee: GeneralException "While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: Integer"
 ``` 
 
 This error means that the top of the stack isn't a ```Boolean``` type that the loop needs to determine 
 if it needs to run at all or again. To fix this, make sure 
 to push a ```Boolean``` type to the top of the stack or have it as a result of a logical expression.
 
+In this example, the error shows the attempted type as an `Integer` which means the stack had an `Integer` on its top which isn't a `Boolean`. 
+This statement of what the type of thing on top of the stack was is mostly there to help users debug their code.
+
 The other error likely is the error:
 ```
-While Loop error: 
-No boolean value for while loop 
-to check because stack is empty.
+ecksdee: GeneralException "While Loop Error. No Boolean value for while loop to check because stack is empty!"
 ```
 
 This means that the stack is empty when the loop starts trying to run or tries to run again.
@@ -1543,22 +1542,19 @@ If there is an else chunk, put the semi-colon after the ```CODE_IF_FALSE```.
 
 One error that can occur with if statements is the error:
 ```
-If statement error:
-No boolean value for if to check 
-because stack is empty.
+ecksdee: GeneralException "If statement error. No Boolean for if to check because stack is empty!"
 ```
 
 Which means that the stack is empty and therefore can't be used in branching.
-To fix this, have some kind of ```Boolean``` at the top of the stack.
+To fix this, have some kind of ```Boolean``` at the top of the stack before the if statement runs.
 
 The other kind of error that can occur with if statements is error: 
 ```
-If statement error:
-If statement requires top of stack 
-to be type Boolean to perform valid branching!
+ecksdee: GeneralException "If statement error. If statement requires top of the stack to be type Boolean to branch! Attempted type: Float"
 ```
 This error means that the stack isn't empty but the top isn't of type ```Boolean```.
 To fix this, have a Boolean type at the top of the stack for branching to occur.
+This error also mentions the type that is on top of the stack, to help the user debug their code.
 
 Example Program:
 ```
@@ -2079,16 +2075,13 @@ if
 	/' Leaving if statement scope! '/
 ;
 
-/' Will throw an error because foo is not in scope here! '/
+/' Will throw an error because foo is not defined in scope here, since we left the if statement scope! '/
 loc get foo ;
 ```
 
 STDERR
 ```
-ecksdee: Loc Get Error:
-Local Variable foo not defined.
-CallStack (from HasCallStack):
-  error, called at ecksdee.hs:1290:32 in main:Main
+ecksdee: GeneralException "Local Variable (loc) Get Error. Local Variable foo not defined in any scope!"
 ```
 
 ##### Same Example but Fixed
@@ -2213,7 +2206,7 @@ onError
 ```
 Final Stack:
 ```
-String {chrs = "Operator (cast) error.\nFailed to convert String \"foo123\" to type Integer.\nCallStack (from HasCallStack):\n  error, called at ecksdee.hs:782:32 in main:Main", len = 154}
+String {chrs = "Operator (cast) error. Failed to convert String \"foo123\" to type Integer.", len = 73}
 Integer 0
 ```
 
@@ -2247,9 +2240,7 @@ func call square ;
 
 Stderr:
 ```
-ecksdee: Error! Function square expects one argument!
-CallStack (from HasCallStack):
-  error, called at ecksdee.hs:867:47 in main:Main
+ecksdee: GeneralException "Error! Function square expects one argument!"
 ```
 
 This custom error was thrown because the function `square` 
@@ -2321,9 +2312,7 @@ func call square ;
 
 Stderr:
 ```
-ecksdee: Error! Function needs argument of type Integer!
-CallStack (from HasCallStack):
-  error, called at ecksdee.hs:867:47 in main:Main
+ecksdee: GeneralException "Error! Function needs argument of type Integer!"
 ```
 
 An error was thrown because the argument pushed to the stack was `"Cheese"` which is of type `String`.
@@ -2418,15 +2407,17 @@ func def square
 
 		/' Errors out if type isn't one of the four numeric types. '/
 		if 
-			"Error!"
+			"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
 			printError
 		;
 		drop
 
 	onError
-		drop
-
-		"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
+		/' Just using printError here is generally the default action 
+		to take initially since any exceptions thrown still bubble up to user-level. 
+		HOWEVER, you can also use drop to get rid of the given error string 
+		and throw something different or do something else entirely. Freedom!
+		'/
 		printError
 
 	;
@@ -2440,9 +2431,7 @@ func call square ;
 
 Stderr:
 ```
-ecksdee: Error! Function needs argument of type Integer, BigInteger, Float, or Double!
-CallStack (from HasCallStack):
-  error, called at ecksdee.hs:867:47 in main:Main
+ecksdee: GeneralException "Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
 ```
 
 This function has a more lenient restriction since the input can be any of the numeric types 
@@ -2490,15 +2479,12 @@ func def square
 
 		/' Errors out if type isn't one of the four numeric types. '/
 		if 
-			"Error!"
+			"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
 			printError
 		;
 		drop
 
 	onError
-		drop
-
-		"Error! Function needs argument of type Integer, BigInteger, Float, or Double!"
 		printError
 
 	;
@@ -2531,7 +2517,7 @@ Double 7.387524
 
 These examples are by no means exhaustive in terms of the potential of this fancy operator!
 Any code that's put in the `attempt` block can be recovered from with the code in 
-the `onError` block in the event of an error. <br> The potential use cases for this are vast!
+the `onError` block in the event of an error. <br> The potential use cases for this are extremely vast!
 
 ### Comments and Whitespace Information
 The way EcksDee largely tokenizes its code is by whitespace. 
@@ -2616,15 +2602,16 @@ If you use Sublime Text there now exists a syntax highlighter useable for EcksDe
    select `EcksDee` from the parsing options and the highlighting will appear.
 
 This makes EcksDee significantly nicer to code in since 
-it's easier to see mistakes and it just looks all around prettier.
+it's easier to see mistakes and it just looks prettier overall.
 
 ## Conclusion:
 EcksDee has been a fun programming language to develop 
 from the very simple Forth interpretor it started as. 
 Adding data types and IO were both definitely challenges in their own right; monads are freaky!
+Also, adding `attempt onError` felt like an act of wizardry in and of itself.
 
 Is EcksDee a revolutionary language? No. Is it a fast language? No. 
-Is it even that good of a language? Heck no! But was it fun to make and keep adding onto? 
+Is it even that good of a language? Definitely no! But was it fun to make and keep adding onto? 
 Absolutely yes!
 
 I have enjoyed the surreal sensation of making programs in my own programming language 
