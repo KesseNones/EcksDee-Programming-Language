@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.071
+--Version: 2024-05-18.084
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1514,11 +1514,10 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                             let frame' = M.insert vName (fsTop state) (head $ frames state)
                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))}
                            
-        "get" -> let findRes = getLoc (frames state) (astNodeToString name) 
-                 in case findRes of
-                    Just value -> let state' = fsPush value state
-                              in doNode (Expression rest) state' 
-                    Nothing -> error ("Loc Get Error:\nLocal Variable " ++ (astNodeToString name) ++ " not defined.")
+        "get" ->  
+            case (getLoc (frames state) (astNodeToString name)) of
+                Just value -> doNode (Expression rest) (fsPush value state)
+                Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
 
         "mut" -> 
             let stackIsEmpty = null (stack state)
