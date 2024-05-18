@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.248
+--Version: 2024-05-18.950
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1348,15 +1348,19 @@ getLoc (f:fs) name =
         Nothing -> getLoc fs name  
 
 --Recursively builds a new list of stack frames with the mutated variable in it.
-updateFrames :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
-updateFrames [] acc mutVal name = error ("SHOULD NEVER GET HERE!!!!!!")
-updateFrames (f:fs) acc mutVal name = 
-    let look = M.lookup name f 
-    in case look of 
-            Just _ -> 
-                let f' = M.insert name mutVal f
-                in acc ++ (f':fs) 
-            Nothing -> updateFrames fs (acc ++ [f]) mutVal name
+--Altered to now linearly do this!
+updateFrames :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> Bool -> [M.Map String Value]
+updateFrames [] acc mutVal name hasUpdated = reverse acc
+updateFrames (f:fs) acc mutVal name hasUpdated = 
+    if hasUpdated
+        then 
+            updateFrames fs (f : acc) mutVal name hasUpdated
+        else 
+            case (M.lookup name f) of
+                Just _ -> 
+                    let f' = M.insert name mutVal f
+                    in updateFrames fs (f' : acc) mutVal name True 
+                Nothing -> updateFrames fs (f : acc) mutVal name hasUpdated
 
 --Comapres types in order to enforce static typing when mutating variables.
 compareTypesForMut :: Value -> Value -> Bool
@@ -1513,7 +1517,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just v -> 
                             if (compareTypesForMut (fsTop state) v)
                                 then
-                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName)}
+                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False)}
                                 else
                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 

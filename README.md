@@ -1905,15 +1905,10 @@ Throws error if none is found and pushes value to stack if found.
 ##### mut
 Performance:
 ```
-O(m^2 * log(n))
+O(m * log(n))
 ```
-Polynomial second order logarithmic time where `n` is the number of variables in 
+Linear logarithmic time where `n` is the number of variables in 
 a given stack frame and `m` is the number of stack frames in existence.
-This would only happen if a local variable was mutated far away from the current program scope 
-where a lot of traversal would be needed.
-
-The performance is so bad here because it has to reconstruct the list as it traverses in the worst-case. 
-In most cases though it won't be this bad since `m` and `n` are typically small.
 
 If variable has been found to exist and its value has the same type as the 
 value at the top of the stack, the variable is changed to that value at the top of the stack.
