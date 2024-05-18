@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-17.987
+--Version: 2024-05-18.071
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1337,18 +1337,6 @@ doOp op = throwError ("Unrecognized operator: " ++ op)
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
 
---Creates a local variable in the current scope. 
--- Throws error if variable already exists.
-makeLoc :: EDState -> String -> IO EDState
-makeLoc state name = 
-    let look = M.lookup name (head $ frames state)
-    in case look of 
-        Just _ -> throwError ("Loc Mak Error. Local Variable " ++ name ++ " already exists in current scope.") state
-        Nothing ->  
-            let top = fsTop state
-                frame' = M.insert name top (head $ frames state)
-            in return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))})
-
 --Performs a lookup through all stack frames to find desired variable name.
 --If found, returns it, else returns Nothing.
 getLoc :: [M.Map String Value] -> String -> Maybe Value
@@ -1516,12 +1504,15 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
 doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
         "mak" ->
-            let stackIsEmpty = null (stack state)
-            in if stackIsEmpty
-                then error ("Loc Mak Error: Can't create variable when stack is empty.\nAttempted local variable name: " ++ (astNodeToString name))
-                else do
-                    state' <- (makeLoc state (astNodeToString name))
-                    doNode (Expression rest) state'
+            let vName = astNodeToString name
+            in if (null $ stack state)
+                then throwError ("Local Variable (loc) Mak Error. Can't create local variable when stack is empty! Attempted local variable name: " ++ vName) state 
+                else
+                    case (M.lookup vName (head $ frames state)) of
+                        Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
+                        Nothing ->
+                            let frame' = M.insert vName (fsTop state) (head $ frames state)
+                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))}
                            
         "get" -> let findRes = getLoc (frames state) (astNodeToString name) 
                  in case findRes of
