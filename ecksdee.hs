@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.084
+--Version: 2024-05-18.215
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1348,30 +1348,15 @@ getLoc (f:fs) name =
         Nothing -> getLoc fs name  
 
 --Recursively builds a new list of stack frames with the mutated variable in it.
-mutateLoc' :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
-mutateLoc' [] acc mutVal name = error ("SHOULD NEVER GET HERE!!!!!!")
-mutateLoc' (f:fs) acc mutVal name = 
+updateFrames :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> [M.Map String Value]
+updateFrames [] acc mutVal name = error ("SHOULD NEVER GET HERE!!!!!!")
+updateFrames (f:fs) acc mutVal name = 
     let look = M.lookup name f 
     in case look of 
             Just _ -> 
                 let f' = M.insert name mutVal f
                 in acc ++ (f':fs) 
-            Nothing -> mutateLoc' fs (acc ++ [f]) mutVal name
-
---Mutates a given local variable.
-mutateLoc :: EDState -> String -> IO EDState
-mutateLoc state name =
-    case (getLoc (frames state) name) of 
-        Just val ->
-            if (compareTypesForMut (fsTop state) val)
-                then
-                    return (EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (mutateLoc' (frames state) [] (fsTop state) name)})
-                else
-                    throwError ("Loc Mut Error. Can't mutate local variable " 
-                        ++ name ++ " of type " ++ (chrs $ doQueryType' val) 
-                        ++ " to different type: " ++ (chrs $ doQueryType' (fsTop state))) state
-
-        Nothing -> throwError ("Loc Mut Error. Local Variable " ++ name ++ " not defined for mutation.") state
+            Nothing -> updateFrames fs (acc ++ [f]) mutVal name
 
 --Comapres types in order to enforce static typing when mutating variables.
 compareTypesForMut :: Value -> Value -> Bool
@@ -1520,12 +1505,21 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
 
         "mut" -> 
-            let stackIsEmpty = null (stack state)
-            in if stackIsEmpty
-                then error ("Loc Mut Error: Can't mutate local variable when stack is empty.\nAttempted local variable name: " ++ (astNodeToString name))
-                else do 
-                    state' <- (mutateLoc state (astNodeToString name))
-                    doNode (Expression rest) state'
+            let vName = astNodeToString name
+            in if (null $ stack state)
+                then throwError ("Local Variable (loc) Mut Error. Can't mutate local variable when stack is empty! Attempted local variable name: " ++ vName) state
+                else
+                    case (getLoc (frames state) vName) of
+                        Just v -> 
+                            if (compareTypesForMut (fsTop state) v)
+                                then
+                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName)}
+                                else
+                                    throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
+                                        ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
+                                        ++ " to different type: " ++ (chrs $ doQueryType' (fsTop state))) state
+
+                        Nothing -> throwError ("Local Variable (loc) Mut Error. Local Variable " ++ vName ++ " not defined for mutation in any scope!") state
 
         other -> error ("Local Variable Command Error: Invalid local variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut")
 
