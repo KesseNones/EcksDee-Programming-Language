@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.215
+--Version: 2024-05-18.222
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1521,7 +1521,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
 
                         Nothing -> throwError ("Local Variable (loc) Mut Error. Local Variable " ++ vName ++ " not defined for mutation in any scope!") state
 
-        other -> error ("Local Variable Command Error: Invalid local variable command given.\nGiven: " ++ other ++ "\nValid: mak, get, mut")
+        other -> throwError ("Local Variable (loc) Command Error. Invalid local variable command given! Given: " ++ other ++ " valid: mak, get, mut") state
 
 --Runs while loop.                                                                                                                      
 doNode ( While loopBody ) state = do
