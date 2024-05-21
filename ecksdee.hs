@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-18.981
+--Version: 2024-05-21.134
 --Toy Programming Language Named EcksDee
 
 {-
@@ -10,6 +10,8 @@
             It would make user debugging much less ass.
         -Standardize errors.
         -Casting edge case may exist where BigInteger to Char works when it shouldn't! (Fixed? Needs more testing.)
+        -Make parsing linear time by having alreadyParsed be prepended 
+        to instead of appended to and just reverse the whole thing when done parsing.
 -}
 
 import Data.List
@@ -67,6 +69,8 @@ data AstNode =
     |   LocVar {name :: AstNode, cmd :: AstNode}
 
     |   AttErr {attempt :: AstNode, onError :: AstNode}
+
+    |   TempStackChange AstNode
 
     deriving ( Show )
 
@@ -1398,6 +1402,11 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
             let state' = fsPush (String {chrs = msg, len = length msg}) (addFrame state)
             in doNode err state'
 
+--Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
+-- without a stack change like with other operators like this.
+doNode (TempStackChange runBlock) state =
+    (doNode runBlock state) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state'})
+
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
@@ -1632,6 +1641,11 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
         let (attemptBranch, errorBranch, remTokens) = parseAttErr tokens
         in parseExpression' (alreadyParsed ++ [AttErr{attempt = attemptBranch, onError = errorBranch}]) remTokens terminators
         
+    --Parse tempStackChange block
+    | token == Word "tempStackChange" = 
+        let (runBlock, remTokens) = parseTempStackChange tokens
+        in  parseExpression' (alreadyParsed ++ [TempStackChange runBlock]) remTokens terminators
+
     -- no special word found. We are parsing a list of operations. Keep doing this until 
     -- there aren't any. 
     | otherwise = parseExpression' (alreadyParsed ++ [Terminal(token)]) (tokens) (terminators)
@@ -1645,6 +1659,12 @@ parseExpression tokens =
 --Custom trace function used during debugging. Made by Grant.
 traceThing :: (Show a) => a -> a 
 traceThing x = traceShow x x 
+
+parseTempStackChange :: [Token] -> (AstNode, [Token])
+parseTempStackChange [] = error "tempStackChange missing closing semicolon!"
+parseTempStackChange tokens =
+    let (runBlock, remTokens, terminator) = parseExpression' [] tokens [";"]
+    in (Expression runBlock, remTokens)
 
 --Parses an attErr code block into its appropriate expression.
 parseAttErr :: [Token] -> (AstNode, AstNode, [Token])
