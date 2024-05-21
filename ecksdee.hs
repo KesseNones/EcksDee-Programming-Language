@@ -1405,7 +1405,7 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
 doNode (TempStackChange runBlock) state =
-    (doNode runBlock state) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state'})
+    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state'})
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
