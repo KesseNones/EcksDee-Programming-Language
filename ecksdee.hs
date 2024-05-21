@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-21.134
+--Version: 2024-05-21.208
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1598,7 +1598,7 @@ parseExpression' alreadyParsed [] terminators =
     -- this is the base case: nothing to parse
     if null terminators then ( alreadyParsed, [], Nothing ) 
     -- error case 
-    else error ( "ended expression without finding one of: " ++ intercalate ", " terminators )
+    else error ( "Ended expression without finding one of: " ++ intercalate ", " terminators )
 
 -- if tokens remain, keep parsing
 parseExpression' alreadyParsed ( token:tokens ) terminators 
@@ -1609,52 +1609,52 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
     -- then parse whatever is after the if-statement.
     | token == Word "if" = 
         let ( trueBranch, falseBranch, remTokens ) = parseIf tokens
-            newParsed = alreadyParsed ++ [If{ifTrue = trueBranch, ifFalse = falseBranch}]
+            newParsed = If{ifTrue = trueBranch, ifFalse = falseBranch} : alreadyParsed
         in parseExpression' newParsed remTokens terminators
             
     -- found a while-statement: remove the "while", parse the body, then parse whatever is after
     | token == Word "while" = 
         let (bod, remTokens) = parseWhile tokens
-            newParsed = alreadyParsed ++ [While(bod)]
+            newParsed = (While bod) : alreadyParsed
         in parseExpression' newParsed remTokens terminators                                              
     
     --Parse function definition.
     | token == Word "func" = 
         let (cmd, name, bod, remTokens) = parseFuncOp tokens
-            newParsed = alreadyParsed ++ [Function{funcCmd = cmd, funcName = name, funcBod = bod}]
+            newParsed = Function{funcCmd = cmd, funcName = name, funcBod = bod} : alreadyParsed
         in parseExpression' newParsed remTokens terminators
 
     --Parse basic variable case.
     | token == Word "var" = 
         let (varAct, variableName, remTokens) = parseVarAction tokens
-            newParsed = alreadyParsed ++ [Variable{varName = variableName, varCmd = varAct}]
+            newParsed = Variable{varName = variableName, varCmd = varAct} : alreadyParsed
         in parseExpression' newParsed remTokens terminators
 
     --Parse local variable.
     | token == Word "loc" =
         let (varAct, variableName, remTokens) = parseVarAction tokens
-            newParsed = alreadyParsed ++ [LocVar{name = variableName, cmd = varAct}]
+            newParsed = LocVar{name = variableName, cmd = varAct} : alreadyParsed
         in parseExpression' newParsed remTokens terminators
 
     --Parse attErr block.
     | token == Word "attempt" =
         let (attemptBranch, errorBranch, remTokens) = parseAttErr tokens
-        in parseExpression' (alreadyParsed ++ [AttErr{attempt = attemptBranch, onError = errorBranch}]) remTokens terminators
+        in parseExpression' (AttErr{attempt = attemptBranch, onError = errorBranch} : alreadyParsed) remTokens terminators
         
     --Parse tempStackChange block
     | token == Word "tempStackChange" = 
         let (runBlock, remTokens) = parseTempStackChange tokens
-        in  parseExpression' (alreadyParsed ++ [TempStackChange runBlock]) remTokens terminators
+        in  parseExpression' ((TempStackChange runBlock) : alreadyParsed) remTokens terminators
 
     -- no special word found. We are parsing a list of operations. Keep doing this until 
     -- there aren't any. 
-    | otherwise = parseExpression' (alreadyParsed ++ [Terminal(token)]) (tokens) (terminators)
+    | otherwise = parseExpression' ((Terminal token) : alreadyParsed) (tokens) (terminators)
 
 -- takes the result of parseExpression' and wraps it in an Expression constructor
 parseExpression :: [Token] -> AstNode
 parseExpression tokens = 
     let (nodes, toks, potTok) = parseExpression' [] tokens []
-    in Expression(nodes)
+    in Expression(reverse nodes)
 
 --Custom trace function used during debugging. Made by Grant.
 traceThing :: (Show a) => a -> a 
@@ -1664,7 +1664,7 @@ parseTempStackChange :: [Token] -> (AstNode, [Token])
 parseTempStackChange [] = error "tempStackChange missing closing semicolon!"
 parseTempStackChange tokens =
     let (runBlock, remTokens, terminator) = parseExpression' [] tokens [";"]
-    in (Expression runBlock, remTokens)
+    in (Expression $ reverse runBlock, remTokens)
 
 --Parses an attErr code block into its appropriate expression.
 parseAttErr :: [Token] -> (AstNode, AstNode, [Token])
@@ -1673,20 +1673,21 @@ parseAttErr tokens =
         (errBranch, remTokens) = if terminator == (Just $ Word "onError") 
             then parseErrorBranch remainingTokens 
             else error "attempt onError Error:\n Branch onError branch missing.\nUSAGE: attempt CODE_TO_ATTEMPT onError CODE_TO_HANDLE_ERROR ;"
-    in (Expression(attBranch), errBranch, remTokens)
+    in (Expression $ reverse attBranch , errBranch, remTokens)
 
 --Parses the onError branch of attErr.
 parseErrorBranch :: [Token] -> (AstNode, [Token])
 parseErrorBranch tokens = 
     let (errorHandleCode, remTokens, terminator) = parseExpression' [] tokens [";"]
-    in (Expression(errorHandleCode), remTokens)
+    in (Expression $ reverse errorHandleCode, remTokens)
 
 parseVarAction :: [Token] -> (AstNode, AstNode, [Token])
 parseVarAction (token:tokens) = 
     let (varInfo, remTokens, terminator) = parseExpression' [] tokens [";"]
+        revVarInfo = reverse varInfo
         varAction = Terminal token
-        varName = if not $ null (tail varInfo) 
-            then error "Malformed variable command" else head varInfo
+        varName = if not $ null (tail revVarInfo) 
+            then error "Malformed variable command" else head revVarInfo
         in (varAction, varName, remTokens)
 
 --Parses a function definition.
@@ -1695,7 +1696,7 @@ parseFuncOp (command:name:tokens) =
     let (funcBody, remTokens, terminator) = parseExpression' [] tokens [";"]
         funcCommand = Terminal command
         funcName = Terminal name
-        in (funcCommand, funcName, Expression(funcBody), remTokens)
+        in (funcCommand, funcName, Expression $ reverse funcBody, remTokens)
 
 -- we just saw an "if". now we have to build an "If" AstNode.
 -- returns the two branches and the remaining tokens. 
@@ -1706,7 +1707,7 @@ parseIf tokens =
         (falseBranch, remTokens) = if terminator == (Just $ Word "else") 
             then parseElse remainingTokens 
             else (Expression([]), remainingTokens)
-    in (Expression(trueBranch), falseBranch, remTokens)
+    in (Expression $ reverse trueBranch, falseBranch, remTokens)
 
 -- we just saw an "else". now finish the ifFalse part of the If node. This one only needs to 
 -- return the "false" branch of the if statement, which is why there is only one [AstNode] in 
@@ -1714,7 +1715,7 @@ parseIf tokens =
 parseElse :: [Token] -> (  AstNode, [Token] )                                                               
 parseElse tokens = 
     let (ifFalse, remTokens, terminator) = parseExpression' [] tokens [";"]
-    in (Expression(ifFalse), remTokens)
+    in (Expression $ reverse ifFalse, remTokens)
 
 -- parsing a while loop is similar to parsing an if statement. 
 parseWhile :: [Token] -> ( AstNode, [Token] )
@@ -1722,7 +1723,7 @@ parseWhile :: [Token] -> ( AstNode, [Token] )
 parseWhile [] = error "while without closing semicolon."
 -- otherwise, parse the loop body until reaching the ";" 
 parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] tokens [";"]
-                    in (Expression(loopBod), (remTokens))
+                    in (Expression $ reverse loopBod, (remTokens))
     
 --Makes new interpretor state with default values.
 fsNew :: IO EDState
