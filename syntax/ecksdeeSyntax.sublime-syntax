@@ -44,12 +44,22 @@ contexts:
         2: variable.parameter.xd
         3: constant.language.infinity.xd
 
-    #Highlights variables local and global.
-    - match: '\b(var|loc)\s+(mak|get|mut|del)\s+(\w+)\s+(;)(?![\w])'
+    #Highlights variables.
+    - match: '\b(var)\s+(mak|get|mut|del)\s+(\w+)\s+(;)(?![\w])'
       captures:
         1: variable.language.xd
         2: variable.parameter.xd
         3: variable.function.xd
+
+    #Highlights local variables.
+    - match: '\b(loc)\s+(mak|get|mut)\s+(\w+)\s+(;)(?![\w])'
+      captures:
+        1: variable.language.xd
+        2: variable.parameter.xd
+        3: variable.function.xd
+
+    - match: '\btempStackChange\b'
+      scope: variable.language.xd
 
     #Try to figure out try-catch highlighting later on!
     # - match: '\b(attempt)\s*(onError)\s*;'
