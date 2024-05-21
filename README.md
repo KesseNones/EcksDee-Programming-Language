@@ -2685,6 +2685,23 @@ If you use Sublime Text there now exists a syntax highlighter useable for EcksDe
 This makes EcksDee significantly nicer to code in since 
 it's easier to see mistakes and it just looks prettier overall.
 
+## Convention
+On the topic of text discussed in the last section, there is a minor convention for EcksDee to be used.
+Of course, the user can do whatever they want but this convention helps establish some consistency.
+
+### Variables
+Variables should be named using `camelCase` where it's all letters with capitals seperating each word and the initial word of the chain starts with lowercase,
+ex: `isLeapYear`, `timeUntilApocalypse`, `ageOfUniverse`, etc.
+
+### Functions
+Functions are also named using `camelCase` however, helper functions, functions that you don't want to call directly, should start with an `_`,
+ex: `_findSuccessor`, `_buildCache`, etc. 
+
+### Comments
+Put comments above the code you're describing, not below.
+
+More information on the EcksDee convention will be put here once more information is thought of.
+
 ## Conclusion:
 EcksDee has been a fun programming language to develop 
 from the very simple Forth interpretor it started as. 
