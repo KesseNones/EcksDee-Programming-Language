@@ -2175,6 +2175,92 @@ or other potential use cases.
 
 TL;DR: Both work with `loc` often being more convenient unless you *really need* manual scoping.
 
+### The `tempStackChange` Block
+Tired of putting a billion `drop`s everywhere when just setting up variables? Is it annoying to have to keep writting all these `drop`s?
+Then, `tempStackChange` is for you! This block runs code inside it and disregards any changes made to the stack when the block is done.
+
+The syntax is very simple:
+```
+tempStackChange CODE_TO_RUN ;
+```
+
+`CODE_TO_RUN` is whatever code you want to run inside this block. When `CODE_TO_RUN` finishes running, the stack is reverted to what it was before
+`tempStackChange` began, which means you can do a bunch of stuff and preserve the stack as what it was.
+
+The use cases for this fancy operator are quite large! 
+
+One nice feature is the fact that this prevents functions from making stack side effects.
+For example:
+```
+func def square
+	tempStackChange
+		loc mak n ;
+		"random crap"
+		"gibberish"
+		"garbage"
+		4763734
+		loc get n ;
+		loc get n ;
+		*
+		var mak retVal ;
+		debugPrintStack
+	;
+	debugPrintStack
+
+	var get retVal ;
+	var del retVal ;
+;
+
+6
+func call square ;
+```
+
+Stdout:
+```
+----------------------------------------------
+DEBUG START
+STACK START
+Integer 6
+String {chrs = "random crap", len = 11}
+String {chrs = "gibberish", len = 9}
+String {chrs = "garbage", len = 7}
+Integer 4763734
+Integer 36
+STACK END
+STACK LENGTH: 6
+DEBUG END
+----------------------------------------------
+----------------------------------------------
+DEBUG START
+STACK START
+Integer 6
+STACK END
+STACK LENGTH: 1
+DEBUG END
+----------------------------------------------
+```
+
+Final Stack:
+```
+Integer 6
+Integer 36
+```
+
+As can be seen using `debugPrintStack` a bunch of random stuff was on the stack inside the block and none of it survived outside the block.
+This means that a function can run its course and the user need not worry about stack side effects outside of the function due to one too many `drop`s.
+
+#### IMPORTANT NOTE
+You will however notice from that example that `var` was needed to save the return value for that function instead of `loc`. This is because 
+`tempStackChange` creates its own scope with its own frame so local variables made inside the `tempStackChange` block are gone once the block 
+finishes. This does make things a little messy for creating a bunch of variables since either you need to use `var` purely, or
+transfer from `var` to `loc` following the block, or have some `loc` variables declared with default values before the block and mutate them inside the block.
+Consequently, on the front of making a bunch of variables, the `tempStackChange` block doesn't really save on typing.
+
+#### `tempStackChange` - Conclusion
+Even though more typing is needed both for the block and for any variable creation done with this block, it's definitely worth using to avoid stack side effects 
+and having to think as hardly about what's on the stack and what needs to be dropped from said stack every step of the way.
+Overall, it doesn't save on typing but it does save on headaches :).
+
 ### The `attempt` `onError` Block (aka try-catch)
 An extremely powerful fancy operator that allows for error handling akin to try-catch in other languages.
 This code allows you to try to run some code and have code to run as backup if there's an error.
