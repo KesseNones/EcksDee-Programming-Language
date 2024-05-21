@@ -58,6 +58,9 @@ contexts:
         2: variable.parameter.xd
         3: variable.function.xd
 
+    - match: '\btempStackChange\b'
+      scope: variable.language.xd
+
     #Try to figure out try-catch highlighting later on!
     # - match: '\b(attempt)\s*(onError)\s*;'
     #   captures:
