@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-25.931
+--Version: 2024-05-25.948
 --Toy Programming Language Named EcksDee
 
 {-
@@ -34,6 +34,7 @@ data Value =
     |   Boolean Bool
     |   List { items :: M.Map Int Value, len :: Int}
     |   Object { fields :: M.Map String Value }
+    |   Box Int
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -71,13 +72,20 @@ data AstNode =
 
     deriving ( Show )
 
+data Heap = Heap {
+    freeList :: M.Map Int Int,
+    h :: M.Map Int Value,
+    heapSize :: Int
+}
+
 -- This is the state of the interpreter. 
 -- Currently it stores the stack, which is where all of the data lives. 
 data EDState = EDState { 
     stack :: [Value], 
     fns :: M.Map String AstNode,
     vars :: M.Map String Value,
-    frames :: [M.Map String Value]
+    frames :: [M.Map String Value],
+    heap :: Heap 
 }
 
 data GeneralException = GeneralException String deriving (Show, Typeable)
@@ -258,8 +266,8 @@ doModulo state =
 doSwap :: EDState -> IO EDState
 doSwap state = 
     case (stack state) of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
         vals ->  
             let (state', b, a) = fsPop2 state
                 state'' = fsPush a state' 
@@ -278,7 +286,7 @@ doDrop state =
 --Clears the entire stack to empty. 
 -- Avoids having to type drop over and over again.
 doDropStack :: EDState -> IO EDState
-doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms})
+doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms, heap = hp} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms, heap = hp})
 
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
@@ -287,9 +295,9 @@ doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDSt
 doRot :: EDState -> IO EDState
 doRot state = 
     case (stack state) of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
         vals -> 
             let (state', c, b, a) = fsPop3 state
                 state'' = fsPush a state'
@@ -1378,14 +1386,14 @@ compareTypesForMut _ _ = False
 
 --Used to add a stack frame when the scope increases. 
 addFrame :: EDState -> EDState
-addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state))}
+addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state)), heap = heap state}
 
 --Removes stack frame if not at global scope.
 removeFrame :: EDState -> EDState
-removeFrame EDState{stack = s, fns = f, vars = v, frames = [x]} = 
-    EDState{stack = s, fns = f, vars = v, frames = [x]}
-removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs)} =
-    EDState{stack = s, fns = f, vars = v, frames = (xs)}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp} = 
+    EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs), heap = hp} =
+    EDState{stack = s, fns = f, vars = v, frames = (xs), heap = hp}
 
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
@@ -1402,7 +1410,7 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
 doNode (TempStackChange runBlock) state =
-    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state'})
+    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state})
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
@@ -1428,7 +1436,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
                     Nothing ->
                         let fns' = M.insert fName body (fns state)
-                        in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
+                        in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
 
         "call" -> 
             let fName = astNodeToString name
@@ -1454,7 +1462,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
                         Nothing -> 
                             let vars' = M.insert vName (fsTop state) (vars state)
-                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
+                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
                            
         --Pushes variable value to stack.
         "get" -> 
@@ -1469,7 +1477,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
             in case (M.lookup vName (vars state)) of 
                 Just v -> 
                     let vars' = M.delete vName (vars state)
-                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} 
+                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
         --Alters variable to new value on top of stack if the types match.
@@ -1485,7 +1493,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                             if (compareTypesForMut v newVal)
                                 then 
                                     let vars' = M.insert vName newVal (vars state)
-                                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
+                                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
                                 else
                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1507,7 +1515,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
                         Nothing ->
                             let frame' = M.insert vName (fsTop state) (head $ frames state)
-                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))}
+                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
                            
         "get" ->  
             case (getLoc (frames state) (astNodeToString name)) of
@@ -1523,7 +1531,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just v -> 
                             if (compareTypesForMut (fsTop state) v)
                                 then
-                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False)}
+                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
                                 else
                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1724,25 +1732,25 @@ parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] t
     
 --Makes new interpretor state with default values.
 fsNew :: IO EDState
-fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty]}
+fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, h = M.empty, heapSize = 0}}
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
-fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state)}
+fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}
 
 --Removes value from top of stack, returning it.
 fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
     let top = head (stack state) 
         newStack = tail (stack state)  
-    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state) }, top )
+    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, top )
 
 --Removes the top two elements from the stack, returning them.
 fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
-    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state)}, secondToTop, top)
+    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, secondToTop, top)
 
 --Removes top three elements from stack.
 fsPop3 :: EDState -> ( EDState, Value, Value, Value )
@@ -1750,7 +1758,7 @@ fsPop3 state =
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
         (state''', thirdToTop) = fsPop state''
-    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state)}, thirdToTop, secondToTop, top)
+    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, thirdToTop, secondToTop, top)
 
 --Returns value at top of stack. 
 fsTop :: EDState -> Value 
