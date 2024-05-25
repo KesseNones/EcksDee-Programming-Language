@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-25.962
+--Version: 2024-05-25.969
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1421,7 +1421,7 @@ doNode (BoxOp cmd) state =
         "open" -> return state
         "altr" -> return state
         "free" -> return state
-        "null" -> return state
+        "null" -> return $ fsPush (Box (-1)) state
         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
 -- Runs true branch if top of stack is true 
