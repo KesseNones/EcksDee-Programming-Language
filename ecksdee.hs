@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-21.208
+--Version: 2024-05-25.931
 --Toy Programming Language Named EcksDee
 
 {-
@@ -8,10 +8,7 @@
         -Maybe have errors show line number 
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
-        -Standardize errors.
         -Casting edge case may exist where BigInteger to Char works when it shouldn't! (Fixed? Needs more testing.)
-        -Make parsing linear time by having alreadyParsed be prepended 
-        to instead of appended to and just reverse the whole thing when done parsing.
 -}
 
 import Data.List
