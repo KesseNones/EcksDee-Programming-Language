@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-25.948
+--Version: 2024-05-25.962
 --Toy Programming Language Named EcksDee
 
 {-
@@ -69,6 +69,8 @@ data AstNode =
     |   AttErr {attempt :: AstNode, onError :: AstNode}
 
     |   TempStackChange AstNode
+
+    |   BoxOp AstNode
 
     deriving ( Show )
 
@@ -1412,6 +1414,16 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 doNode (TempStackChange runBlock) state =
     (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state})
 
+--Parses box command.
+doNode (BoxOp cmd) state =
+    case (astNodeToString cmd) of
+        "make" -> return state
+        "open" -> return state
+        "altr" -> return state
+        "free" -> return state
+        "null" -> return state
+        x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
+
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
 doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
@@ -1651,6 +1663,10 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
         let (runBlock, remTokens) = parseTempStackChange tokens
         in  parseExpression' ((TempStackChange runBlock) : alreadyParsed) remTokens terminators
 
+    | token == Word "box" = 
+        let (boxWords, remTokens, term) = parseExpression' [] tokens [";"]
+        in parseExpression' ((BoxOp $ head $ reverse boxWords) : alreadyParsed) remTokens terminators
+
     -- no special word found. We are parsing a list of operations. Keep doing this until 
     -- there aren't any. 
     | otherwise = parseExpression' ((Terminal token) : alreadyParsed) (tokens) (terminators)
@@ -1889,6 +1905,8 @@ printStack ((String {chrs = cs, len = l}):xs) =
     let pr = if l < 256 then cs else (init  $ take 255 cs) ++ "..."
     in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
 printStack ((Object{fields = fs}):xs) = putStrLn ("{" ++ (printObj (M.toList fs) "") ++ "}") >> printStack xs
+--Makes it so it prints Box NULL instead of Box -1 since -1 is defined as the null value under the hood.
+printStack ((Box (-1)):xs) = putStrLn "Box NULL" >> printStack xs 
 printStack (x:xs) = print x >> printStack xs
 
 --Recursively prints a list's contents.
