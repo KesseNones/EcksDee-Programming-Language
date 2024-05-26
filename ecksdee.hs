@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-26.974
+--Version: 2024-05-26.980
 --Toy Programming Language Named EcksDee
 
 {-
@@ -938,12 +938,15 @@ doCast' (Box bn) String{chrs = "String", len = _} =
     if (bn == (-1))
         then Left $ String{chrs = "Box NULL", len = length "Box NULL"}
         else let boxStr = "Box " ++ (show bn) in Left String{chrs = boxStr, len = length boxStr}
+doCast' (Box bn) String{chrs = "Integer", len = _} = Left $ Integer bn
+--Truthy vs falsy value, kinda useless but why not.
+doCast' (Box bn) String{chrs = "Boolean", len = _} = Left $ Boolean $ bn /= (-1)
 
+--Casting failure cases.
 doCast' a String{chrs = typeCastStr, len = _} =
     let aType = chrs $ doQueryType' a 
     in Right ("Operator (cast) error. Invalid casting configuration given! Tried to cast "
         ++ aType ++ " to type " ++ typeCastStr)
-
 doCast' a b =
     let (aType, bType) = findTypeStrsForError a b
     in Right("Operator (cast) error. Types of Value and String required for cast to occur. Attempted types: "
