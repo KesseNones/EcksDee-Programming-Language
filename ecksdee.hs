@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-26.971
+--Version: 2024-05-26.974
 --Toy Programming Language Named EcksDee
 
 {-
@@ -371,6 +371,7 @@ doNotEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Le
 doNotEqual' (Char a) (Char b) = Left $ Boolean (a /= b)
 doNotEqual' (Boolean a) (Boolean b) = Left $ Boolean (a /= b)
 doNotEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as /= bs)
+doNotEqual' (Box bnA) (Box bnB) = Left $ Boolean $ bnA /= bnB
 doNotEqual' a b =
     let (aType, bType) = findTypeStrsForError a b  
     in Right ("Operator (/=) error. Can't compare types that are not both types of" 
