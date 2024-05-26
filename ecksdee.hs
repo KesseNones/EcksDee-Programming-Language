@@ -1258,6 +1258,7 @@ doQueryType' (Char _) = String{chrs = "Char", len = length "Char"}
 doQueryType' (Boolean _) = String{chrs = "Boolean", len = length "Boolean"}
 doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "List"}
 doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
+doQueryType' (Box _) = String{chrs = "Box", len = length "Box"}
 
 --Prints stack to stdout when called.
 doDebugPrintStack :: EDState -> IO EDState
@@ -1397,6 +1398,21 @@ removeFrame EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp} =
 removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs), heap = hp} =
     EDState{stack = s, fns = f, vars = v, frames = (xs), heap = hp}
 
+--Determines if desired box number is valid on the heap.
+-- Returns a value if the box number is valid and returns an error string if not.
+validateBox :: Heap -> Int -> Either Value String
+validateBox Heap{freeList = fl, h = hp, heapSize = s} bn = 
+    if (bn > (-1) && bn < s)
+        then
+            case (M.lookup bn fl) of
+                Just _ -> Right ("Operator (box) error. Box number " ++ (show bn) ++ " isn't a valid Box number! Box number has been free'd!")
+                Nothing -> 
+                    case (M.lookup bn hp) of
+                        Just v -> Left v
+                        Nothing -> Right ("Operator (box) error. Box number " ++ (show bn) ++ " doesn't exist in the heap!")
+        else
+            Right ("Operator (box) error. Box number " ++ (show bn) ++ " isn't a valid Box number! Box number out of range of heap of size " ++ (show s))
+
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
 
@@ -1418,7 +1434,23 @@ doNode (TempStackChange runBlock) state =
 doNode (BoxOp cmd) state =
     case (astNodeToString cmd) of
         "make" -> return state
-        "open" -> return state
+        "open" -> 
+            if (null $ stack state)
+                then 
+                    throwError "Operator (box open) error. Can't open a Box with an empty stack!" state
+                else
+                    case (fsTop state) of
+                        Box n -> 
+                            if (n == (-1))    
+                                then
+                                    throwError ("Operator (box open) error. Can't open NULL Box!") state
+                                else 
+                                    case (validateBox (heap state) n) of
+                                        Left v -> return $ fsPush v state
+                                        Right err -> throwError err state 
+                        x -> 
+                            let xType = chrs $ doQueryType' x 
+                            in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
         "altr" -> return state
         "free" -> return state
         "null" -> return $ fsPush (Box (-1)) state
