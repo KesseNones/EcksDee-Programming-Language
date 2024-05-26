@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-25.969
+--Version: 2024-05-26.953
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1433,7 +1433,32 @@ doNode (TempStackChange runBlock) state =
 --Parses box command.
 doNode (BoxOp cmd) state =
     case (astNodeToString cmd) of
-        "make" -> return state
+        "make" -> 
+            if (null $ stack state)
+                then
+                    throwError "Operator (box make) error. Can't make a box with no data on stack to give it!" state
+                else
+                    let (Heap{freeList = fl, h = hp, heapSize = hs}) = heap state
+                        (state', v) = fsPop state
+                        flSize = M.size fl
+                    --If items exist in the free list, recycle in make, otherwise add on to heap.
+                    in if (null fl)
+                        then
+                            let hp' = M.insert hs v hp
+                                hs' = hs + 1
+                                state'' = fsPush (Box hs) state'
+                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
+                                frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
+                        else
+                            case (M.lookup (flSize - 1) fl) of
+                                Just bn -> 
+                                    let state'' = fsPush (Box bn) state'
+                                        fl' = M.delete (flSize - 1) fl
+                                        hp' = M.insert bn v hp
+                                    in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+                                        frames = frames state'', heap = Heap{freeList = fl', h = hp', heapSize = hs}}
+                                Nothing -> throwError "HEAP ERROR: SHOULD NEVER GET HERE!!!" state
+
         "open" -> 
             if (null $ stack state)
                 then 
