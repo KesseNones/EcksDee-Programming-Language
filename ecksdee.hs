@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-26.953
+--Version: 2024-05-26.969
 --Toy Programming Language Named EcksDee
 
 {-
@@ -930,6 +930,12 @@ doCast' Object{fields = fs} String{chrs = "String", len = _} =
     let objStr = "{" ++ (printObj (M.toList fs) "") ++ "}"
         objStrLen = length objStr
     in Left String{chrs = objStr, len = objStrLen}
+
+--Box casting cases.
+doCast' (Box bn) String{chrs = "String", len = _} =
+    if (bn == (-1))
+        then Left $ String{chrs = "Box NULL", len = length "Box NULL"}
+        else let boxStr = "Box " ++ (show bn) in Left String{chrs = boxStr, len = length boxStr}
 
 doCast' a String{chrs = typeCastStr, len = _} =
     let aType = chrs $ doQueryType' a 
