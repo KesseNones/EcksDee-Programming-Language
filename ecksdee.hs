@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-27.002
+--Version: 2024-05-27.022
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1396,6 +1396,7 @@ compareTypesForMut (String {chrs = _, len = _}) (String {chrs = _, len = _}) = T
 compareTypesForMut (Char _) (Char _) = True
 compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True
 compareTypesForMut Object{fields = _} Object{fields = _} = True 
+compareTypesForMut (Box _) (Box _) = True
 compareTypesForMut _ _ = False
 
 --Used to add a stack frame when the scope increases. 
@@ -1484,7 +1485,32 @@ doNode (BoxOp cmd) state =
                         x -> 
                             let xType = chrs $ doQueryType' x 
                             in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
-        "altr" -> return state
+        "altr" -> 
+            case (stack state) of 
+                [] -> throwError "Operator (box altr) error. Two operands expected on stack; none provided!" state
+                [x] -> throwError "Operator (box altr) error. Two operands expected on stack; only one provided!" state
+                vals ->
+                    let (state', secondToTop, top) = fsPop2 state
+                    in case (secondToTop, top) of
+                        (Box bn, v) ->
+                            case (validateBox (heap state') bn) of
+                                Left oldV -> 
+                                    if (compareTypesForMut oldV v)
+                                        then
+                                            let h' = M.insert bn v (h $ heap state)
+                                                state'' = fsPush (Box bn) state'
+                                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+                                                frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
+                                        else
+                                            let (oldVType, vType) = findTypeStrsForError oldV v
+                                            in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
+                                                " of type " ++ vType ++ " doesn't match old value of type " ++ oldVType 
+                                                ++ ". Types must match for value to be changed for given Box!") state'
+                                Right err -> throwError err state
+                        (x, v) ->
+                            let (xType, vType) = findTypeStrsForError x v
+                            in throwError ("Operator (box altr) error. Second to top of stack needs to be type Box and top needs to be type Value. TL;DR Needs types Box Value ; Attempted types: "
+                                ++ xType ++ " and " ++ vType) state'
         "free" -> 
             if (null $ stack state)
                 then
