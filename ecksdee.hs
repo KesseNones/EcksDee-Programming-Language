@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-27.164
+--Version: 2024-05-27.203
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1441,7 +1441,7 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
 doNode (TempStackChange runBlock) state =
-    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state})
+    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state'})
 
 --Parses box command.
 doNode (BoxOp cmd) state =
@@ -1497,7 +1497,7 @@ doNode (BoxOp cmd) state =
                                 Left oldV -> 
                                     if (compareTypesForMut oldV v)
                                         then
-                                            let h' = M.insert bn v (h $ heap state)
+                                            let h' = M.insert bn v (h $ heap state')
                                                 state'' = fsPush (Box bn) state'
                                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
                                                 frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
