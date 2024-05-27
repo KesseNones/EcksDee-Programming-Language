@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-27.203
+--Version: 2024-05-27.941
 --Toy Programming Language Named EcksDee
 
 {-
@@ -75,7 +75,7 @@ data AstNode =
     deriving ( Show )
 
 data Heap = Heap {
-    freeList :: M.Map Int Int,
+    freeList :: M.Map Int (),
     h :: M.Map Int Value,
     heapSize :: Int
 }
@@ -1463,14 +1463,12 @@ doNode (BoxOp cmd) state =
                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
                                 frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
                         else
-                            case (M.lookup (flSize - 1) fl) of
-                                Just bn -> 
-                                    let state'' = fsPush (Box bn) state'
-                                        fl' = M.delete (flSize - 1) fl
-                                        hp' = M.insert bn v hp
-                                    in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
-                                        frames = frames state'', heap = Heap{freeList = fl', h = hp', heapSize = hs}}
-                                Nothing -> throwError "HEAP ERROR: SHOULD NEVER GET HERE!!!" state
+                            let ((replaceBn, _), fl') = M.deleteFindMin fl
+                                hp' = M.insert replaceBn v hp
+                                state'' = fsPush (Box replaceBn) state'
+                            in return EDState{stack = stack state'', fns = fns state'', 
+                                vars = vars state'', frames = frames state'', 
+                                heap = Heap{freeList = fl', h = hp', heapSize = hs}}
 
         "open" -> 
             if (null $ stack state)
@@ -1516,20 +1514,19 @@ doNode (BoxOp cmd) state =
                 then
                     throwError "Operator (box free) error. Can't free a Box when stack is empty and no Box exists!" state
                 else
-                    case (fsTop state) of 
-                        Box bn ->
-                            case (validateBox (heap state) bn) of
-                                Left _ -> 
-                                    let Heap{freeList = fl, h = hp, heapSize = hs} = heap state
-                                        (state', _) = fsPop state
-                                        flSize = M.size fl
-                                        fl' = M.insert flSize bn fl
-                                    in return EDState{stack = stack state', fns = fns state', vars = vars state', 
-                                        frames = frames state', heap = Heap{freeList = fl', h = hp, heapSize = hs}}  
-                                Right err -> throwError err state
+                    let (state', top) = fsPop state
+                    in case (top) of
+                        Box freeBn ->
+                            case (validateBox (heap state) freeBn) of
+                                Left _ ->
+                                    let fl' = M.insert freeBn () (freeList $ heap state')
+                                    in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
+                                        heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}}
+                                Right err -> throwError err state'
                         x ->
                             let xType = chrs $ doQueryType' x
-                            in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " ++ xType) state
+                            in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
+                                ++ xType) state
         "null" -> return $ fsPush (Box (-1)) state
         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
