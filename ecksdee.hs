@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-27.022
+--Version: 2024-05-27.164
 --Toy Programming Language Named EcksDee
 
 {-
@@ -2031,6 +2031,7 @@ printList List {items = is, len = l} acc index isLimited
                     then ", [" 
                     else "[") ++ (printList (List{items = ls, len = listLength}) "" 0 isLimited) ++ (if (isLimited && listLength > 16) then ", ...]" else "]")
                 Object {fields = fs} -> acc ++ (if (accSmall acc) then ", {" else "{") ++ (printObj (M.toList fs) "") ++ "}"
+                Box (-1) -> acc ++ (if (index > 0) then ", " else "") ++ "Box NULL"
                 i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
         in printList (List{items = is, len = l}) acc' (index + 1) isLimited 
     | otherwise = acc 
@@ -2045,6 +2046,7 @@ printObj ((name, val):xs) acc =
             String{chrs = cs, len = l} -> 
                 let cs' = if l < 256 then cs else (init $ take 255 cs) ++ "..."
                 in show $ String{chrs = cs', len = l}
+            Box (-1) -> "Box NULL"
             i -> show i
 
     in printObj xs (acc ++ (if accSmall acc then ", " else "") ++ name ++ " : " ++ insStr)
