@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-26.994
+--Version: 2024-05-27.002
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1413,7 +1413,8 @@ removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs), heap = hp} =
 -- Returns a value if the box number is valid and returns an error string if not.
 validateBox :: Heap -> Int -> Either Value String
 validateBox Heap{freeList = fl, h = hp, heapSize = s} bn = 
-    if (bn > (-1) && bn < s)
+    if (bn == (-1)) then Right "Operator (box) error. Box interaction with a NULL Box occuring! Can't operate using a NULL Box!"
+    else if (bn > (-1) && bn < s)
         then
             case (M.lookup bn fl) of
                 Just _ -> Right ("Operator (box) error. Box number " ++ (show bn) ++ " isn't a valid Box number! Box " ++ (show bn) ++ " has been free'd!")
@@ -1477,13 +1478,9 @@ doNode (BoxOp cmd) state =
                 else
                     case (fsTop state) of
                         Box n -> 
-                            if (n == (-1))    
-                                then
-                                    throwError ("Operator (box open) error. Can't open NULL Box!") state
-                                else 
-                                    case (validateBox (heap state) n) of
-                                        Left v -> return $ fsPush v state
-                                        Right err -> throwError err state 
+                            case (validateBox (heap state) n) of
+                                Left v -> return $ fsPush v state
+                                Right err -> throwError err state 
                         x -> 
                             let xType = chrs $ doQueryType' x 
                             in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
@@ -1495,8 +1492,7 @@ doNode (BoxOp cmd) state =
                 else
                     case (fsTop state) of 
                         Box bn ->
-                            if (bn == (-1)) then throwError "Operator (box free) error. Can't free a NULL Box!" state 
-                            else case (validateBox (heap state) bn) of
+                            case (validateBox (heap state) bn) of
                                 Left _ -> 
                                     let Heap{freeList = fl, h = hp, heapSize = hs} = heap state
                                         (state', _) = fsPop state
