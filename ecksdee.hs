@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-27.941
+--Version: 2024-05-28.436
 --Toy Programming Language Named EcksDee
 
 {-
@@ -343,7 +343,7 @@ doEqual' (Box bnA) (Box bnB) = Left $ Boolean $ bnA == bnB
 doEqual' a b =
     let (aType, bType) = findTypeStrsForError a b  
     in Right ("Operator (==) error. Can't compare types that are not both types of" 
-        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, Lists, or Boxes! " 
         ++ "Attempted types were: " 
         ++ bType ++ " and " ++ aType)
 
@@ -375,7 +375,7 @@ doNotEqual' (Box bnA) (Box bnB) = Left $ Boolean $ bnA /= bnB
 doNotEqual' a b =
     let (aType, bType) = findTypeStrsForError a b  
     in Right ("Operator (/=) error. Can't compare types that are not both types of" 
-        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, Lists, or Boxes! " 
         ++ "Attempted types were: " 
         ++ bType ++ " and " ++ aType)
 
