@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-21.208
+--Version: 2024-05-28.436
 --Toy Programming Language Named EcksDee
 
 {-
@@ -8,10 +8,7 @@
         -Maybe have errors show line number 
             of code file where error happened, somehow. 
             It would make user debugging much less ass.
-        -Standardize errors.
         -Casting edge case may exist where BigInteger to Char works when it shouldn't! (Fixed? Needs more testing.)
-        -Make parsing linear time by having alreadyParsed be prepended 
-        to instead of appended to and just reverse the whole thing when done parsing.
 -}
 
 import Data.List
@@ -37,6 +34,7 @@ data Value =
     |   Boolean Bool
     |   List { items :: M.Map Int Value, len :: Int}
     |   Object { fields :: M.Map String Value }
+    |   Box Int
     deriving (Eq, Show, Ord)
 
 -- or it can be an operation, which has a string name.
@@ -72,7 +70,15 @@ data AstNode =
 
     |   TempStackChange AstNode
 
+    |   BoxOp AstNode
+
     deriving ( Show )
+
+data Heap = Heap {
+    freeList :: M.Map Int (),
+    h :: M.Map Int Value,
+    heapSize :: Int
+}
 
 -- This is the state of the interpreter. 
 -- Currently it stores the stack, which is where all of the data lives. 
@@ -80,7 +86,8 @@ data EDState = EDState {
     stack :: [Value], 
     fns :: M.Map String AstNode,
     vars :: M.Map String Value,
-    frames :: [M.Map String Value]
+    frames :: [M.Map String Value],
+    heap :: Heap 
 }
 
 data GeneralException = GeneralException String deriving (Show, Typeable)
@@ -261,8 +268,8 @@ doModulo state =
 doSwap :: EDState -> IO EDState
 doSwap state = 
     case (stack state) of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
         vals ->  
             let (state', b, a) = fsPop2 state
                 state'' = fsPush a state' 
@@ -281,7 +288,7 @@ doDrop state =
 --Clears the entire stack to empty. 
 -- Avoids having to type drop over and over again.
 doDropStack :: EDState -> IO EDState
-doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms})
+doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms, heap = hp} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms, heap = hp})
 
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
@@ -290,9 +297,9 @@ doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms} = return (EDSt
 doRot :: EDState -> IO EDState
 doRot state = 
     case (stack state) of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state)} )
-        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state)} )
+        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
         vals -> 
             let (state', c, b, a) = fsPop3 state
                 state'' = fsPush a state'
@@ -332,10 +339,11 @@ doEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left 
 doEqual' (Char a) (Char b) = Left $ Boolean (a == b)
 doEqual' (Boolean a) (Boolean b) = Left $ Boolean (a == b)
 doEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean ((al == bl) && (as == bs))
+doEqual' (Box bnA) (Box bnB) = Left $ Boolean $ bnA == bnB
 doEqual' a b =
     let (aType, bType) = findTypeStrsForError a b  
     in Right ("Operator (==) error. Can't compare types that are not both types of" 
-        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, Lists, or Boxes! " 
         ++ "Attempted types were: " 
         ++ bType ++ " and " ++ aType)
 
@@ -363,10 +371,11 @@ doNotEqual' (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Le
 doNotEqual' (Char a) (Char b) = Left $ Boolean (a /= b)
 doNotEqual' (Boolean a) (Boolean b) = Left $ Boolean (a /= b)
 doNotEqual' (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as /= bs)
+doNotEqual' (Box bnA) (Box bnB) = Left $ Boolean $ bnA /= bnB
 doNotEqual' a b =
     let (aType, bType) = findTypeStrsForError a b  
     in Right ("Operator (/=) error. Can't compare types that are not both types of" 
-        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, or Lists! " 
+        ++ " BigIntegers, Integers, Floats, Doubles, String, Chars, Booleans, Lists, or Boxes! " 
         ++ "Attempted types were: " 
         ++ bType ++ " and " ++ aType)
 
@@ -924,11 +933,20 @@ doCast' Object{fields = fs} String{chrs = "String", len = _} =
         objStrLen = length objStr
     in Left String{chrs = objStr, len = objStrLen}
 
+--Box casting cases.
+doCast' (Box bn) String{chrs = "String", len = _} =
+    if (bn == (-1))
+        then Left $ String{chrs = "Box NULL", len = length "Box NULL"}
+        else let boxStr = "Box " ++ (show bn) in Left String{chrs = boxStr, len = length boxStr}
+doCast' (Box bn) String{chrs = "Integer", len = _} = Left $ Integer bn
+--Truthy vs falsy value, kinda useless but why not.
+doCast' (Box bn) String{chrs = "Boolean", len = _} = Left $ Boolean $ bn /= (-1)
+
+--Casting failure cases.
 doCast' a String{chrs = typeCastStr, len = _} =
     let aType = chrs $ doQueryType' a 
     in Right ("Operator (cast) error. Invalid casting configuration given! Tried to cast "
         ++ aType ++ " to type " ++ typeCastStr)
-
 doCast' a b =
     let (aType, bType) = findTypeStrsForError a b
     in Right("Operator (cast) error. Types of Value and String required for cast to occur. Attempted types: "
@@ -1251,6 +1269,7 @@ doQueryType' (Char _) = String{chrs = "Char", len = length "Char"}
 doQueryType' (Boolean _) = String{chrs = "Boolean", len = length "Boolean"}
 doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "List"}
 doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
+doQueryType' (Box _) = String{chrs = "Box", len = length "Box"}
 
 --Prints stack to stdout when called.
 doDebugPrintStack :: EDState -> IO EDState
@@ -1377,18 +1396,35 @@ compareTypesForMut (String {chrs = _, len = _}) (String {chrs = _, len = _}) = T
 compareTypesForMut (Char _) (Char _) = True
 compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True
 compareTypesForMut Object{fields = _} Object{fields = _} = True 
+compareTypesForMut (Box _) (Box _) = True
 compareTypesForMut _ _ = False
 
 --Used to add a stack frame when the scope increases. 
 addFrame :: EDState -> EDState
-addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state))}
+addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state)), heap = heap state}
 
 --Removes stack frame if not at global scope.
 removeFrame :: EDState -> EDState
-removeFrame EDState{stack = s, fns = f, vars = v, frames = [x]} = 
-    EDState{stack = s, fns = f, vars = v, frames = [x]}
-removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs)} =
-    EDState{stack = s, fns = f, vars = v, frames = (xs)}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp} = 
+    EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs), heap = hp} =
+    EDState{stack = s, fns = f, vars = v, frames = (xs), heap = hp}
+
+--Determines if desired box number is valid on the heap.
+-- Returns a value if the box number is valid and returns an error string if not.
+validateBox :: Heap -> Int -> Either Value String
+validateBox Heap{freeList = fl, h = hp, heapSize = s} bn = 
+    if (bn == (-1)) then Right "Operator (box) error. Box interaction with a NULL Box occuring! Can't operate using a NULL Box!"
+    else if (bn > (-1) && bn < s)
+        then
+            case (M.lookup bn fl) of
+                Just _ -> Right ("Operator (box) error. Box number " ++ (show bn) ++ " isn't a valid Box number! Box " ++ (show bn) ++ " has been free'd!")
+                Nothing -> 
+                    case (M.lookup bn hp) of
+                        Just v -> Left v
+                        Nothing -> Right ("Operator (box) error. Box number " ++ (show bn) ++ " doesn't exist in the heap!")
+        else
+            Right ("Operator (box) error. Box number " ++ (show bn) ++ " isn't a valid Box number! Box number out of range of heap of size " ++ (show s))
 
 --Runs through the code and executes all nodes of the AST.
 doNode :: AstNode -> EDState -> IO EDState
@@ -1405,7 +1441,94 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
 doNode (TempStackChange runBlock) state =
-    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state'})
+    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state'})
+
+--Parses box command.
+doNode (BoxOp cmd) state =
+    case (astNodeToString cmd) of
+        "make" -> 
+            if (null $ stack state)
+                then
+                    throwError "Operator (box make) error. Can't make a box with no data on stack to give it!" state
+                else
+                    let (Heap{freeList = fl, h = hp, heapSize = hs}) = heap state
+                        (state', v) = fsPop state
+                        flSize = M.size fl
+                    --If items exist in the free list, recycle in make, otherwise add on to heap.
+                    in if (null fl)
+                        then
+                            let hp' = M.insert hs v hp
+                                hs' = hs + 1
+                                state'' = fsPush (Box hs) state'
+                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
+                                frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
+                        else
+                            let ((replaceBn, _), fl') = M.deleteFindMin fl
+                                hp' = M.insert replaceBn v hp
+                                state'' = fsPush (Box replaceBn) state'
+                            in return EDState{stack = stack state'', fns = fns state'', 
+                                vars = vars state'', frames = frames state'', 
+                                heap = Heap{freeList = fl', h = hp', heapSize = hs}}
+
+        "open" -> 
+            if (null $ stack state)
+                then 
+                    throwError "Operator (box open) error. Can't open a Box with an empty stack! No Box to open!" state
+                else
+                    case (fsTop state) of
+                        Box n -> 
+                            case (validateBox (heap state) n) of
+                                Left v -> return $ fsPush v state
+                                Right err -> throwError err state 
+                        x -> 
+                            let xType = chrs $ doQueryType' x 
+                            in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
+        "altr" -> 
+            case (stack state) of 
+                [] -> throwError "Operator (box altr) error. Two operands expected on stack; none provided!" state
+                [x] -> throwError "Operator (box altr) error. Two operands expected on stack; only one provided!" state
+                vals ->
+                    let (state', secondToTop, top) = fsPop2 state
+                    in case (secondToTop, top) of
+                        (Box bn, v) ->
+                            case (validateBox (heap state') bn) of
+                                Left oldV -> 
+                                    if (compareTypesForMut oldV v)
+                                        then
+                                            let h' = M.insert bn v (h $ heap state')
+                                                state'' = fsPush (Box bn) state'
+                                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+                                                frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
+                                        else
+                                            let (oldVType, vType) = findTypeStrsForError oldV v
+                                            in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
+                                                " of type " ++ vType ++ " doesn't match old value of type " ++ oldVType 
+                                                ++ ". Types must match for value to be changed for given Box!") state'
+                                Right err -> throwError err state
+                        (x, v) ->
+                            let (xType, vType) = findTypeStrsForError x v
+                            in throwError ("Operator (box altr) error. Second to top of stack needs to be type Box and top needs to be type Value. TL;DR Needs types Box Value ; Attempted types: "
+                                ++ xType ++ " and " ++ vType) state'
+        "free" -> 
+            if (null $ stack state)
+                then
+                    throwError "Operator (box free) error. Can't free a Box when stack is empty and no Box exists!" state
+                else
+                    let (state', top) = fsPop state
+                    in case (top) of
+                        Box freeBn ->
+                            case (validateBox (heap state) freeBn) of
+                                Left _ ->
+                                    let fl' = M.insert freeBn () (freeList $ heap state')
+                                    in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
+                                        heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}}
+                                Right err -> throwError err state'
+                        x ->
+                            let xType = chrs $ doQueryType' x
+                            in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
+                                ++ xType) state
+        "null" -> return $ fsPush (Box (-1)) state
+        x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
@@ -1431,7 +1554,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
                     Nothing ->
                         let fns' = M.insert fName body (fns state)
-                        in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state)}
+                        in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
 
         "call" -> 
             let fName = astNodeToString name
@@ -1457,7 +1580,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
                         Nothing -> 
                             let vars' = M.insert vName (fsTop state) (vars state)
-                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
+                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
                            
         --Pushes variable value to stack.
         "get" -> 
@@ -1472,7 +1595,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
             in case (M.lookup vName (vars state)) of 
                 Just v -> 
                     let vars' = M.delete vName (vars state)
-                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)} 
+                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
         --Alters variable to new value on top of stack if the types match.
@@ -1488,7 +1611,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                             if (compareTypesForMut v newVal)
                                 then 
                                     let vars' = M.insert vName newVal (vars state)
-                                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state)}
+                                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
                                 else
                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1510,7 +1633,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
                         Nothing ->
                             let frame' = M.insert vName (fsTop state) (head $ frames state)
-                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state))}
+                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
                            
         "get" ->  
             case (getLoc (frames state) (astNodeToString name)) of
@@ -1526,7 +1649,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just v -> 
                             if (compareTypesForMut (fsTop state) v)
                                 then
-                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False)}
+                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
                                 else
                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1646,6 +1769,10 @@ parseExpression' alreadyParsed ( token:tokens ) terminators
         let (runBlock, remTokens) = parseTempStackChange tokens
         in  parseExpression' ((TempStackChange runBlock) : alreadyParsed) remTokens terminators
 
+    | token == Word "box" = 
+        let (boxWords, remTokens, term) = parseExpression' [] tokens [";"]
+        in parseExpression' ((BoxOp $ head $ reverse boxWords) : alreadyParsed) remTokens terminators
+
     -- no special word found. We are parsing a list of operations. Keep doing this until 
     -- there aren't any. 
     | otherwise = parseExpression' ((Terminal token) : alreadyParsed) (tokens) (terminators)
@@ -1727,25 +1854,25 @@ parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] t
     
 --Makes new interpretor state with default values.
 fsNew :: IO EDState
-fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty]}
+fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, h = M.empty, heapSize = 0}}
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
-fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state)}
+fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}
 
 --Removes value from top of stack, returning it.
 fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
     let top = head (stack state) 
         newStack = tail (stack state)  
-    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state) }, top )
+    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, top )
 
 --Removes the top two elements from the stack, returning them.
 fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
-    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state)}, secondToTop, top)
+    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, secondToTop, top)
 
 --Removes top three elements from stack.
 fsPop3 :: EDState -> ( EDState, Value, Value, Value )
@@ -1753,7 +1880,7 @@ fsPop3 state =
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
         (state''', thirdToTop) = fsPop state''
-    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state)}, thirdToTop, secondToTop, top)
+    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, thirdToTop, secondToTop, top)
 
 --Returns value at top of stack. 
 fsTop :: EDState -> Value 
@@ -1884,6 +2011,8 @@ printStack ((String {chrs = cs, len = l}):xs) =
     let pr = if l < 256 then cs else (init  $ take 255 cs) ++ "..."
     in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs
 printStack ((Object{fields = fs}):xs) = putStrLn ("{" ++ (printObj (M.toList fs) "") ++ "}") >> printStack xs
+--Makes it so it prints Box NULL instead of Box -1 since -1 is defined as the null value under the hood.
+printStack ((Box (-1)):xs) = putStrLn "Box NULL" >> printStack xs 
 printStack (x:xs) = print x >> printStack xs
 
 --Recursively prints a list's contents.
@@ -1899,6 +2028,7 @@ printList List {items = is, len = l} acc index isLimited
                     then ", [" 
                     else "[") ++ (printList (List{items = ls, len = listLength}) "" 0 isLimited) ++ (if (isLimited && listLength > 16) then ", ...]" else "]")
                 Object {fields = fs} -> acc ++ (if (accSmall acc) then ", {" else "{") ++ (printObj (M.toList fs) "") ++ "}"
+                Box (-1) -> acc ++ (if (index > 0) then ", " else "") ++ "Box NULL"
                 i -> acc ++ (if (index > 0) then ", " else "") ++ (show i)
         in printList (List{items = is, len = l}) acc' (index + 1) isLimited 
     | otherwise = acc 
@@ -1913,6 +2043,7 @@ printObj ((name, val):xs) acc =
             String{chrs = cs, len = l} -> 
                 let cs' = if l < 256 then cs else (init $ take 255 cs) ++ "..."
                 in show $ String{chrs = cs', len = l}
+            Box (-1) -> "Box NULL"
             i -> show i
 
     in printObj xs (acc ++ (if accSmall acc then ", " else "") ++ name ++ " : " ++ insStr)

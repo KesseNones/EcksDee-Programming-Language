@@ -2261,6 +2261,117 @@ Even though more typing is needed both for the block and for any variable creati
 and having to think as hardly about what's on the stack and what needs to be dropped from said stack every step of the way.
 Overall, it doesn't save on typing but it does save on headaches :).
 
+### The `box` data type and the heap
+To allow for the existence of data structures in EcksDee, the abstraction utilizing boxes exists.
+Using `box` is much like using variables or functions, with the box keyword followed by a command keyword.
+The reason `box` is used instead of pointers is because that's basically how it works: the user has the heap store some blob of data in a box, 
+but not in the same contiguous manner as you would see in C. For example, a `box` storing an `Integer` couldn't store multiple integers 
+but just a single one in the "box", unlike an `int*` in C. All operations for `box` are thus built around this abstraction.
+
+Specifically, the usage for `box` is this:
+```
+box COMMAND_WORD ;
+```
+Where `COMMAND_WORD` is one of five different command words that tell `box` what to do.
+These command words are: `make`, `open`, `altr`, `free`, `null`.
+
+#### Command `make`
+Given a stack `x` where `x` is any data type `t` the `make` command consumes `x` and puts it in a box to be
+stored on the heap. A `Box` containing a box number `b` is then pushed back to the stack, resulting in stack: `b`
+
+Example:
+```
+5040
+box make ;
+```
+Final Stack:
+```
+Box 0
+```
+`Box 0` on the stack represents a box tag which contains the number the desired box is stored at. 
+This is effectively like a reference or pointer in other languages. To access what's in this box, 
+the `open` command can be used.
+
+#### Command `open`
+Given stack `b` where `b` is of type `Box`, "opens" `b` and pushes the contents `c` onto the stack,
+resulting in stack: `b c`.
+
+Example:
+```
+5040
+box make ;
+box open ;
+```
+Final Stack:
+```
+Box 0
+Integer 5040
+```
+As can be seen, `Box 0` was opened and its contents pushed, in this case `Integer 5040`.
+
+#### Command `altr`
+Given stack `b v` where `b` is of type `Box` and `v` is any data type which matches the data type stored in
+`b`, updates the contents of `Box` `b` to store the new value `v`. (The reason this is `altr` and not `alter`
+is because this way all five `box` commands are four characters long.)
+
+Example:
+```
+5040
+box make ;
+box open ;
+swap
+42
+box altr ;
+box open ;
+``` 
+Final Stack:
+```
+Integer 5040
+Box 0
+Integer 42
+```
+In this case, `Integer 5040` was altered to be `Integer 42`. If the types weren't the same, an error would've been thrown.
+
+#### Command `free`
+Given stack `b` where `b` is of type `Box`, consumes `b` and frees it for reuse by newer `box`es
+leaving an empty stack. Akin to C or other languages with manual memory management, `free` frees a box on the heap 
+and allows it to be recycled for newly allocated `box`es. This is a good command to use to help save data when
+frequently allocating since it frees up space on the heap.
+
+Example:
+```
+5040
+box make ;
+box free ;
+```
+
+Final Stack:
+```
+
+```
+If the user where to try to `open` `Box 0` after freeing, an error would be thrown since it's freed.
+
+#### Command `null`
+Given empty stack, pushes a NULL `Box` to the stack, leaving stack `b`. 
+This command is mostly useful for placeholders of `box`es where boxes
+are intended to go eventually but don't exist yet, such as BST node children.
+
+Example:
+```
+{} 
+"value" 5040 addField
+"next" box null ; addField
+```
+Final Stack:
+```
+{next : Box NULL, value : Integer 5040}
+```
+This is how a default node in a linked list may be initialized.
+
+#### `Box` - Conclusion
+This is a really neat addition to the language since it makes data structures 
+and pointers possible at least to an extent which opens up a lot of possibilities.
+
 ### The `attempt` `onError` Block (aka try-catch)
 An extremely powerful fancy operator that allows for error handling akin to try-catch in other languages.
 This code allows you to try to run some code and have code to run as backup if there's an error.

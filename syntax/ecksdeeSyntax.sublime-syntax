@@ -58,6 +58,11 @@ contexts:
         2: variable.parameter.xd
         3: variable.function.xd
 
+    - match: '\b(box)\s+(make|open|altr|free|null)\s+(;)(?![\w])'
+      captures:
+        1: variable.function.xd
+        2: entity.other.inherited-class.xd
+
     - match: '\btempStackChange\b'
       scope: variable.language.xd
 
