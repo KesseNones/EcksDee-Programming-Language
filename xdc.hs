@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.1.0
+--Version: Alpha 0.1.1
 --Compiler for EcksDee
 
 import Data.List
@@ -355,13 +355,11 @@ main = do
         then (args !! 0) 
         else error "Please provide an EcksDee file to compile!"
 
-    withFile fileName ReadMode $ \file -> do   
-        code <- hGetContents file
+    --Magic *snorts in Mr Bean*
+    openResult <- tryIOError $ openFile fileName ReadMode
+    fileStr <- case (openResult) of
+            Left e -> error ("File Read Error. File " ++ fileName ++ " couldn't be opened because: " ++ (show e))
+            Right handle -> (hGetContents handle) >>= (\str -> str `deepseq` ((hClose handle) >> (return str)))
 
-        -- convert it into a list of tokens
-        let tokens = code `deepseq` removeComments False [] ( tokenize code )
-
-        --Parse and run AST, printing result.
-        let ast = parseExpression tokens
-        
-        putStrLn $ show ast
+    let tokens = removeComments False [] (tokenize fileStr)
+    putStrLn $ show $ parseExpression tokens
