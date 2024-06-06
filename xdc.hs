@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.2.0
+--Version: Alpha 0.2.2
 --Compiler for EcksDee
 
 import Data.List
@@ -358,26 +358,32 @@ main = do
         then (args !! 0) 
         else error "Please provide an EcksDee file to compile!"
 
+    putStrLn ("Opening and reading " ++ fileName)
     --Magic *snorts in Mr Bean*
     openResult <- tryIOError $ openFile fileName ReadMode
     fileStr <- case (openResult) of
             Left e -> error ("File Read Error. File " ++ fileName ++ " couldn't be opened because: " ++ (show e))
             Right handle -> (hGetContents handle) >>= (\str -> str `deepseq` ((hClose handle) >> (return str)))
 
+    putStrLn ("Generating abstract syntax tree of " ++ fileName)
     let tokens = removeComments False [] (tokenize fileStr)
     let ast = parseExpression tokens
-    putStrLn $ show $ ast
+    putStrLn $ show $ ast --DELETE LATER!!!!
 
-    --Given program string, writes it to a file and then will compile it.
-    let pgmStr = "main = putStrLn \"Hello, World!!!\""
+    let pgmStr = "main = putStrLn \"Hello, World!!!\"" --This will need to be more than a template!
+    --This name replaces the .xd file extension with .hs so ghc can compile it.
     let haskellFileName = if (".xd" `isSuffixOf` fileName) then (init $ init $ init fileName) ++ ".hs" else fileName ++ ".hs"
+    
+    --Writes program string to haskellFileName and tries to compile it using ghc.
+    putStrLn ("Writing to " ++ haskellFileName)
     haskellWriteRes <- tryIOError $ openFile haskellFileName WriteMode
     case haskellWriteRes of
         Left err -> error ("Unable to write to file " ++ haskellFileName ++ " because " ++ (show err))
         Right handle -> do
             hPutStr handle pgmStr 
             hClose handle
-            res <- system "ls"
+            putStrLn ("Compiling " ++ haskellFileName)
+            res <- system ("ghc " ++ haskellFileName)
             case res of 
-                ExitSuccess -> putStrLn "YEEHAWW!!!"
-                ExitFailure err -> putStrLn "YOU DONE FUCKED UP!!!"
+                ExitSuccess -> return ()
+                ExitFailure err -> putStrLn (show err)
