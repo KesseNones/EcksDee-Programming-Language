@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.2.2
+--Version: Alpha 0.3.0
 --Compiler for EcksDee
 
 import Data.List
@@ -385,5 +385,11 @@ main = do
             putStrLn ("Compiling " ++ haskellFileName)
             res <- system ("ghc " ++ haskellFileName)
             case res of 
-                ExitSuccess -> return ()
-                ExitFailure err -> putStrLn (show err)
+                ExitSuccess -> do
+                    putStrLn "Cleanup"
+                    let baseName = init $ init $ init haskellFileName
+                    cleanupRes <- system ("rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
+                    case cleanupRes of
+                        ExitSuccess -> (putStrLn "Cleanup Successful") >> putStrLn ("Compilation complete!")
+                        ExitFailure errMsg -> putStrLn ("Cleanup failed because " ++ (show errMsg))
+                ExitFailure err -> putStrLn ("Compilation of " ++ haskellFileName ++ " failed because " ++ (show err))
