@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.1.1
+--Version: Alpha 0.2.0
 --Compiler for EcksDee
 
 import Data.List
@@ -14,6 +14,9 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Typeable
 import System.IO.Error (tryIOError)
+import System.Exit (ExitCode(..))
+import System.Process (system)
+import Data.List (isSuffixOf)
 
 data Value =                                         
         BigInteger Integer
@@ -362,4 +365,19 @@ main = do
             Right handle -> (hGetContents handle) >>= (\str -> str `deepseq` ((hClose handle) >> (return str)))
 
     let tokens = removeComments False [] (tokenize fileStr)
-    putStrLn $ show $ parseExpression tokens
+    let ast = parseExpression tokens
+    putStrLn $ show $ ast
+
+    --Given program string, writes it to a file and then will compile it.
+    let pgmStr = "main = putStrLn \"Hello, World!!!\""
+    let haskellFileName = if (".xd" `isSuffixOf` fileName) then (init $ init $ init fileName) ++ ".hs" else fileName ++ ".hs"
+    haskellWriteRes <- tryIOError $ openFile haskellFileName WriteMode
+    case haskellWriteRes of
+        Left err -> error ("Unable to write to file " ++ haskellFileName ++ " because " ++ (show err))
+        Right handle -> do
+            hPutStr handle pgmStr 
+            hClose handle
+            res <- system "ls"
+            case res of 
+                ExitSuccess -> putStrLn "YEEHAWW!!!"
+                ExitFailure err -> putStrLn "YOU DONE FUCKED UP!!!"
