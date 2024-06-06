@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.3.2
+--Version: Alpha 0.3.3
 --Compiler for EcksDee
 
 import Data.List
@@ -392,9 +392,22 @@ generateCodeString ast =
                 (nFourSpaces 1) ++ "h :: M.Map Int Value,",
                 (nFourSpaces 1) ++ "heapSize :: Int",
                 "}",
+                "data EDState = EDState {",
+                (nFourSpaces 1) ++ "stack :: [Value]",
+                "}",
+                "data GeneralException = GeneralException String deriving (Show, Typeable)",
+                "instance Exception GeneralException",
                 "",
+                "pop :: EDState -> (EDState, Maybe Value)",
+                "pop EDState{stack = []} = (EDState{stack = []}, Nothing)",
+                "pop state = (EDState{stack = tail $ stack state}, Just $ head $ stack state)",
+                "",
+                "push :: EDState -> Value -> EDState",
+                "push EDState{stack = xs} v = EDState{stack = v:xs}",
                 "main :: IO ()",
-                "main = putStrLn \"Hello, World 2: Electric Boogaloo!\""
+                "main = do",
+                (nFourSpaces 1) ++ "let state0 = EDState{stack = []}",
+                (nFourSpaces 1) ++ "putStrLn $ show $ stack state0"
             ]
     in (intercalate "\n" linesInit) ++ "\n"
 
@@ -431,7 +444,7 @@ main = do
             hPutStr handle pgmStr 
             hClose handle
             putStrLn ("Compiling " ++ haskellFileName)
-            res <- system ("ghc " ++ haskellFileName)
+            res <- system ( "cat " ++ haskellFileName ++ " && " ++ "ghc " ++ haskellFileName)
             case res of 
                 ExitSuccess -> do
                     putStrLn "Cleanup"
