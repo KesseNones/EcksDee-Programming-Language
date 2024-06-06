@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.3.0
+--Version: Alpha 0.3.1
 --Compiler for EcksDee
 
 import Data.List
@@ -350,6 +350,47 @@ removeComments False nonComments ( Word ("/'"):xs ) = removeComments True nonCom
 -- If we're not in a comment, add the token to the nonComment tokens 
 removeComments False nonComments ( x:xs ) = removeComments False (x:nonComments) xs
 
+nFourSpaces' :: Int -> String -> String
+nFourSpaces' 0 acc = acc
+nFourSpaces' n acc = 
+    nFourSpaces' (n - 1) (' ':' ':' ':' ':acc)
+
+nFourSpaces :: Int -> String
+nFourSpaces count = nFourSpaces' count "" 
+
+--Takes in AST and returns the final string of the Haskell code generated from it. 
+generateCodeString :: AstNode -> String
+generateCodeString ast =
+    let linesInit = 
+            [
+                "import Data.List",
+                "import Data.Char",
+                "import Data.Maybe",
+                "import Debug.Trace",
+                "import Text.Read (readMaybe)",
+                "import System.IO",
+                "import System.Environment",
+                "import qualified Data.Map.Strict as M",
+                "import Control.DeepSeq",
+                "import Control.Exception",
+                "import Data.Typeable",
+                "import System.IO.Error (tryIOError)",
+                "data Value = ",
+                ((nFourSpaces 2) ++ "BigInteger Integer"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++  "Integer Int"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Float Float"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Double Double"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "String {chrs :: [Char], len :: Int}"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Char Char"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Boolean Bool"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "List {items :: M.Map Int Value, len :: Int}"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Object {fields :: M.Map String Value}"),
+                ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Box Int"),
+                ((nFourSpaces 1) ++ "deriving(Eq, Show, Ord)"),
+                "main = putStrLn \"Hello, World 2: Electric Boogaloo!\""
+            ]
+    in (intercalate "\n" linesInit) ++ "\n"
+
 main :: IO ()
 main = do
     args <- getArgs
@@ -370,7 +411,7 @@ main = do
     let ast = parseExpression tokens
     putStrLn $ show $ ast --DELETE LATER!!!!
 
-    let pgmStr = "main = putStrLn \"Hello, World!!!\"" --This will need to be more than a template!
+    let pgmStr = generateCodeString ast
     --This name replaces the .xd file extension with .hs so ghc can compile it.
     let haskellFileName = if (".xd" `isSuffixOf` fileName) then (init $ init $ init fileName) ++ ".hs" else fileName ++ ".hs"
     
@@ -388,7 +429,7 @@ main = do
                 ExitSuccess -> do
                     putStrLn "Cleanup"
                     let baseName = init $ init $ init haskellFileName
-                    cleanupRes <- system ("rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
+                    cleanupRes <- system ("cat " ++ haskellFileName ++ " && " ++ "rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
                     case cleanupRes of
                         ExitSuccess -> (putStrLn "Cleanup Successful") >> putStrLn ("Compilation complete!")
                         ExitFailure errMsg -> putStrLn ("Cleanup failed because " ++ (show errMsg))
