@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.3.1
+--Version: Alpha 0.3.2
 --Compiler for EcksDee
 
 import Data.List
@@ -387,6 +387,13 @@ generateCodeString ast =
                 ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Object {fields :: M.Map String Value}"),
                 ((nFourSpaces 1) ++ "|" ++ (nFourSpaces 1) ++ "Box Int"),
                 ((nFourSpaces 1) ++ "deriving(Eq, Show, Ord)"),
+                "data Heap = Heap {",
+                (nFourSpaces 1) ++ "freeList :: M.Map Int (),",
+                (nFourSpaces 1) ++ "h :: M.Map Int Value,",
+                (nFourSpaces 1) ++ "heapSize :: Int",
+                "}",
+                "",
+                "main :: IO ()",
                 "main = putStrLn \"Hello, World 2: Electric Boogaloo!\""
             ]
     in (intercalate "\n" linesInit) ++ "\n"
