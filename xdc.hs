@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.3.3
+--Version: Alpha 0.4.0
 --Compiler for EcksDee
 
 import Data.List
@@ -358,6 +358,308 @@ nFourSpaces' n acc =
 nFourSpaces :: Int -> String
 nFourSpaces count = nFourSpaces' count "" 
 
+-- --Runs through the code and executes all nodes of the AST.
+-- doNode :: AstNode -> EDState -> IO EDState
+
+-- --Attempt on Error doNode case where it tries to run code in attempt branch 
+-- -- and instead runs the code in on Error if there's a problem.
+-- doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame state)) handler 
+--     where 
+--         handler :: GeneralException -> IO EDState
+--         handler (GeneralException msg) = 
+--             let state' = fsPush (String {chrs = msg, len = length msg}) (addFrame state)
+--             in doNode err state'
+
+-- --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
+-- -- without a stack change like with other operators like this.
+-- doNode (TempStackChange runBlock) state =
+--     (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state'})
+
+-- --Parses box command.
+-- doNode (BoxOp cmd) state =
+--     case (astNodeToString cmd) of
+--         "make" -> 
+--             if (null $ stack state)
+--                 then
+--                     throwError "Operator (box make) error. Can't make a box with no data on stack to give it!" state
+--                 else
+--                     let (Heap{freeList = fl, h = hp, heapSize = hs}) = heap state
+--                         (state', v) = fsPop state
+--                         flSize = M.size fl
+--                     --If items exist in the free list, recycle in make, otherwise add on to heap.
+--                     in if (null fl)
+--                         then
+--                             let hp' = M.insert hs v hp
+--                                 hs' = hs + 1
+--                                 state'' = fsPush (Box hs) state'
+--                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
+--                                 frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
+--                         else
+--                             let ((replaceBn, _), fl') = M.deleteFindMin fl
+--                                 hp' = M.insert replaceBn v hp
+--                                 state'' = fsPush (Box replaceBn) state'
+--                             in return EDState{stack = stack state'', fns = fns state'', 
+--                                 vars = vars state'', frames = frames state'', 
+--                                 heap = Heap{freeList = fl', h = hp', heapSize = hs}}
+
+--         "open" -> 
+--             if (null $ stack state)
+--                 then 
+--                     throwError "Operator (box open) error. Can't open a Box with an empty stack! No Box to open!" state
+--                 else
+--                     case (fsTop state) of
+--                         Box n -> 
+--                             case (validateBox (heap state) n) of
+--                                 Left v -> return $ fsPush v state
+--                                 Right err -> throwError err state 
+--                         x -> 
+--                             let xType = chrs $ doQueryType' x 
+--                             in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
+--         "altr" -> 
+--             case (stack state) of 
+--                 [] -> throwError "Operator (box altr) error. Two operands expected on stack; none provided!" state
+--                 [x] -> throwError "Operator (box altr) error. Two operands expected on stack; only one provided!" state
+--                 vals ->
+--                     let (state', secondToTop, top) = fsPop2 state
+--                     in case (secondToTop, top) of
+--                         (Box bn, v) ->
+--                             case (validateBox (heap state') bn) of
+--                                 Left oldV -> 
+--                                     if (compareTypesForMut oldV v)
+--                                         then
+--                                             let h' = M.insert bn v (h $ heap state')
+--                                                 state'' = fsPush (Box bn) state'
+--                                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+--                                                 frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
+--                                         else
+--                                             let (oldVType, vType) = findTypeStrsForError oldV v
+--                                             in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
+--                                                 " of type " ++ vType ++ " doesn't match old value of type " ++ oldVType 
+--                                                 ++ ". Types must match for value to be changed for given Box!") state'
+--                                 Right err -> throwError err state
+--                         (x, v) ->
+--                             let (xType, vType) = findTypeStrsForError x v
+--                             in throwError ("Operator (box altr) error. Second to top of stack needs to be type Box and top needs to be type Value. TL;DR Needs types Box Value ; Attempted types: "
+--                                 ++ xType ++ " and " ++ vType) state'
+--         "free" -> 
+--             if (null $ stack state)
+--                 then
+--                     throwError "Operator (box free) error. Can't free a Box when stack is empty and no Box exists!" state
+--                 else
+--                     let (state', top) = fsPop state
+--                     in case (top) of
+--                         Box freeBn ->
+--                             case (validateBox (heap state) freeBn) of
+--                                 Left _ ->
+--                                     let fl' = M.insert freeBn () (freeList $ heap state')
+--                                     in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
+--                                         heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}}
+--                                 Right err -> throwError err state'
+--                         x ->
+--                             let xType = chrs $ doQueryType' x
+--                             in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
+--                                 ++ xType) state
+--         "null" -> return $ fsPush (Box (-1)) state
+--         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
+
+-- -- Runs true branch if top of stack is true 
+-- --and false branch if top of stack is false.
+-- doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
+--     if (null $ stack state)
+--         then
+--             throwError "If statement error. No Boolean for if to check because stack is empty!" state
+--         else
+--             case (fsTop state) of 
+--                 (Boolean True) -> doNode trueBranch (addFrame state)
+--                 (Boolean False) -> doNode falseBranch (addFrame state)
+--                 x ->
+--                     let xType = chrs $ doQueryType' x
+--                     in throwError ("If statement error. If statement requires top of the stack" 
+--                         ++ " to be type Boolean to branch! Attempted type: " ++ xType) state
+
+-- --Pattern matches function def and call.
+-- doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
+--     case (astNodeToString cmd) of 
+--         "def" -> 
+--             let fName = astNodeToString name
+--             in case (M.lookup fName (fns state)) of 
+--                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
+--                     Nothing ->
+--                         let fns' = M.insert fName body (fns state)
+--                         in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
+
+--         "call" -> 
+--             let fName = astNodeToString name
+--             in case (M.lookup fName (fns state)) of
+--                 Just bod -> 
+--                     (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
+                
+--                 Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
+
+--         other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
+
+-- --Runs all the different cases of variable actions.
+-- doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
+--     case (astNodeToString cmd) of
+--         --Used in making a new variable in vars.
+--         "mak" ->
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then 
+--                     throwError ("Variable (var) Mak Error. Can't create variable when stack is empty. Attempted variable name: " ++ vName) state 
+--                 else
+--                     case (M.lookup vName (vars state)) of
+--                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
+--                         Nothing -> 
+--                             let vars' = M.insert vName (fsTop state) (vars state)
+--                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+                           
+--         --Pushes variable value to stack.
+--         "get" -> 
+--             let vName = astNodeToString name
+--             in case (M.lookup vName (vars state)) of
+--                 Just v -> doNode (Expression rest) (fsPush v state)
+--                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
+
+--         --Removes variable from existence since var is manually scoped.
+--         "del" -> 
+--             let vName = astNodeToString name
+--             in case (M.lookup vName (vars state)) of 
+--                 Just v -> 
+--                     let vars' = M.delete vName (vars state)
+--                     in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
+--                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
+
+--         --Alters variable to new value on top of stack if the types match.
+--         "mut" -> 
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then
+--                     throwError ("Variable (var) Mut Error. Can't mutate variable when stack is empty! Attempted variable name: " ++ vName) state
+--                 else
+--                     let newVal = fsTop state
+--                     in case (M.lookup vName (vars state)) of 
+--                         Just v -> 
+--                             if (compareTypesForMut v newVal)
+--                                 then 
+--                                     let vars' = M.insert vName newVal (vars state)
+--                                     in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+--                                 else
+--                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
+--                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
+--                                         ++ " to different type: " ++ (chrs $ doQueryType' newVal)) state
+
+--                         Nothing -> throwError ("Variable (var) Mut Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
+
+--         other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
+
+-- --Runs all the different cases of local variable actions.
+-- doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
+--     case (astNodeToString cmd) of
+--         "mak" ->
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then throwError ("Local Variable (loc) Mak Error. Can't create local variable when stack is empty! Attempted local variable name: " ++ vName) state 
+--                 else
+--                     case (M.lookup vName (head $ frames state)) of
+--                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
+--                         Nothing ->
+--                             let frame' = M.insert vName (fsTop state) (head $ frames state)
+--                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
+                           
+--         "get" ->  
+--             case (getLoc (frames state) (astNodeToString name)) of
+--                 Just value -> doNode (Expression rest) (fsPush value state)
+--                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
+
+--         "mut" -> 
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then throwError ("Local Variable (loc) Mut Error. Can't mutate local variable when stack is empty! Attempted local variable name: " ++ vName) state
+--                 else
+--                     case (getLoc (frames state) vName) of
+--                         Just v -> 
+--                             if (compareTypesForMut (fsTop state) v)
+--                                 then
+--                                     doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
+--                                 else
+--                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
+--                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
+--                                         ++ " to different type: " ++ (chrs $ doQueryType' (fsTop state))) state
+
+--                         Nothing -> throwError ("Local Variable (loc) Mut Error. Local Variable " ++ vName ++ " not defined for mutation in any scope!") state
+
+--         other -> throwError ("Local Variable (loc) Command Error. Invalid local variable command given! Given: " ++ other ++ " valid: mak, get, mut") state
+
+-- --This code looks sus but basically it runs the loop body 
+-- -- and then runs the whole loop recursion if it needs to run again.                                                                                                                      
+-- doNode ( While loopBody ) state = 
+--     if (null $ stack state)
+--         then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+--         else do 
+--             newState <- case (fsTop state) of 
+--                 Boolean True -> doNode loopBody (addFrame state)
+--                 Boolean False -> return state
+--                 x -> 
+--                     let xType = chrs $ doQueryType' x 
+--                     in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+--                         ++ xType) state
+
+--             --Checks to see if loop can run again or not.
+--             if (null $ stack newState)
+--                 then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+--                 else 
+--                     case (fsTop newState) of 
+--                         Boolean True -> doNode (While loopBody) newState
+--                         Boolean False -> return newState
+--                         x -> 
+--                             let xType = chrs $ doQueryType' x 
+--                             in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+--                                 ++ xType) newState
+
+-- -- doing a terminal changes depending on whether it's a word or a number. 
+-- -- if it's a number, push it...
+-- doNode ( Terminal ( Val v ) ) state = return $ fsPush v state
+
+-- -- ...if it's a word, execute the operation
+-- doNode ( Terminal ( Word o ) ) state = doOp o state
+
+-- -- "doing" an empty expression does nothing
+-- doNode ( Expression [] ) state = return $ removeFrame state
+
+-- -- "doing" a non-empty expression tries to execute every node in the expression
+-- doNode ( Expression ( first:rest ) ) state = do  
+--     stateAfterFirst <- doNode first state
+--     doNode (Expression (rest)) stateAfterFirst 
+
+--Uses pattern matching to find type of given value.
+doQueryType' :: Value -> Value
+doQueryType' (BigInteger _) = String{chrs = "BigInteger", len = length "BigInteger"}
+doQueryType' (Integer _) = String{chrs = "Integer", len = length "Integer"}
+doQueryType' (Float _) = String{chrs = "Float", len = length "Float"}
+doQueryType' (Double _) = String{chrs = "Double", len = length "Double"}
+doQueryType' String{chrs = _, len = _} = String{chrs = "String", len = length "String"}
+doQueryType' (Char _) = String{chrs = "Char", len = length "Char"}
+doQueryType' (Boolean _) = String{chrs = "Boolean", len = length "Boolean"}
+doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "List"}
+doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
+doQueryType' (Box _) = String{chrs = "Box", len = length "Box"}
+
+generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
+generateCodeString' (Terminal (Val v)) lineAcc indent stateCount = 
+    let vType = chrs $ doQueryType' v
+        pushVal = case vType of
+                        "List" -> "List { items = M.empty, len = 0}"
+                        "Object" -> "Object {fields = M.empty}"
+                        "String" -> "String{chrs = " ++ (show $ chrs v) ++ ", len = " ++ (show $ len v) ++ "}"
+                        _ -> show v 
+        lineAcc' = lineAcc ++ [(nFourSpaces indent) ++ "let state" ++ (show $ stateCount + 1) ++ " = push state" ++ (show $ stateCount) ++ " (" ++ pushVal ++ ")"]
+    in (lineAcc', stateCount + 1)
+generateCodeString' (Expression []) lineAcc indent stateCount = (lineAcc, stateCount)
+generateCodeString' (Expression (first:rest)) lineAcc indent stateCount = 
+    let (lineAcc', stateCount') = generateCodeString' first lineAcc indent stateCount
+    in generateCodeString' (Expression (rest)) lineAcc' indent stateCount'
+
 --Takes in AST and returns the final string of the Haskell code generated from it. 
 generateCodeString :: AstNode -> String
 generateCodeString ast =
@@ -406,10 +708,11 @@ generateCodeString ast =
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
                 "main :: IO ()",
                 "main = do",
-                (nFourSpaces 1) ++ "let state0 = EDState{stack = []}",
-                (nFourSpaces 1) ++ "putStrLn $ show $ stack state0"
+                (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
             ]
-    in (intercalate "\n" linesInit) ++ "\n"
+        (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
+        linesFinal = newLines ++ [(nFourSpaces 1) ++ "putStrLn $ show $ reverse $ stack state" ++ (show stateCount)]
+    in (intercalate "\n" linesFinal) ++ "\n"
 
 main :: IO ()
 main = do
