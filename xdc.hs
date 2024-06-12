@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.4.0
+--Version: Alpha 0.4.1
 --Compiler for EcksDee
 
 import Data.List
@@ -706,12 +706,12 @@ generateCodeString ast =
                 "",
                 "push :: EDState -> Value -> EDState",
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
-                "main :: IO ()",
+                "main :: IO EDState",
                 "main = do",
                 (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
-        linesFinal = newLines ++ [(nFourSpaces 1) ++ "putStrLn $ show $ reverse $ stack state" ++ (show stateCount)]
+        linesFinal = newLines ++ [(nFourSpaces 1) ++ "(putStrLn $ show $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
     in (intercalate "\n" linesFinal) ++ "\n"
 
 main :: IO ()
