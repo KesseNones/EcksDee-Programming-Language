@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.4.1
+--Version: Alpha 0.5.0
 --Compiler for EcksDee
 
 import Data.List
@@ -645,7 +645,27 @@ doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "L
 doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
 doQueryType' (Box _) = String{chrs = "Box", len = length "Box"}
 
+generateOpCode :: String -> Int -> Int -> ([String], Int)
+generateOpCode "+" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
+                intercalate "" [nFourSpaces $ indent + 2, "case (addVals v1 v2) of"],
+                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
+                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (+) error. Addition requires two operands; only one provided!\" ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (+) error. Addition requires two operands; none provided!\" ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
+generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
+    let (codeStr, stateCount') = generateOpCode op indent stateCount
+    in (lineAcc ++ codeStr, stateCount')
 generateCodeString' (Terminal (Val v)) lineAcc indent stateCount = 
     let vType = chrs $ doQueryType' v
         pushVal = case vType of
@@ -700,12 +720,45 @@ generateCodeString ast =
                 "data GeneralException = GeneralException String deriving (Show, Typeable)",
                 "instance Exception GeneralException",
                 "",
+                "throwError :: String -> EDState -> IO EDState",
+                "throwError msg = throw $ GeneralException msg",
+                "",
+                "doQueryType' :: Value -> Value",
+                "doQueryType' (BigInteger _) = String{chrs = \"BigInteger\", len = length \"BigInteger\"}",
+                "doQueryType' (Integer _) = String{chrs = \"Integer\", len = length \"Integer\"}",
+                "doQueryType' (Float _) = String{chrs = \"Float\", len = length \"Float\"}",
+                "doQueryType' (Double _) = String{chrs = \"Double\", len = length \"Double\"}",
+                "doQueryType' String{chrs = _, len = _} = String{chrs = \"String\", len = length \"String\"}",
+                "doQueryType' (Char _) = String{chrs = \"Char\", len = length \"Char\"}",
+                "doQueryType' (Boolean _) = String{chrs = \"Boolean\", len = length \"Boolean\"}",
+                "doQueryType' (List {items = _, len = _}) = String{chrs = \"List\", len = length \"List\"}",
+                "doQueryType' (Object {fields = _}) = String{chrs = \"Object\", len = length \"Object\"}",
+                "doQueryType' (Box _) = String{chrs = \"Box\", len = length \"Box\"}",
+                "findTypeStrsForError :: Value -> Value -> (String, String)",
+                "findTypeStrsForError x y = (chrs $ doQueryType' x, chrs $ doQueryType' y)",
                 "pop :: EDState -> (EDState, Maybe Value)",
                 "pop EDState{stack = []} = (EDState{stack = []}, Nothing)",
                 "pop state = (EDState{stack = tail $ stack state}, Just $ head $ stack state)",
                 "",
+                "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
+                "pop2 state = ",
+                intercalate "" [nFourSpaces 1, "let (state', top) = pop state"],
+                intercalate "" [nFourSpaces 2, "(state'', secondToTop) = pop state'"],
+                intercalate "" [nFourSpaces 1, "in (state'', secondToTop, top)"],
+                "",
                 "push :: EDState -> Value -> EDState",
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
+                "addVals :: Value -> Value -> Either Value String",
+                "addVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a + b)",
+                "addVals (Integer a) (Integer b) = Left $ Integer (a + b)",
+                "addVals (Double a) (Double b) = Left $ Double (a + b)",
+                "addVals (Float a) (Float b) = Left $ Float (a + b)",
+                "addVals (Boolean a) (Boolean b) = Left $ Boolean (a || b)",
+                "addVals a b = ",
+                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
+                intercalate "" [nFourSpaces 1, "in Right (\"Operator (+) error. Can't add types together that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
+                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
+                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
                 "main :: IO EDState",
                 "main = do",
                 (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
