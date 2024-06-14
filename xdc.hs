@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.2
+--Version: Alpha 0.5.3
 --Compiler for EcksDee
 
 import Data.List
@@ -691,6 +691,21 @@ generateOpCode "*" indent stateCount =
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
+generateOpCode "/" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
+                intercalate "" [nFourSpaces $ indent + 2, "case (divideVals v2 v1) of"],
+                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
+                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (/) error. Division requires two operands; only one provided!\" ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (/) error. Division requires two operands; none provided!\" ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
@@ -766,18 +781,22 @@ generateCodeString ast =
                 "doQueryType' (Box _) = String{chrs = \"Box\", len = length \"Box\"}",
                 "findTypeStrsForError :: Value -> Value -> (String, String)",
                 "findTypeStrsForError x y = (chrs $ doQueryType' x, chrs $ doQueryType' y)",
+
                 "pop :: EDState -> (EDState, Maybe Value)",
                 "pop EDState{stack = []} = (EDState{stack = []}, Nothing)",
                 "pop state = (EDState{stack = tail $ stack state}, Just $ head $ stack state)",
                 "",
+
                 "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
                 "pop2 state = ",
                 intercalate "" [nFourSpaces 1, "let (state', top) = pop state"],
                 intercalate "" [nFourSpaces 2, "(state'', secondToTop) = pop state'"],
                 intercalate "" [nFourSpaces 1, "in (state'', secondToTop, top)"],
                 "",
+
                 "push :: EDState -> Value -> EDState",
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
+
                 "addVals :: Value -> Value -> Either Value String",
                 "addVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a + b)",
                 "addVals (Integer a) (Integer b) = Left $ Integer (a + b)",
@@ -789,6 +808,7 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 1, "in Right (\"Operator (+) error. Can't add types together that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+
                 "subVals :: Value -> Value -> Either Value String",
                 "subVals (BigInteger a) (BigInteger b) = Left $ BigInteger (b - a)",
                 "subVals (Integer a) (Integer b) = Left $ Integer (b - a)",
@@ -799,6 +819,7 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 1, "in Right (\"Operator (-) error. Can't subtract types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ bType ++ \" and \" ++ aType)"],
+
                 "multVals :: Value -> Value -> Either Value String",
                 "multVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a * b)",
                 "multVals (Integer a) (Integer b) = Left $ Integer (a * b)",
@@ -810,6 +831,18 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 1, "in Right (\"Operator (*) error. Can't multiply types that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+
+                "divideVals :: Value -> Value -> Either Value String",
+                "divideVals (BigInteger a) (BigInteger b) = if (a /= 0) then Left $ BigInteger (b `div` a) else Right \"Operator (/) error. Can't divide by zero for type BigInteger!\"",
+                "divideVals (Integer a) (Integer b) = if (a /= 0) then Left $ Integer (b `div` a) else Right \"Operator (/) error. Can't divide by zero for type Integer!\"",
+                "divideVals (Double a) (Double b) = if (a /= 0.0) then Left $ Double (b / a) else Right \"Operator (/) error. Can't divide by zero for type Double!\"",
+                "divideVals (Float a) (Float b) = if (a /= 0.0) then Left $ Float (b / a) else Right \"Operator (/) error. Can't divide by zero for type Float!\"",
+                "divideVals a b =",
+                intercalate "" [nFourSpaces 1, "let (bType, aType) = findTypeStrsForError b a"],
+                intercalate "" [nFourSpaces 1, "in Right (\"Operator (/) error. Can't divide types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
+                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
+                intercalate "" [nFourSpaces 2, "++ bType ++ \" and \" ++ aType)"],
+
                 "main :: IO EDState",
                 "main = do",
                 (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
