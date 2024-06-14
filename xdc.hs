@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.5
+--Version: Alpha 0.5.6
 --Compiler for EcksDee
 
 import Data.List
@@ -724,6 +724,12 @@ generateOpCode "drop" indent stateCount =
         codeLines =
             [
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = fst $ pop ", stateStr]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "dropStack" indent stateCount =
+    let codeLines = 
+            [
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = EDState{stack = []}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
             ]
     in (codeLines, stateCount + 1)
 
