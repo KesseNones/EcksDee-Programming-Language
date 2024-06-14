@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.3
+--Version: Alpha 0.5.4
 --Compiler for EcksDee
 
 import Data.List
@@ -703,6 +703,19 @@ generateOpCode "/" indent stateCount =
                 intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (/) error. Division requires two operands; only one provided!\" ", stateStr],
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (/) error. Division requires two operands; none provided!\" ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
+generateOpCode "swap" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+            [
+                intercalate "" [nFourSpaces indent, "let (", stateStr, "', ", "secondToTop, top) = pop2 ", stateStr],
+                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> return $ push (", "push ", stateStr, "' (v2)) (v1)"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> return ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> return ", stateStr],
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
