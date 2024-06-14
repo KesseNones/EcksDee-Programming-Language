@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.0
+--Version: Alpha 0.5.1
 --Compiler for EcksDee
 
 import Data.List
@@ -661,6 +661,21 @@ generateOpCode "+" indent stateCount =
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
+generateOpCode "-" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
+                intercalate "" [nFourSpaces $ indent + 2, "case (subVals v2 v1) of"],
+                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
+                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (-) error. Addition requires two operands; only one provided!\" ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (-) error. Addition requires two operands; none provided!\" ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
@@ -759,6 +774,16 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 1, "in Right (\"Operator (+) error. Can't add types together that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                "subVals :: Value -> Value -> Either Value String",
+                "subVals (BigInteger a) (BigInteger b) = Left $ BigInteger (b - a)",
+                "subVals (Integer a) (Integer b) = Left $ Integer (b - a)",
+                "subVals (Double a) (Double b) = Left $ Double (b - a)",
+                "subVals (Float a) (Float b) = Left $ Float (b - a)",
+                "subVals a b = ",
+                intercalate "" [nFourSpaces 1, "let (bType, aType) = findTypeStrsForError b a"],
+                intercalate "" [nFourSpaces 1, "in Right (\"Operator (-) error. Can't subtract types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
+                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
+                intercalate "" [nFourSpaces 2, "++ bType ++ \" and \" ++ aType)"],
                 "main :: IO EDState",
                 "main = do",
                 (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
