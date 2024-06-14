@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.1
+--Version: Alpha 0.5.2
 --Compiler for EcksDee
 
 import Data.List
@@ -671,8 +671,23 @@ generateOpCode "-" indent stateCount =
                 intercalate "" [nFourSpaces $ indent + 2, "case (subVals v2 v1) of"],
                 intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
                 intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (-) error. Addition requires two operands; only one provided!\" ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (-) error. Addition requires two operands; none provided!\" ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (-) error. Subtraction requires two operands; only one provided!\" ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (-) error. Subtraction requires two operands; none provided!\" ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "*" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
+                intercalate "" [nFourSpaces $ indent + 2, "case (multVals v1 v2) of"],
+                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
+                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (*) error. Multiplication requires two operands; only one provided!\" ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (*) error. Multiplication requires two operands; none provided!\" ", stateStr],
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
@@ -784,6 +799,17 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 1, "in Right (\"Operator (-) error. Can't subtract types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ bType ++ \" and \" ++ aType)"],
+                "multVals :: Value -> Value -> Either Value String",
+                "multVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a * b)",
+                "multVals (Integer a) (Integer b) = Left $ Integer (a * b)",
+                "multVals (Double a) (Double b) = Left $ Double (a * b)",
+                "multVals (Float a) (Float b) = Left $ Float (a * b)",
+                "multVals (Boolean a) (Boolean b) = Left $ Boolean (a && b)",
+                "multVals a b =",
+                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
+                intercalate "" [nFourSpaces 1, "in Right (\"Operator (*) error. Can't multiply types that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
+                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
+                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
                 "main :: IO EDState",
                 "main = do",
                 (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
