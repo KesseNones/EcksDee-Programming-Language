@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.4
+--Version: Alpha 0.5.5
 --Compiler for EcksDee
 
 import Data.List
@@ -717,6 +717,13 @@ generateOpCode "swap" indent stateCount =
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> return ", stateStr],
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> return ", stateStr],
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "drop" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+            [
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = fst $ pop ", stateStr]
             ]
     in (codeLines, stateCount + 1)
 
