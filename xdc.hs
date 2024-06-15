@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.7
+--Version: Alpha 0.5.8
 --Compiler for EcksDee
 
 import Data.List
@@ -742,6 +742,16 @@ generateOpCode "rot" indent stateCount =
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2, Just v3) -> return $ push (", "push ", stateStr, "' (v3)) (v2)"],
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing, Just v3) -> return $ ", stateStr],
                 intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing, Nothing) -> return $ ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "dup" indent stateCount =
+    let codeLines = 
+            [
+                intercalate "" [nFourSpaces indent, "let (_, top) = pop state", show stateCount],
+                intercalate "" [nFourSpaces indent, "newState <- case top of"],
+                intercalate "" [nFourSpaces $ indent + 1, "Just v -> return $ push state", show stateCount, "(v)"],
+                intercalate "" [nFourSpaces $ indent + 1, "Nothing -> return state", show stateCount],
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
