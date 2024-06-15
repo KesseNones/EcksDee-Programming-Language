@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.6
+--Version: Alpha 0.5.7
 --Compiler for EcksDee
 
 import Data.List
@@ -732,6 +732,19 @@ generateOpCode "dropStack" indent stateCount =
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = EDState{stack = []}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
             ]
     in (codeLines, stateCount + 1)
+generateOpCode "rot" indent stateCount = 
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+            [
+                intercalate "" [nFourSpaces indent, "let (", stateStr, "', thirdToTop, secondToTop, top) = pop3 ", stateStr],
+                intercalate "" [nFourSpaces indent, "newState <- case (thirdToTop, secondToTop, top) of"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2, Just v3) -> return $ push (", "push (", "push ", stateStr, "' (v3)) (v1)) (v2)"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2, Just v3) -> return $ push (", "push ", stateStr, "' (v3)) (v2)"],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing, Just v3) -> return $ ", stateStr],
+                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing, Nothing) -> return $ ", stateStr],
+                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
@@ -819,6 +832,13 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 2, "(state'', secondToTop) = pop state'"],
                 intercalate "" [nFourSpaces 1, "in (state'', secondToTop, top)"],
                 "",
+
+                "pop3 :: EDState -> (EDState, Maybe Value, Maybe Value, Maybe Value)",
+                "pop3 state = ",
+                intercalate "" [nFourSpaces 1, "let (state', top) = pop state"],
+                intercalate "" [nFourSpaces 2, "(state'', secondToTop) = pop state'"],
+                intercalate "" [nFourSpaces 2, "(state''', thirdToTop) = pop state''"],
+                intercalate "" [nFourSpaces 1, "in (state''', thirdToTop, secondToTop, top)"],
 
                 "push :: EDState -> Value -> EDState",
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
