@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.10
+--Version: Alpha 0.5.11
 --Compiler for EcksDee
 
 import Data.List
@@ -785,6 +785,8 @@ generateOpCode "/=" indent stateCount =
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
+
+generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
