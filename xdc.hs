@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.12
+--Version: Alpha 0.5.13
 --Compiler for EcksDee
 
 import Data.List
@@ -785,6 +785,21 @@ generateOpCode "/=" indent stateCount =
                 intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
+generateOpCode ">" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+                [
+                    intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                    intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
+                    intercalate "" [nFourSpaces $ indent + 2, "case (doGreaterThan v1 v2) of"],
+                    intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
+                    intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
+                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (>) error. Greater than comparison requires two operands; only one provided!\" ", stateStr, "'"],
+                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (>) error. Greater than comparison requires two operands; none provided!\" ", stateStr, "'"],
+                    intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
@@ -1009,6 +1024,22 @@ generateCodeString ast =
                 intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, Lists, or Boxes! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],   
+
+                "doGreaterThan :: Value -> Value -> Either Value String",
+                "doGreaterThan (BigInteger a) (BigInteger b) = Left $ Boolean (a > b)",
+                "doGreaterThan (Integer a) (Integer b) = Left $ Boolean (a > b)",
+                "doGreaterThan (Float a) (Float b) = Left $ Boolean (a > b)",
+                "doGreaterThan (Double a) (Double b) = Left $ Boolean (a > b)",
+                "doGreaterThan (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean (acs > bcs)",
+                "doGreaterThan (Char a) (Char b) = Left $ Boolean (a > b)",
+                "doGreaterThan (Boolean a) (Boolean b) = Left $ Boolean (a > b)",
+                "doGreaterThan (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as > bs)",
+                "doGreaterThan a b = ",
+                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
+                intercalate "" [nFourSpaces 1, "in Right (\"Operator (>) error. Can't compare types that are not both types of \""],
+                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
+                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
 
                 "main :: IO EDState",
                 "main = do",
