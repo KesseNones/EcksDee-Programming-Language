@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-28.436
+--Version: 2024-06-16.186
 --Toy Programming Language Named EcksDee
 
 {-
@@ -477,8 +477,8 @@ doGreaterThanEqualTo' a b =
 doLessThanEqualTo :: EDState -> IO EDState
 doLessThanEqualTo state = 
     case (stack state) of 
-        [] -> throwError "Operator (<=) error. Less than comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (<=) error. Less than comparison requires two operands; only one provided!" state
+        [] -> throwError "Operator (<=) error. Less than equal to comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (<=) error. Less than equal to comparison requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doLessThanEqualTo' b a) of
