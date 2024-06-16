@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.13
+--Version: Alpha 0.5.14
 --Compiler for EcksDee
 
 import Data.List
@@ -800,6 +800,21 @@ generateOpCode ">" indent stateCount =
                     intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
+generateOpCode "<" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+                [
+                    intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
+                    intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
+                    intercalate "" [nFourSpaces $ indent + 2, "case (doLessThan v1 v2) of"],
+                    intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
+                    intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
+                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (<) error. Less than comparison requires two operands; only one provided!\" ", stateStr, "'"],
+                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (<) error. Less than comparison requires two operands; none provided!\" ", stateStr, "'"],
+                    intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
@@ -1037,6 +1052,22 @@ generateCodeString ast =
                 "doGreaterThan a b = ",
                 intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
                 intercalate "" [nFourSpaces 1, "in Right (\"Operator (>) error. Can't compare types that are not both types of \""],
+                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
+                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+
+                "doLessThan :: Value -> Value -> Either Value String",
+                "doLessThan (BigInteger a) (BigInteger b) = Left $ Boolean (a < b)",
+                "doLessThan (Integer a) (Integer b) = Left $ Boolean (a < b)",
+                "doLessThan (Float a) (Float b) = Left $ Boolean (a < b)",
+                "doLessThan (Double a) (Double b) = Left $ Boolean (a < b)",
+                "doLessThan (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ Boolean (acs < bcs)",
+                "doLessThan (Char a) (Char b) = Left $ Boolean (a < b)",
+                "doLessThan (Boolean a) (Boolean b) = Left $ Boolean (a < b)",
+                "doLessThan (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as < bs)",
+                "doLessThan a b = ",
+                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
+                intercalate "" [nFourSpaces 1, "in Right (\"Operator (<) error. Can't compare types that are not both types of \""],
                 intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
                 intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
                 intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
