@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.11
+--Version: Alpha 0.5.12
 --Compiler for EcksDee
 
 import Data.List
@@ -885,6 +885,51 @@ generateCodeString ast =
                 "push :: EDState -> Value -> EDState",
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
 
+                "printStack :: [Value] -> IO ()",
+                "printStack [] = return ()",
+                "printStack ((List {items = is, len = l}):xs) =",
+                intercalate "" [nFourSpaces 1, "putStrLn (\"[\" ++ (printList List {items = is, len = l} \"\" 0 True) ++ (if (l > 16) then \", ...]\" else \"]\")) >> printStack xs"],
+                "printStack ((String {chrs = cs, len = l}):xs) =",
+
+                intercalate "" [nFourSpaces 1, "let pr = if l < 256 then cs else (init $ take 255 cs) ++ \"...\""],
+                intercalate "" [nFourSpaces 1, "in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs"],
+                "printStack ((Object{fields = fs}):xs) = putStrLn (\"{\" ++ (printObj (M.toList fs) \"\") ++ \"}\") >> printStack xs",
+                "printStack ((Box (-1)):xs) = putStrLn \"Box NULL\" >> printStack xs",
+                "printStack (x:xs) = print x >> printStack xs",
+
+                "printList :: Value -> String -> Int -> Bool -> String",
+                "printList List {items = is, len = l} acc index isLimited",
+                intercalate "" [nFourSpaces 1, "| (index < l) && (index < 16 || isLimited == False) ="],
+                intercalate "" [nFourSpaces 2, "let curr = case M.lookup index is of"],
+                intercalate "" [nFourSpaces 4, "Just i -> i"],
+                intercalate "" [nFourSpaces 4, "Nothing -> error \"SHOULD NEVER GET HERE!!!\""],
+                intercalate "" [nFourSpaces 3, "acc' = case curr of"],
+                intercalate "" [nFourSpaces 4, "List {items = ls, len = listLength} -> acc ++ (if (accSmall acc)"],
+                intercalate "" [nFourSpaces 5, "then \", [\""],
+                intercalate "" [nFourSpaces 5, "else \"[\") ++ (printList (List{items = ls, len = listLength}) \"\" 0 isLimited) ++ (if (isLimited && listLength > 16) then \", ...]\" else \"]\")"],                
+                intercalate "" [nFourSpaces 4, "Object {fields = fs} -> acc ++ (if (accSmall acc) then \", {\" else \"{\") ++ (printObj (M.toList fs) \"\") ++ \"}\""],
+                intercalate "" [nFourSpaces 4, "Box (-1) -> acc ++ (if (index > 0) then \", \" else \"\") ++ \"Box NULL\""],
+                intercalate "" [nFourSpaces 4, "i -> acc ++ (if (index > 0) then \", \" else \"\") ++ (show i)"],
+                intercalate "" [nFourSpaces 2, "in printList (List{items = is, len = l}) acc' (index + 1) isLimited"],
+                intercalate "" [nFourSpaces 1, "| otherwise = acc"],
+
+                "printObj :: [(String, Value)] -> String -> String",
+                "printObj [] acc = acc",
+                "printObj ((name, val):xs) acc =",
+                intercalate "" [nFourSpaces 1, "let insStr = case val of"],
+                intercalate "" [nFourSpaces 3, "Object{fields = fs} -> \"{\" ++ (printObj (M.toList fs) \"\") ++ \"}\""],
+                intercalate "" [nFourSpaces 3, "List{items = is, len = l} -> \"[\" ++ (printList (List{items = is, len = l}) \"\" 0 True) ++ (if (l > 16) then \", ...]\" else \"]\")"],
+                intercalate "" [nFourSpaces 3, "String{chrs = cs, len = l} ->"],
+                intercalate "" [nFourSpaces 4, "let cs' = if l < 256 then cs else (init $ take 255 cs) ++ \"...\""],
+                intercalate "" [nFourSpaces 4, "in show $ String{chrs = cs', len = l}"],
+                intercalate "" [nFourSpaces 3, "Box (-1) -> \"Box NULL\""],
+                intercalate "" [nFourSpaces 3, "i -> show i"],
+                intercalate "" [nFourSpaces 1, "in printObj xs (acc ++ (if accSmall acc then \", \" else \"\") ++ name ++ \" : \" ++ insStr)"],
+
+                "accSmall :: String -> Bool",
+                "accSmall \"\" = False",
+                "accSmall _ = True",
+
                 "addVals :: Value -> Value -> Either Value String",
                 "addVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a + b)",
                 "addVals (Integer a) (Integer b) = Left $ Integer (a + b)",
@@ -970,7 +1015,7 @@ generateCodeString ast =
                 (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
-        linesFinal = newLines ++ [(nFourSpaces 1) ++ "(putStrLn $ show $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
+        linesFinal = newLines ++ [(nFourSpaces 1) ++ "(printStack $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
     in (intercalate "\n" linesFinal) ++ "\n"
 
 main :: IO ()
