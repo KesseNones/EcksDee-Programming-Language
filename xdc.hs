@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.17
+--Version: Alpha 0.5.18
 --Compiler for EcksDee
 
 import Data.List
@@ -849,6 +849,22 @@ generateOpCode "<=" indent stateCount =
                 ]
     in (codeLines, stateCount + 1)
 
+generateOpCode "%" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                makeLine (indent + 2) ["case (doModulo v1 v2) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> ", "throwError \"Operator (%) error. Modulo requires two operands; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (%) error. Modulo requires two operands; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
@@ -1134,6 +1150,16 @@ generateCodeString ast =
                 makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
                 makeLine 1 ["in Right (\"Operator (<=) error. Can't compare types that are not both types of \""],
                 makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
+
+                "doModulo :: Value -> Value -> Either Value String",
+                "doModulo (BigInteger a) (BigInteger b) = Left $ BigInteger (a `mod` b)",
+                "doModulo (Integer a) (Integer b) = Left $ Integer (a `mod` b)",
+                "doModulo a b =",
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (%) error. Can't modulo types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers or Integers! \""],
                 makeLine 2 ["++ \"Attempted types were: \""],
                 makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
