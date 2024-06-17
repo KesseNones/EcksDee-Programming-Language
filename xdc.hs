@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.18
+--Version: Alpha 0.5.19
 --Compiler for EcksDee
 
 import Data.List
@@ -864,6 +864,21 @@ generateOpCode "%" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
+generateOpCode "++" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                makeLine (indent + 2) ["case (doConcat v1 v2) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> ", "throwError \"Operator (++) error. Concatenation requires two operands; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (++) error. Concatenation requires two operands; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
@@ -1162,6 +1177,28 @@ generateCodeString ast =
                 makeLine 2 ["++ \"BigIntegers or Integers! \""],
                 makeLine 2 ["++ \"Attempted types were: \""],
                 makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
+
+                "doConcat :: Value -> Value -> Either Value String",
+                "doConcat (String {chrs = acs, len = al}) (String {chrs = bcs, len = bl}) = Left $ String {chrs = acs ++ bcs, len = al + bl}",
+                "doConcat List {items = as, len = al} List {items = bs, len = bl} =",
+                makeLine 1 ["let List{items = cs, len = cl} = doConcat' List{items = as, len = al} List{items = M.empty, len = 0} 0 0"],
+                makeLine 2 ["List{items = ds, len = dl} = doConcat' List{items = bs, len = bl} List{items = cs, len = cl} 0 al"],
+                makeLine 1 ["in Left $ List{items = ds, len = dl}"],
+                "doConcat a b =",
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (++) error. Can't concatenate types that are not both types of List or String! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
+
+                "doConcat' :: Value -> Value -> Int -> Int -> Value",
+                "doConcat' List{items = is, len = l} List{items = accs, len = accLen} index offset",
+                makeLine 1 ["|    (index < l) ="],
+                makeLine 3 ["let ins = case (M.lookup index is) of"],
+                makeLine 5 ["Just i -> i"],
+                makeLine 5 ["Nothing -> error \"SHOULD NEVER GET HERE!!!\""],
+                makeLine 4 ["accs' = M.insert (index + offset) ins accs"],
+                makeLine 3 ["in doConcat' List{items = is, len = l} List{items = accs', len = accLen + 1} (index + 1) offset"],
+                makeLine 1 ["|    otherwise = List{items = accs, len = accLen}"],
 
                 "main :: IO EDState",
                 "main = do",
