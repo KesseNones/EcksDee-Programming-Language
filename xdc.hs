@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.19
+--Version: Alpha 0.5.20
 --Compiler for EcksDee
 
 import Data.List
@@ -878,6 +878,20 @@ generateOpCode "++" indent stateCount =
                 makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (++) error. Concatenation requires two operands; none provided!\" ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
+    in (codeLines, stateCount + 1)
+generateOpCode "and" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+                [
+                    makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just (Boolean b1), Just (Boolean b2)) -> return $ push ", stateStr, "' (Boolean $ b1 && b2)"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 in throwError (\"Operator (and) error. \
+                    \Can't logically AND two items that are not both types of Boolean! Attempted types were:  \" ++ v1Type ++ \" and \" ++ v2Type)", stateStr],
+                    makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (and) error. Logical AND requires two operands; only one provided!\" ", stateStr],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (and) error. Logical AND requires two operands; none provided!\" ", stateStr],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                ]
     in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
