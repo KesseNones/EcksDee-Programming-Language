@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.23
+--Version: Alpha 0.5.24
 --Compiler for EcksDee
 
 import Data.List
@@ -931,6 +931,21 @@ generateOpCode "not" indent stateCount =
                     makeLine (indent + 1) ["(Just v1) -> let (v1Type) = chrs $ doQueryType' v1 in throwError (\"Operator (not) error. \
                     \Can't logically NOT item that isn't type Boolean! Attempted type was: \" ++ v1Type) ", stateStr],
                     makeLine (indent + 1) ["(Nothing) -> throwError \"Operator (not) error. Logical NOT operation requires one operand; none provided!\" ", stateStr],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                ]
+    in (codeLines, stateCount + 1)
+generateOpCode "pow" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+                [
+                    makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just (Float f1), Just (Float f2)) -> return $ push ", stateStr, "' (Float $ f1 ** f2)"],
+                    makeLine (indent + 1) ["(Just (Double d1), Just (Double d2)) -> return $ push ", stateStr, "' (Double $ d1 ** d2)"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 in throwError (\"Operator (pow) error. \
+                    \Operands need to be both of type Float or Double! Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type)", stateStr],
+                    makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (pow) error. Two operands needed; only one provided!\" ", stateStr],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (pow) error. Two operands needed; none provided!\" ", stateStr],
                     makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
