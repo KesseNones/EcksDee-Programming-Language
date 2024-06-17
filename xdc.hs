@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.16
+--Version: Alpha 0.5.17
 --Compiler for EcksDee
 
 import Data.List
@@ -645,65 +645,68 @@ doQueryType' (List {items = _, len = _}) = String{chrs = "List", len = length "L
 doQueryType' (Object {fields = _}) = String{chrs = "Object", len = length "Object"}
 doQueryType' (Box _) = String{chrs = "Box", len = length "Box"}
 
+makeLine :: Int -> [String] -> String
+makeLine indent strs = intercalate "" ((nFourSpaces indent):strs)
+
 generateOpCode :: String -> Int -> Int -> ([String], Int)
 generateOpCode "+" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines = 
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                intercalate "" [nFourSpaces $ indent + 2, "case (addVals v1 v2) of"],
-                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (+) error. Addition requires two operands; only one provided!\" ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (+) error. Addition requires two operands; none provided!\" ", stateStr],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                makeLine (indent + 2) ["case (addVals v1 v2) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> ", "throwError \"Operator (+) error. Addition requires two operands; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (+) error. Addition requires two operands; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "-" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines = 
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                intercalate "" [nFourSpaces $ indent + 2, "case (subVals v2 v1) of"],
-                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (-) error. Subtraction requires two operands; only one provided!\" ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (-) error. Subtraction requires two operands; none provided!\" ", stateStr],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                makeLine (indent + 2) ["case (subVals v2 v1) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> ", "throwError \"Operator (-) error. Subtraction requires two operands; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (-) error. Subtraction requires two operands; none provided!\" ", stateStr],
+                makeLine (indent) ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "*" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines = 
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                intercalate "" [nFourSpaces $ indent + 2, "case (multVals v1 v2) of"],
-                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (*) error. Multiplication requires two operands; only one provided!\" ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (*) error. Multiplication requires two operands; none provided!\" ", stateStr],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                makeLine (indent + 2) ["case (multVals v1 v2) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> ", "throwError \"Operator (*) error. Multiplication requires two operands; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (*) error. Multiplication requires two operands; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "/" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines = 
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                intercalate "" [nFourSpaces $ indent + 2, "case (divideVals v2 v1) of"],
-                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> ", "throwError \"Operator (/) error. Division requires two operands; only one provided!\" ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (/) error. Division requires two operands; none provided!\" ", stateStr],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "'", ", ", "secondToTop, ", "top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                makeLine (indent + 2) ["case (divideVals v2 v1) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> ", "throwError \"Operator (/) error. Division requires two operands; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (/) error. Division requires two operands; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 
@@ -711,138 +714,138 @@ generateOpCode "swap" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "', ", "secondToTop, top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> return $ push (", "push ", stateStr, "' (v2)) (v1)"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> return ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> return ", stateStr],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "', ", "secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> return $ push (", "push ", stateStr, "' (v2)) (v1)"],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> return ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> return ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "drop" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
             [
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = fst $ pop ", stateStr]
+                makeLine indent ["let state", show $ stateCount + 1, " = fst $ pop ", stateStr]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "dropStack" indent stateCount =
     let codeLines = 
             [
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = EDState{stack = []}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
+                makeLine indent ["let state", show $ stateCount + 1, " = EDState{stack = []}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "rot" indent stateCount = 
     let stateStr = "state" ++ (show stateCount)
         codeLines =
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "', thirdToTop, secondToTop, top) = pop3 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (thirdToTop, secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2, Just v3) -> return $ push (", "push (", "push ", stateStr, "' (v3)) (v1)) (v2)"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2, Just v3) -> return $ push (", "push ", stateStr, "' (v3)) (v2)"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing, Just v3) -> return $ ", stateStr],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing, Nothing) -> return $ ", stateStr],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "', thirdToTop, secondToTop, top) = pop3 ", stateStr],
+                makeLine indent ["newState <- case (thirdToTop, secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2, Just v3) -> return $ push (", "push (", "push ", stateStr, "' (v3)) (v1)) (v2)"],
+                makeLine (indent + 1) ["(Nothing, Just v2, Just v3) -> return $ push (", "push ", stateStr, "' (v3)) (v2)"],
+                makeLine (indent + 1) ["(Nothing, Nothing, Just v3) -> return $ ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing, Nothing) -> return $ ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "dup" indent stateCount =
     let codeLines = 
             [
-                intercalate "" [nFourSpaces indent, "let (_, top) = pop state", show stateCount],
-                intercalate "" [nFourSpaces indent, "newState <- case top of"],
-                intercalate "" [nFourSpaces $ indent + 1, "Just v -> return $ push state", show stateCount, "(v)"],
-                intercalate "" [nFourSpaces $ indent + 1, "Nothing -> return state", show stateCount],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (_, top) = pop state", show stateCount],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just v -> return $ push state", show stateCount, "(v)"],
+                makeLine (indent + 1) ["Nothing -> return state", show stateCount],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "==" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) ->"],
-                intercalate "" [nFourSpaces $ indent + 2, "case (doEqual v1 v2) of"],
-                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (==) error. Equality comparison requires two operands; only one provided!\"", stateStr, "'"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (==) error. Equality comparison requires two operands; none provided!\"", stateStr, "'"],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) ->"],
+                makeLine (indent + 2) ["case (doEqual v1 v2) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr, "'"],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (==) error. Equality comparison requires two operands; only one provided!\"", stateStr, "'"],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (==) error. Equality comparison requires two operands; none provided!\"", stateStr, "'"],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "/=" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
             [
-                intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
-                intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) ->"],
-                intercalate "" [nFourSpaces $ indent + 2, "case (doNotEqual v1 v2) of"],
-                intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (/=) error. Inequality comparison requires two operands; only one provided!\"", stateStr, "'"],
-                intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (/=) error. Inequality comparison requires two operands; none provided!\"", stateStr, "'"],
-                intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just v1, Just v2) ->"],
+                makeLine (indent + 2) ["case (doNotEqual v1 v2) of"],
+                makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                makeLine (indent + 3) ["Right err -> throwError err ", stateStr, "'"],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (/=) error. Inequality comparison requires two operands; only one provided!\"", stateStr, "'"],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (/=) error. Inequality comparison requires two operands; none provided!\"", stateStr, "'"],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 generateOpCode ">" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
                 [
-                    intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
-                    intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                    intercalate "" [nFourSpaces $ indent + 2, "case (doGreaterThan v1 v2) of"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (>) error. Greater than comparison requires two operands; only one provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (>) error. Greater than comparison requires two operands; none provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                    makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                    makeLine (indent + 2) ["case (doGreaterThan v1 v2) of"],
+                    makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                    makeLine (indent + 3) ["Right err -> throwError err ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (>) error. Greater than comparison requires two operands; only one provided!\" ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (>) error. Greater than comparison requires two operands; none provided!\" ", stateStr, "'"],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
 generateOpCode "<" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
                 [
-                    intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
-                    intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                    intercalate "" [nFourSpaces $ indent + 2, "case (doLessThan v1 v2) of"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (<) error. Less than comparison requires two operands; only one provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (<) error. Less than comparison requires two operands; none provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                    makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                    makeLine (indent + 2) ["case (doLessThan v1 v2) of"],
+                    makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                    makeLine (indent + 3) ["Right err -> throwError err ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (<) error. Less than comparison requires two operands; only one provided!\" ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (<) error. Less than comparison requires two operands; none provided!\" ", stateStr, "'"],
+                    makeLine (indent) ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
 generateOpCode ">=" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
                 [
-                    intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
-                    intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                    intercalate "" [nFourSpaces $ indent + 2, "case (doGreaterThanEqualTo v1 v2) of"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (>=) error. Greater than equal to comparison requires two operands; only one provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (>=) error. Greater than equal to comparison requires two operands; none provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                    makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                    makeLine (indent + 2) ["case (doGreaterThanEqualTo v1 v2) of"],
+                    makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                    makeLine (indent + 3) ["Right err -> throwError err ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (>=) error. Greater than equal to comparison requires two operands; only one provided!\" ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (>=) error. Greater than equal to comparison requires two operands; none provided!\" ", stateStr, "'"],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
 generateOpCode "<=" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines =
                 [
-                    intercalate "" [nFourSpaces indent, "let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
-                    intercalate "" [nFourSpaces indent, "newState <- case (secondToTop, top) of"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Just v1, Just v2) -> "],
-                    intercalate "" [nFourSpaces $ indent + 2, "case (doLessThanEqualTo v1 v2) of"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Left v -> return $ push ", stateStr, "' (v)"],
-                    intercalate "" [nFourSpaces $ indent + 3, "Right err -> throwError err ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Just v2) -> throwError \"Operator (<=) error. Less than equal to comparison requires two operands; only one provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces $ indent + 1, "(Nothing, Nothing) -> throwError \"Operator (<=) error. Less than equal to comparison requires two operands; none provided!\" ", stateStr, "'"],
-                    intercalate "" [nFourSpaces indent, "let state", show $ stateCount + 1, " = newState"]
+                    makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> "],
+                    makeLine (indent + 2) ["case (doLessThanEqualTo v1 v2) of"],
+                    makeLine (indent + 3) ["Left v -> return $ push ", stateStr, "' (v)"],
+                    makeLine (indent + 3) ["Right err -> throwError err ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (<=) error. Less than equal to comparison requires two operands; only one provided!\" ", stateStr, "'"],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (<=) error. Less than equal to comparison requires two operands; none provided!\" ", stateStr, "'"],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
 
@@ -930,17 +933,17 @@ generateCodeString ast =
 
                 "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
                 "pop2 state = ",
-                intercalate "" [nFourSpaces 1, "let (state', top) = pop state"],
-                intercalate "" [nFourSpaces 2, "(state'', secondToTop) = pop state'"],
-                intercalate "" [nFourSpaces 1, "in (state'', secondToTop, top)"],
+                makeLine 1 ["let (state', top) = pop state"],
+                makeLine 2 ["(state'', secondToTop) = pop state'"],
+                makeLine 1 ["in (state'', secondToTop, top)"],
                 "",
 
                 "pop3 :: EDState -> (EDState, Maybe Value, Maybe Value, Maybe Value)",
                 "pop3 state = ",
-                intercalate "" [nFourSpaces 1, "let (state', top) = pop state"],
-                intercalate "" [nFourSpaces 2, "(state'', secondToTop) = pop state'"],
-                intercalate "" [nFourSpaces 2, "(state''', thirdToTop) = pop state''"],
-                intercalate "" [nFourSpaces 1, "in (state''', thirdToTop, secondToTop, top)"],
+                makeLine 1 ["let (state', top) = pop state"],
+                makeLine 2 ["(state'', secondToTop) = pop state'"],
+                makeLine 2 ["(state''', thirdToTop) = pop state''"],
+                makeLine 1 ["in (state''', thirdToTop, secondToTop, top)"],
 
                 "push :: EDState -> Value -> EDState",
                 "push EDState{stack = xs} v = EDState{stack = v:xs}",
@@ -948,43 +951,43 @@ generateCodeString ast =
                 "printStack :: [Value] -> IO ()",
                 "printStack [] = return ()",
                 "printStack ((List {items = is, len = l}):xs) =",
-                intercalate "" [nFourSpaces 1, "putStrLn (\"[\" ++ (printList List {items = is, len = l} \"\" 0 True) ++ (if (l > 16) then \", ...]\" else \"]\")) >> printStack xs"],
+                makeLine 1 ["putStrLn (\"[\" ++ (printList List {items = is, len = l} \"\" 0 True) ++ (if (l > 16) then \", ...]\" else \"]\")) >> printStack xs"],
                 "printStack ((String {chrs = cs, len = l}):xs) =",
 
-                intercalate "" [nFourSpaces 1, "let pr = if l < 256 then cs else (init $ take 255 cs) ++ \"...\""],
-                intercalate "" [nFourSpaces 1, "in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs"],
+                makeLine 1 ["let pr = if l < 256 then cs else (init $ take 255 cs) ++ \"...\""],
+                makeLine 1 ["in putStrLn (show (String {chrs = pr, len = l})) >> printStack xs"],
                 "printStack ((Object{fields = fs}):xs) = putStrLn (\"{\" ++ (printObj (M.toList fs) \"\") ++ \"}\") >> printStack xs",
                 "printStack ((Box (-1)):xs) = putStrLn \"Box NULL\" >> printStack xs",
                 "printStack (x:xs) = print x >> printStack xs",
 
                 "printList :: Value -> String -> Int -> Bool -> String",
                 "printList List {items = is, len = l} acc index isLimited",
-                intercalate "" [nFourSpaces 1, "| (index < l) && (index < 16 || isLimited == False) ="],
-                intercalate "" [nFourSpaces 2, "let curr = case M.lookup index is of"],
-                intercalate "" [nFourSpaces 4, "Just i -> i"],
-                intercalate "" [nFourSpaces 4, "Nothing -> error \"SHOULD NEVER GET HERE!!!\""],
-                intercalate "" [nFourSpaces 3, "acc' = case curr of"],
-                intercalate "" [nFourSpaces 4, "List {items = ls, len = listLength} -> acc ++ (if (accSmall acc)"],
-                intercalate "" [nFourSpaces 5, "then \", [\""],
-                intercalate "" [nFourSpaces 5, "else \"[\") ++ (printList (List{items = ls, len = listLength}) \"\" 0 isLimited) ++ (if (isLimited && listLength > 16) then \", ...]\" else \"]\")"],                
-                intercalate "" [nFourSpaces 4, "Object {fields = fs} -> acc ++ (if (accSmall acc) then \", {\" else \"{\") ++ (printObj (M.toList fs) \"\") ++ \"}\""],
-                intercalate "" [nFourSpaces 4, "Box (-1) -> acc ++ (if (index > 0) then \", \" else \"\") ++ \"Box NULL\""],
-                intercalate "" [nFourSpaces 4, "i -> acc ++ (if (index > 0) then \", \" else \"\") ++ (show i)"],
-                intercalate "" [nFourSpaces 2, "in printList (List{items = is, len = l}) acc' (index + 1) isLimited"],
-                intercalate "" [nFourSpaces 1, "| otherwise = acc"],
+                makeLine 1 ["| (index < l) && (index < 16 || isLimited == False) ="],
+                makeLine 2 ["let curr = case M.lookup index is of"],
+                makeLine 4 ["Just i -> i"],
+                makeLine 4 ["Nothing -> error \"SHOULD NEVER GET HERE!!!\""],
+                makeLine 3 ["acc' = case curr of"],
+                makeLine 4 ["List {items = ls, len = listLength} -> acc ++ (if (accSmall acc)"],
+                makeLine 5 ["then \", [\""],
+                makeLine 5 ["else \"[\") ++ (printList (List{items = ls, len = listLength}) \"\" 0 isLimited) ++ (if (isLimited && listLength > 16) then \", ...]\" else \"]\")"],
+                makeLine 4 ["Object {fields = fs} -> acc ++ (if (accSmall acc) then \", {\" else \"{\") ++ (printObj (M.toList fs) \"\") ++ \"}\""],                
+                makeLine 4 ["Box (-1) -> acc ++ (if (index > 0) then \", \" else \"\") ++ \"Box NULL\""],
+                makeLine 4 ["i -> acc ++ (if (index > 0) then \", \" else \"\") ++ (show i)"],
+                makeLine 2 ["in printList (List{items = is, len = l}) acc' (index + 1) isLimited"],
+                makeLine 1 ["| otherwise = acc"],
 
                 "printObj :: [(String, Value)] -> String -> String",
                 "printObj [] acc = acc",
                 "printObj ((name, val):xs) acc =",
-                intercalate "" [nFourSpaces 1, "let insStr = case val of"],
-                intercalate "" [nFourSpaces 3, "Object{fields = fs} -> \"{\" ++ (printObj (M.toList fs) \"\") ++ \"}\""],
-                intercalate "" [nFourSpaces 3, "List{items = is, len = l} -> \"[\" ++ (printList (List{items = is, len = l}) \"\" 0 True) ++ (if (l > 16) then \", ...]\" else \"]\")"],
-                intercalate "" [nFourSpaces 3, "String{chrs = cs, len = l} ->"],
-                intercalate "" [nFourSpaces 4, "let cs' = if l < 256 then cs else (init $ take 255 cs) ++ \"...\""],
-                intercalate "" [nFourSpaces 4, "in show $ String{chrs = cs', len = l}"],
-                intercalate "" [nFourSpaces 3, "Box (-1) -> \"Box NULL\""],
-                intercalate "" [nFourSpaces 3, "i -> show i"],
-                intercalate "" [nFourSpaces 1, "in printObj xs (acc ++ (if accSmall acc then \", \" else \"\") ++ name ++ \" : \" ++ insStr)"],
+                makeLine 1 ["let insStr = case val of"],
+                makeLine 3 ["Object{fields = fs} -> \"{\" ++ (printObj (M.toList fs) \"\") ++ \"}\""],
+                makeLine 3 ["List{items = is, len = l} -> \"[\" ++ (printList (List{items = is, len = l}) \"\" 0 True) ++ (if (l > 16) then \", ...]\" else \"]\")"],
+                makeLine 3 ["String{chrs = cs, len = l} ->"],
+                makeLine 4 ["let cs' = if l < 256 then cs else (init $ take 255 cs) ++ \"...\""],
+                makeLine 4 ["in show $ String{chrs = cs', len = l}"],
+                makeLine 3 ["Box (-1) -> \"Box NULL\""],
+                makeLine 3 ["i -> show i"],
+                makeLine 1 ["in printObj xs (acc ++ (if accSmall acc then \", \" else \"\") ++ name ++ \" : \" ++ insStr)"],
 
                 "accSmall :: String -> Bool",
                 "accSmall \"\" = False",
@@ -997,10 +1000,10 @@ generateCodeString ast =
                 "addVals (Float a) (Float b) = Left $ Float (a + b)",
                 "addVals (Boolean a) (Boolean b) = Left $ Boolean (a || b)",
                 "addVals a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (+) error. Can't add types together that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (+) error. Can't add types together that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
                 "subVals :: Value -> Value -> Either Value String",
                 "subVals (BigInteger a) (BigInteger b) = Left $ BigInteger (b - a)",
@@ -1008,10 +1011,10 @@ generateCodeString ast =
                 "subVals (Double a) (Double b) = Left $ Double (b - a)",
                 "subVals (Float a) (Float b) = Left $ Float (b - a)",
                 "subVals a b = ",
-                intercalate "" [nFourSpaces 1, "let (bType, aType) = findTypeStrsForError b a"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (-) error. Can't subtract types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ bType ++ \" and \" ++ aType)"],
+                makeLine 1 ["let (bType, aType) = findTypeStrsForError b a"],
+                makeLine 1 ["in Right (\"Operator (-) error. Can't subtract types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ bType ++ \" and \" ++ aType)"],
 
                 "multVals :: Value -> Value -> Either Value String",
                 "multVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a * b)",
@@ -1020,10 +1023,10 @@ generateCodeString ast =
                 "multVals (Float a) (Float b) = Left $ Float (a * b)",
                 "multVals (Boolean a) (Boolean b) = Left $ Boolean (a && b)",
                 "multVals a b =",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (*) error. Can't multiply types that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (*) error. Can't multiply types that are not both types of BigIntegers, Integers, Floats, Doubles, or Booleans! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
                 "divideVals :: Value -> Value -> Either Value String",
                 "divideVals (BigInteger a) (BigInteger b) = if (a /= 0) then Left $ BigInteger (b `div` a) else Right \"Operator (/) error. Can't divide by zero for type BigInteger!\"",
@@ -1031,10 +1034,10 @@ generateCodeString ast =
                 "divideVals (Double a) (Double b) = if (a /= 0.0) then Left $ Double (b / a) else Right \"Operator (/) error. Can't divide by zero for type Double!\"",
                 "divideVals (Float a) (Float b) = if (a /= 0.0) then Left $ Float (b / a) else Right \"Operator (/) error. Can't divide by zero for type Float!\"",
                 "divideVals a b =",
-                intercalate "" [nFourSpaces 1, "let (bType, aType) = findTypeStrsForError b a"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (/) error. Can't divide types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ bType ++ \" and \" ++ aType)"],
+                makeLine 1 ["let (bType, aType) = findTypeStrsForError b a"],
+                makeLine 1 ["in Right (\"Operator (/) error. Can't divide types that are not both types of BigIntegers, Integers, Floats, or Doubles! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ bType ++ \" and \" ++ aType)"],
 
                 "doEqual :: Value -> Value -> Either Value String",
                 "doEqual (BigInteger a) (BigInteger b) = Left $ Boolean (a == b)",
@@ -1047,11 +1050,11 @@ generateCodeString ast =
                 "doEqual (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean ((al == bl) && (as == bs))",
                 "doEqual (Box bnA) (Box bnB) = Left $ Boolean $ bnA == bnB",
                 "doEqual a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (==) error. Can't compare types that are not both types of \""],
-                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, Lists, or Boxes! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],       
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (==) error. Can't compare types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, Lists, or Boxes! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],       
 
                 "doNotEqual :: Value -> Value -> Either Value String",
                 "doNotEqual (BigInteger a) (BigInteger b) = Left $ Boolean (a /= b)",
@@ -1064,11 +1067,11 @@ generateCodeString ast =
                 "doNotEqual (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as /= bs)",
                 "doNotEqual (Box bnA) (Box bnB) = Left $ Boolean $ bnA /= bnB",
                 "doNotEqual a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (/=) error. Can't compare types that are not both types of \""],
-                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, Lists, or Boxes! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],   
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (/=) error. Can't compare types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, Lists, or Boxes! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"], 
 
                 "doGreaterThan :: Value -> Value -> Either Value String",
                 "doGreaterThan (BigInteger a) (BigInteger b) = Left $ Boolean (a > b)",
@@ -1080,11 +1083,11 @@ generateCodeString ast =
                 "doGreaterThan (Boolean a) (Boolean b) = Left $ Boolean (a > b)",
                 "doGreaterThan (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as > bs)",
                 "doGreaterThan a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (>) error. Can't compare types that are not both types of \""],
-                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (>) error. Can't compare types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
                 "doLessThan :: Value -> Value -> Either Value String",
                 "doLessThan (BigInteger a) (BigInteger b) = Left $ Boolean (a < b)",
@@ -1096,11 +1099,11 @@ generateCodeString ast =
                 "doLessThan (Boolean a) (Boolean b) = Left $ Boolean (a < b)",
                 "doLessThan (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as < bs)",
                 "doLessThan a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (<) error. Can't compare types that are not both types of \""],
-                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (<) error. Can't compare types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
                 "doGreaterThanEqualTo :: Value -> Value -> Either Value String",
                 "doGreaterThanEqualTo (BigInteger a) (BigInteger b) = Left $ Boolean (a >= b)",
@@ -1112,11 +1115,11 @@ generateCodeString ast =
                 "doGreaterThanEqualTo (Boolean a) (Boolean b) = Left $ Boolean (a >= b)",
                 "doGreaterThanEqualTo (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as >= bs)",
                 "doGreaterThanEqualTo a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (>=) error. Can't compare types that are not both types of \""],
-                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (>=) error. Can't compare types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
                 "doLessThanEqualTo :: Value -> Value -> Either Value String",
                 "doLessThanEqualTo (BigInteger a) (BigInteger b) = Left $ Boolean (a <= b)",
@@ -1128,11 +1131,11 @@ generateCodeString ast =
                 "doLessThanEqualTo (Boolean a) (Boolean b) = Left $ Boolean (a <= b)",
                 "doLessThanEqualTo (List {items = as, len = al}) (List {items = bs, len = bl}) = Left $ Boolean (as <= bs)",
                 "doLessThanEqualTo a b = ",
-                intercalate "" [nFourSpaces 1, "let (aType, bType) = findTypeStrsForError a b"],
-                intercalate "" [nFourSpaces 1, "in Right (\"Operator (<=) error. Can't compare types that are not both types of \""],
-                intercalate "" [nFourSpaces 2, "++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
-                intercalate "" [nFourSpaces 2, "++ \"Attempted types were: \""],
-                intercalate "" [nFourSpaces 2, "++ aType ++ \" and \" ++ bType)"],
+                makeLine 1 ["let (aType, bType) = findTypeStrsForError a b"],
+                makeLine 1 ["in Right (\"Operator (<=) error. Can't compare types that are not both types of \""],
+                makeLine 2 ["++ \"BigIntegers, Integers, Floats, Doubles, Strings, Chars, Booleans, or Lists! \""],
+                makeLine 2 ["++ \"Attempted types were: \""],
+                makeLine 2 ["++ aType ++ \" and \" ++ bType)"],
 
                 "main :: IO EDState",
                 "main = do",
