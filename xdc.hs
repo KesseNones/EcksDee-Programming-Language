@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.24
+--Version: Alpha 0.5.25
 --Compiler for EcksDee
 
 import Data.List
@@ -648,6 +648,27 @@ doQueryType' (Box _) = String{chrs = "Box", len = length "Box"}
 makeLine :: Int -> [String] -> String
 makeLine indent strs = intercalate "" ((nFourSpaces indent):strs)
 
+--This function is seperate from the main blocks because it'll be called twice, 
+-- since both "push" and "p" are valid to push stuff to lists.
+makeListPushCode :: Int -> Int -> ([String], Int)
+makeListPushCode indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just (List{items = is, len = l}), Just v) -> return $ push ", stateStr, "' (List{items = M.insert l v is, len = l + 1})"],
+                makeLine (indent + 1) ["(Just (String{chrs = cs, len = l}), Just (Char c)) -> return $ push ", stateStr, "' (String{chrs = cs ++ [c], len = l + 1})"],
+                makeLine (indent + 1) ["(Just (String{chrs = cs, len = l}), Just v) -> let vType = chrs $ doQueryType' v in throwError (\"Operator (push) error.\ 
+                \ Push operator needs a List/String and a Value/Char to be pushed. Attempted types: String and \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 in throwError (\"Operator (push) error.\ 
+                \ Push operator needs a List/String and a Value/Char to be pushed. Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (push) error. Two operands required for push; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (push) error. Two operands required for push; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
 generateOpCode :: String -> Int -> Int -> ([String], Int)
 generateOpCode "+" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
@@ -949,6 +970,8 @@ generateOpCode "pow" indent stateCount =
                     makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
+generateOpCode "push" indent stateCount = makeListPushCode indent stateCount
+generateOpCode "p" indent stateCount = makeListPushCode indent stateCount
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
