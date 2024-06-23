@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-06-16.186
+--Version: 2024-06-23.14
 --Toy Programming Language Named EcksDee
 
 {-
@@ -624,7 +624,7 @@ doPush' a b =
 doPop :: EDState -> IO EDState
 doPop state = 
     case (stack state) of 
-        [] -> throwError "Operator (pop) error. Pop operator needs a list to pop from; none provided!" state
+        [] -> throwError "Operator (pop). error. Pop operator needs one operand; none provided!" state
         vals -> 
             let (state', list) = fsPop state
             in case (doPop' list) of 
@@ -654,7 +654,7 @@ doPop' (String {chrs = cs, len = l}) =
     in Left (newStr, Just poppedChar) 
 doPop' x = 
     let xType = chrs $ doQueryType' x
-    in Right ("Operator (pop) error. Pop operator needs a List/String to pop items on. Attempted type: "
+    in Right ("Operator (pop) error. Pop operator needs a List/String to pop items on top of stack. Attempted type: "
         ++ xType)
 
 --Pushes an item to the front of a list on the stack.
