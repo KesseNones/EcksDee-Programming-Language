@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.25
+--Version: Alpha 0.5.26
 --Compiler for EcksDee
 
 import Data.List
@@ -669,6 +669,28 @@ makeListPushCode indent stateCount =
             ]
     in (codeLines, stateCount + 1)
 
+makeListPopCode :: Int -> Int -> ([String], Int)
+makeListPopCode indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (List{items = _, len = 0}) -> return ", stateStr],
+                makeLine (indent + 1) ["Just (List{items = is, len = l}) -> \
+                \let popped = fromJust (M.lookup (l - 1) is) ; is' = M.delete (l - 1) is \
+                \in return $ push (push ", stateStr', "(List{items = is', len = l - 1})) (popped)"],
+                makeLine (indent + 1) ["Just (String{chrs = \"\", len = 0}) -> return ", stateStr],
+                makeLine (indent + 1) ["Just (String{chrs = cs, len = l}) -> let newStr = String{chrs = init cs, len = l - 1} ; popped = Char $ last cs \
+                \in return $ push (push ", stateStr', " (newStr)) popped"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v in throwError (\"Operator (pop) error.\
+                \ Pop operator needs a List/String to pop items on top of stack. Attempted type: \" ++ vType) ", stateStr'],
+                makeLine (indent + 1) ["Nothing -> throwError \"Operator (pop). error. Pop operator needs one operand; none provided!\" ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
 generateOpCode :: String -> Int -> Int -> ([String], Int)
 generateOpCode "+" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
@@ -970,8 +992,11 @@ generateOpCode "pow" indent stateCount =
                     makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
+
 generateOpCode "push" indent stateCount = makeListPushCode indent stateCount
 generateOpCode "p" indent stateCount = makeListPushCode indent stateCount
+generateOpCode "pop" indent stateCount = makeListPopCode indent stateCount
+generateOpCode "po" indent stateCount = makeListPopCode indent stateCount
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
