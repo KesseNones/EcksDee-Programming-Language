@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.27
+--Version: Alpha 0.5.28
 --Compiler for EcksDee
 
 import Data.List
@@ -717,8 +717,37 @@ createListFrontPushCode indent stateCount =
                 \ Operator fpush needs a List/String and a Value/Char to be pushed to front. Attempted types: String and \" ++ vType) ", stateStr],
                 makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 in throwError (\"Operator (fpush) error.\ 
                 \ Operator fpush needs a List/String and a Value/Char to be pushed to front. Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr],
-                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (fpush) error. Two operands required for push; only one provided!\" ", stateStr],
-                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (fpush) error. Two operands required for push; none provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (fpush) error. Two operands required for fpush; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (fpush) error. Two operands required for fpush; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
+createListFrontPopCode :: Int -> Int -> ([String], Int)
+createListFrontPopCode indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (List{items = _, len = 0}) -> return ", stateStr],
+                makeLine (indent + 1) ["Just (List{items = is, len = l}) -> ",
+                    "let popped = fromJust $ M.lookup 0 is ; ",
+                    "updateList = (\\List{items = as, len = al} List{items = bs, len = bl} index -> ",
+                    "if index < al then let ins = fromJust $ M.lookup index as ; bs' = M.insert (index - 1) ins bs ",
+                    "in updateList List{items = as, len = al} List{items = bs', len = bl + 1} (index + 1)",
+                    " else List{items = bs, len = bl}", 
+                    ") ; ",
+                    "newLs = updateList List{items = is, len = l} List{items = M.empty, len = 0} 1 ; ",
+                    "in return $ push (push ", stateStr', " newLs) popped"
+                ],
+                makeLine (indent + 1) ["Just (String{chrs = \"\", len = 0}) -> return ", stateStr],
+                makeLine (indent + 1) ["Just (String{chrs = cs, len = l}) -> let popped = Char $ head cs ; newStr = String{chrs = tail cs, len = l - 1} in \
+                \return $ push (push ", stateStr', " newStr) popped"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v in throwError (\"Operator (fpop) error. \
+                \Popping from front requires a List/String to pop from. Attempted type: \" ++ vType) ", stateStr'],
+                makeLine (indent + 1) ["Nothing -> throwError \"Operator (fpop) error. Needs one operand to work; none provided!\" ", stateStr'],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
@@ -1031,6 +1060,8 @@ generateOpCode "pop" indent stateCount = makeListPopCode indent stateCount
 generateOpCode "po" indent stateCount = makeListPopCode indent stateCount
 generateOpCode "fpush" indent stateCount = createListFrontPushCode indent stateCount
 generateOpCode "fp" indent stateCount = createListFrontPushCode indent stateCount
+generateOpCode "fpop" indent stateCount = createListFrontPopCode indent stateCount
+generateOpCode "fpo" indent stateCount = createListFrontPopCode indent stateCount
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
