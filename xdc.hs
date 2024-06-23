@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.26
+--Version: Alpha 0.5.27
 --Compiler for EcksDee
 
 import Data.List
@@ -691,6 +691,38 @@ makeListPopCode indent stateCount =
             ]
     in (codeLines, stateCount + 1)
 
+createListFrontPushCode :: Int -> Int -> ([String], Int)
+createListFrontPushCode indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [
+                makeLine indent ["let (", stateStr, "', secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                
+                makeLine (indent + 1) ["(Just (List{items = is, len = l}), Just v) -> ",
+                    "let updateList = (\\List{items = is, len = l} index insVal -> \
+                    \if index < l \
+                        \then let old = fromJust $ M.lookup index is ; \
+                        \is' = M.insert index insVal is \
+                        \in updateList List{items = is', len = l} (index + 1) old " ,
+                    "else let is' = M.insert index insVal is in List{items = is', len = l + 1}",
+                    " ) ; ",
+                    "newList = updateList List{items = is, len = l} 0 v ",
+                    "in return $ push ", stateStr', " newList" 
+                ],
+
+                makeLine (indent + 1) ["(Just (String{chrs = cs, len = l}), Just (Char c)) -> return $ push ", stateStr, "' (String{chrs = (c:cs), len = l + 1})"],
+                makeLine (indent + 1) ["(Just (String{chrs = cs, len = l}), Just v) -> let vType = chrs $ doQueryType' v in throwError (\"Operator (fpush) error.\ 
+                \ Operator fpush needs a List/String and a Value/Char to be pushed to front. Attempted types: String and \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 in throwError (\"Operator (fpush) error.\ 
+                \ Operator fpush needs a List/String and a Value/Char to be pushed to front. Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError \"Operator (fpush) error. Two operands required for push; only one provided!\" ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError \"Operator (fpush) error. Two operands required for push; none provided!\" ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
 generateOpCode :: String -> Int -> Int -> ([String], Int)
 generateOpCode "+" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
@@ -997,6 +1029,8 @@ generateOpCode "push" indent stateCount = makeListPushCode indent stateCount
 generateOpCode "p" indent stateCount = makeListPushCode indent stateCount
 generateOpCode "pop" indent stateCount = makeListPopCode indent stateCount
 generateOpCode "po" indent stateCount = makeListPopCode indent stateCount
+generateOpCode "fpush" indent stateCount = createListFrontPushCode indent stateCount
+generateOpCode "fp" indent stateCount = createListFrontPushCode indent stateCount
 
 generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
