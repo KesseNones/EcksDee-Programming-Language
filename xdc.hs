@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.28
+--Version: Alpha 0.5.29
 --Compiler for EcksDee
 
 import Data.List
@@ -1062,8 +1062,28 @@ generateOpCode "fpush" indent stateCount = createListFrontPushCode indent stateC
 generateOpCode "fp" indent stateCount = createListFrontPushCode indent stateCount
 generateOpCode "fpop" indent stateCount = createListFrontPopCode indent stateCount
 generateOpCode "fpo" indent stateCount = createListFrontPopCode indent stateCount
+generateOpCode "index" indent stateCount = 
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just (List{items = is, len = l}), Just (Integer idx)) -> case (M.lookup idx is) of "],
+                makeLine (indent + 2) ["Just v -> return $ push (push ", stateStr', " (List{items = is, len = l})) v"],
+                makeLine (indent + 2) ["Nothing -> throwError (\"Operator (index) error. Index \" ++ (show idx) ++ \" out of valid range for List of size \" ++ (show l) ++ \"!\") ", stateStr'],
+                makeLine (indent + 1) ["(Just (String{chrs = cs, len = l}), Just (Integer idx)) -> if idx > -1 && idx < l \
+                    \then return $ push (push ", stateStr', " String{chrs = cs, len = l}) (Char $ cs !! idx) ",
+                    "else throwError (\"Operator (index) error. Index \" ++ (show idx) ++ \" out of valid range for String of size \" ++ (show l) ++ \"!\") ", stateStr'],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in throwError (\"Operator (index) error. Index needs a List/String and an index value of type Integer! Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError (\"Operator (index) error. Two operands required for index; only one provided!\") ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (index) error. Two operands required for index; none provided!\") ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
-generateOpCode op indent stateCount = ([intercalate "" [nFourSpaces indent, "throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
+generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
