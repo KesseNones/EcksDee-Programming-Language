@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.29
+--Version: Alpha 0.5.30
 --Compiler for EcksDee
 
 import Data.List
@@ -723,6 +723,23 @@ createListFrontPushCode indent stateCount =
             ]
     in (codeLines, stateCount + 1)
 
+generateLengthCode :: Int -> Int -> ([String], Int)
+generateLengthCode indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just List{items = _, len = l} -> return $ push ", stateStr, " (Integer l)"],
+                makeLine (indent + 1) ["Just String{chrs = _, len = l} -> return $ push ", stateStr, " (Integer l)"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v in \
+                \throwError (\"Operator (length) error. List/String type is needed for length operator to work. Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (length) error. Operand needed for length; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ] 
+    in (codeLines, stateCount + 1)
+
 createListFrontPopCode :: Int -> Int -> ([String], Int)
 createListFrontPopCode indent stateCount =
     let stateStr = "state" ++ (show stateCount)
@@ -1082,6 +1099,8 @@ generateOpCode "index" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
+generateOpCode "length" indent stateCount = generateLengthCode indent stateCount
+generateOpCode "len" indent stateCount = generateLengthCode indent stateCount
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
