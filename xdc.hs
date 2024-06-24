@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.32
+--Version: Alpha 0.5.33
 --Compiler for EcksDee
 
 import Data.List
@@ -1131,6 +1131,25 @@ generateOpCode "clear" indent stateCount =
                 \in throwError (\"Operator (clear) error. Only type List/String/Object is valid for clear. Attempted type: \" ++ vType) ", stateStr],
                 makeLine (indent + 1) ["Nothing -> throwError (\"Operator (clear) error. One operand needed; none provided!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]   
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "contains" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [
+                makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just (List{items = is, len = l}), Just v) -> return $ push ", stateStr, " (Boolean $ v `elem` is)"],
+                makeLine (indent + 1) ["(Just (String{chrs = cs, len = l}), Just (Char c)) -> return $ push ", stateStr, " (Boolean $ c `elem` cs)"],
+                makeLine (indent + 1) ["(Just (Object{fields = fs}), Just (String{chrs = name, len = l})) -> \
+                \let contains = case (M.lookup name fs) of ; Just _ -> True ; Nothing -> False ; in return $ push ", stateStr, " (Boolean contains) "],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in throwError (\"Operator (contains) error. First pushed element must be a List/String/Object \
+                \and second item needs to be Value/Char/String respectively. Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError (\"Operator (contains) error. Two operands on stack needed; only one provided!\") ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (contains) error. Two operands on stack needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
 
