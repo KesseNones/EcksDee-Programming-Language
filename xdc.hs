@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.34
+--Version: Alpha 0.5.35
 --Compiler for EcksDee
 
 import Data.List
@@ -1174,6 +1174,20 @@ generateOpCode "changeItemAt" indent stateCount =
                 makeLine (indent + 1) ["(Nothing, Nothing, Nothing) -> throwError (\"Operator (changeItemAt) error. Three operands needed; none provided!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]   
+    in (codeLines, stateCount + 1)
+generateOpCode "isWhitespace" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (Char c) -> return $ push ", stateStr, " (Boolean $ isSpace c) "],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"Operator (isWhitespace) error. Type on stack top needs to be of type Char. Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (isWhitespace) error. Operand on stack needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
     in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
