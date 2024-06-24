@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.33
+--Version: Alpha 0.5.34
 --Compiler for EcksDee
 
 import Data.List
@@ -1151,6 +1151,29 @@ generateOpCode "contains" indent stateCount =
                 makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (contains) error. Two operands on stack needed; none provided!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
+    in (codeLines, stateCount + 1)
+generateOpCode "changeItemAt" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", thirdToTop, secondToTop, top) = pop3 ", stateStr],
+                makeLine indent ["newState <- case (thirdToTop, secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just (List{items = is, len = l}), Just v, Just (Integer idx)) -> "],
+                makeLine (indent + 2) ["if (idx > -1 && idx < l) \
+                    \then return $ push ", stateStr', "(List{items = M.insert idx v is, len = l}) \
+                    \else throwError (\"Operator (changeItemAt) error. Index \" ++ (show idx) \
+                    \++ \" out of range for List of size \" ++ (show l) ++ \"!\") ", stateStr'],
+                makeLine (indent + 1) ["(Just v1, Just v2, Just v3) -> \
+                \let (v1Type, v2Type, v3Type) = (chrs $ doQueryType' v1, chrs $ doQueryType' v2, chrs $ doQueryType' v3)\
+                \ in throwError (\"Operator (changeItemAt) error. Top three items of stack need to be of type: \
+                \List Value Integer (ordered from bottom to top). \
+                \Attempted types: \" ++ v1Type ++ \", \" ++ v2Type ++ \", and \" ++ v3Type) ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2, Just v3) -> throwError (\"Operator (changeItemAt) error. Three operands needed; only two provided!\") ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing, Just v3) -> throwError (\"Operator (changeItemAt) error. Three operands needed; only one provided!\") ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing, Nothing) -> throwError (\"Operator (changeItemAt) error. Three operands needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]   
     in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
