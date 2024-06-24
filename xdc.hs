@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.31
+--Version: Alpha 0.5.32
 --Compiler for EcksDee
 
 import Data.List
@@ -1115,6 +1115,22 @@ generateOpCode "isEmpty" indent stateCount =
                 \in throwError (\"Operator (isEmpty) error. This operator is only valid for types of List/String/Object. Attempted type: \" ++ vType) ", stateStr],
                 makeLine (indent + 1) ["Nothing -> throwError (\"Operator (isEmpty) error. One operand needed; none provided!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "clear" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (List{items = _, len = _}) -> return $ push ", stateStr', " (List{items = M.empty, len = 0})"],
+                makeLine (indent + 1) ["Just (String{chrs = _, len = _}) -> return $ push ", stateStr', " (String{chrs = \"\", len = 0})"],
+                makeLine (indent + 1) ["Just (Object{fields = fs}) -> return $ push ", stateStr', " (Object{fields = M.empty})"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"Operator (clear) error. Only type List/String/Object is valid for clear. Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (clear) error. One operand needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]   
             ]
     in (codeLines, stateCount + 1)
 
