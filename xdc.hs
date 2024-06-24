@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.30
+--Version: Alpha 0.5.31
 --Compiler for EcksDee
 
 import Data.List
@@ -1101,6 +1101,22 @@ generateOpCode "index" indent stateCount =
     in (codeLines, stateCount + 1)
 generateOpCode "length" indent stateCount = generateLengthCode indent stateCount
 generateOpCode "len" indent stateCount = generateLengthCode indent stateCount
+generateOpCode "isEmpty" indent stateCount = 
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (List{items = _, len = l}) -> return $ push ", stateStr, " (Boolean $ l == 0)"],
+                makeLine (indent + 1) ["Just (String{chrs = _, len = l}) -> return $ push ", stateStr, " (Boolean $ l == 0)"],
+                makeLine (indent + 1) ["Just (Object{fields = fs}) -> return $ push ", stateStr, " (Boolean $ M.null fs)"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"Operator (isEmpty) error. This operator is only valid for types of List/String/Object. Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (isEmpty) error. One operand needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
