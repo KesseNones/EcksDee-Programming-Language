@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.35
+--Version: Alpha 0.5.36
 --Compiler for EcksDee
 
 import Data.List
@@ -1190,6 +1190,94 @@ generateOpCode "isWhitespace" indent stateCount =
             ]
     in (codeLines, stateCount + 1)
 
+generateOpCode "cast" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                makeLine (indent) ["let castResult = case (secondToTop, top) of"],
+                
+                makeLine (indent + 2) ["(Just (Boolean b), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer $ if b then 1 else 0"],
+                makeLine (indent + 2) ["(Just (Boolean b), Just (String{chrs = \"BigInteger\", len = _})) -> Left $ BigInteger $ if b then 1 else 0"],
+                makeLine (indent + 2) ["(Just (Boolean b), Just (String{chrs = \"String\", len = _})) -> let boolStr = show b in Left $ String{chrs = boolStr, len = length boolStr}"],
+                makeLine (indent + 2) ["(Just (Boolean b), Just (String{chrs = \"Boolean\", len = _})) -> Left $ Boolean b"],
+
+                makeLine (indent + 2) ["(Just (BigInteger n), Just (String{chrs = \"String\", len = _})) -> let bigIntStr = show n in Left $ String{chrs = bigIntStr, len = length bigIntStr}"],
+                makeLine (indent + 2) ["(Just (BigInteger n), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer (fromIntegral n :: Int)"],
+                makeLine (indent + 2) ["(Just (BigInteger n), Just (String{chrs = \"BigInteger\", len = _})) -> Left $ BigInteger n"],
+                makeLine (indent + 2) ["(Just (BigInteger n), Just (String{chrs = \"Float\", len = _})) -> Left $ Float (fromIntegral n :: Float)"],
+                makeLine (indent + 2) ["(Just (BigInteger n), Just (String{chrs = \"Double\", len = _})) -> Left $ Double (fromIntegral n :: Double)"],
+                makeLine (indent + 2) ["(Just (BigInteger n), Just (String{chrs = \"Char\", len = _})) -> let nInt = fromIntegral n :: Int \
+                \in if validIntToChar nInt \
+                    \then Left $ Char $ chr nInt \
+                    \else Right (\"Operator (cast) error. Failed to convert type BigInteger to Char. Try making sure the Integer is in the UTF-8 numerical range.\" \
+                    \++ \" Given value: \" ++ (show n) ++ \" valid numbers are \" ++ (show $ ord minBound) ++ \" to \" ++ (show $ ord maxBound) ++ \".\")"],
+
+                makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"String\", len = _})) -> let intStr = show n in Left $ String{chrs = intStr, len = length intStr}"],
+                makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer n"],
+                makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"BigInteger\", len = _})) -> Left $ BigInteger (fromIntegral n :: Integer)"],
+                makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"Float\", len = _})) -> Left $ Float (fromIntegral n :: Float)"],
+                makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"Double\", len = _})) -> Left $ Double (fromIntegral n :: Double)"],
+                makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"Char\", len = _})) -> if validIntToChar n \
+                    \then Left $ Char $ chr n \
+                    \else Right (\"Operator (cast) error. Failed to convert type Integer to Char. Try making sure the Integer is in the UTF-8 numerical range. \
+                    \Given value: \" ++ (show n) ++ \"valid numbers are \" ++ (show $ ord minBound) ++ \" to \" ++ (show $ ord maxBound) ++ \".\") "],
+
+                makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"String\", len = _})) -> let floatStr = show n in Left String{chrs = floatStr, len = length floatStr}"],
+                makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer $ truncate n"],
+                makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"BigInteger\", len = _})) -> Left $ BigInteger (floor n :: Integer)"],
+                makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"Float\", len = _})) -> Left $ Float n"],
+                makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"Double\", len = _})) -> Left $ Double (realToFrac n :: Double)"],
+
+                makeLine (indent + 2) ["(Just (Double n), Just (String{chrs = \"String\", len = _})) -> let dblStr = show n in Left String{chrs = dblStr, len = length dblStr}"],
+                makeLine (indent + 2) ["(Just (Double n), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer (truncate n)"],
+                makeLine (indent + 2) ["(Just (Double n), Just (String{chrs = \"BigInteger\", len = _})) -> Left $ BigInteger (floor n :: Integer)"],
+                makeLine (indent + 2) ["(Just (Double n), Just (String{chrs = \"Float\", len = _})) -> Left $ Float (realToFrac n :: Float)"],
+                makeLine (indent + 2) ["(Just (Double n), Just (String{chrs = \"Double\", len = _})) -> Left $ Double n"],
+
+                makeLine (indent + 2) ["(Just (Char c), Just (String{chrs = \"String\", len = _})) -> let cStr = [c] in Left String{chrs = cStr, len = length cStr}"],
+                makeLine (indent + 2) ["(Just (Char c), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer $ ord c"],
+                makeLine (indent + 2) ["(Just (Char c), Just (String{chrs = \"BigInteger\", len = _})) -> Left $ BigInteger (fromIntegral (ord c) :: Integer)"],
+                
+                makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"String\", len = _})) -> Left $ String{chrs = cs, len = l}"],
+                makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"Integer\", len = _})) -> case (readMaybe cs :: Maybe Int) of ; Just v -> Left $ Integer v ; \
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type Integer.\")"],
+                makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"BigInteger\", len = _})) -> case (readMaybe cs :: Maybe Integer) of ; Just v -> Left $ BigInteger v ; \
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type BigInteger.\")"],
+                makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"Float\", len = _})) -> case (readMaybe cs :: Maybe Float) of ; Just v -> Left $ Float v ; \
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type Float.\")"],
+                makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"Double\", len = _})) -> case (readMaybe cs :: Maybe Double) of ; Just v -> Left $ Double v ; \
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type Double.\")"],
+
+                makeLine (indent + 2) ["(Just (List{items = is, len = l}), Just (String{chrs = \"String\", len = _})) -> \
+                \let listStr = (\"[\" ++ (printList List{items = is, len = l} \"\" 0 False) ++ \"]\") ; listStrLen = length listStr ; in Left $ String{chrs = listStr, len = listStrLen}"],
+
+                makeLine (indent + 2) ["(Just (Object{fields = fs}), Just (String{chrs = \"String\", len = _})) -> \
+                \let objStr = (\"{\" ++ (printObj (M.toList fs) \"\") ++ \"}\") ; objStrLen = length objStr ; in Left $ String{chrs = objStr, len = objStrLen}"],
+
+                makeLine (indent + 2) ["(Just (Box bn), Just (String{chrs = \"String\", len = _})) -> \
+                \let boxStr = if bn == (-1) then \"Box NULL\" else \"Box \" ++ (show bn) in Left $ String{chrs = boxStr, len = length boxStr} "],
+                makeLine (indent + 2) ["(Just (Box bn), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer bn"],
+                makeLine (indent + 2) ["(Just (Box bn), Just (String{chrs = \"Boolean\", len = _})) -> Left $ Boolean $ bn /= (-1)"],
+
+                makeLine (indent + 2) ["(Just (v), Just (String{chrs = typeCastStr, len = _})) -> let vType = chrs $ doQueryType' v \
+                \in Right (\"Operator (cast) error. Invalid casting configuration given! Tried to cast \" ++ vType ++ \" to type \" ++ typeCastStr)"],
+                makeLine (indent + 2) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in Right (\"Operator (cast) error. Types of Value and String required for cast to occur. Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type)"],
+
+                makeLine (indent + 2) ["(Nothing, Just v2) -> Right \"Operator (cast) error. Two operands required for cast; only one provided!\""],
+                makeLine (indent + 2) ["(Nothing, Nothing) -> Right \"Operator (cast) error. Two operands required for cast; none provided!\""],
+
+                makeLine (indent) ["newState <- case castResult of"],
+                makeLine (indent + 1) ["Left v -> return $ push ", stateStr', " (v)"],
+                makeLine (indent + 1) ["Right err -> throwError err ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+
+            ]
+    in (codeLines, stateCount + 1)
+
+
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
@@ -1333,6 +1421,9 @@ generateCodeString ast =
                 "accSmall :: String -> Bool",
                 "accSmall \"\" = False",
                 "accSmall _ = True",
+
+                "validIntToChar :: Int -> Bool",
+                "validIntToChar num = (num >= (ord minBound)) && (num <= (ord maxBound))",
 
                 "addVals :: Value -> Value -> Either Value String",
                 "addVals (BigInteger a) (BigInteger b) = Left $ BigInteger (a + b)",
