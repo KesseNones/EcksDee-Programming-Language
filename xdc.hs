@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.43
+--Version: Alpha 0.5.44
 --Compiler for EcksDee
 
 import Data.List
@@ -1345,6 +1345,18 @@ generateOpCode "print" indent stateCount =
                 \in throwError (\"Operator (print) error. Top of stack needs to be a String to be printed! Attempted type: \" ++ vType) ", stateStr],
                 makeLine (indent + 1) ["Nothing -> throwError (\"Operator (print) error. One operand needed for print; none provided!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "read" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+            [
+                makeLine indent ["let doRead = (\\acc -> do ; isEnd <- isEOF ; \
+                \if isEnd \
+                    \then return acc \
+                    \else do input <- getLine ; if (null input) then return acc else do doRead (acc ++ input ++ \"\\n\")", ")"],
+                makeLine indent ["captured <- doRead \"\" "],
+                makeLine indent ["let state", show $ stateCount + 1, " = push ", stateStr, " String{chrs = captured, len = length captured}"]
             ]
     in (codeLines, stateCount + 1)
 
