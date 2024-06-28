@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.37
+--Version: Alpha 0.5.38
 --Compiler for EcksDee
 
 import Data.List
@@ -1276,7 +1276,18 @@ generateOpCode "cast" indent stateCount =
 
             ]
     in (codeLines, stateCount + 1)
-
+generateOpCode "queryType" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just v -> return $ push ", stateStr, " (doQueryType' v)"],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (queryType) error. One operand needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
