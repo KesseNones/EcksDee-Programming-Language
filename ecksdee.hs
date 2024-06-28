@@ -982,7 +982,7 @@ doPrint state =
                 x -> 
                     let xType = chrs $ doQueryType' x
                     in throwError ("Operator (print) error. " 
-                        ++ "Top of stack needs to be a Sring to be printed! "
+                        ++ "Top of stack needs to be a String to be printed! "
                         ++ "Attempted type: " ++ xType) state
 
 --Reads a line from stdin, and pushes it onto stack.
