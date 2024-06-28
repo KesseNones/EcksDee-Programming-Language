@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.36
+--Version: Alpha 0.5.37
 --Compiler for EcksDee
 
 import Data.List
@@ -1222,7 +1222,7 @@ generateOpCode "cast" indent stateCount =
                 makeLine (indent + 2) ["(Just (Integer n), Just (String{chrs = \"Char\", len = _})) -> if validIntToChar n \
                     \then Left $ Char $ chr n \
                     \else Right (\"Operator (cast) error. Failed to convert type Integer to Char. Try making sure the Integer is in the UTF-8 numerical range. \
-                    \Given value: \" ++ (show n) ++ \"valid numbers are \" ++ (show $ ord minBound) ++ \" to \" ++ (show $ ord maxBound) ++ \".\") "],
+                    \Given value: \" ++ (show n) ++ \" valid numbers are \" ++ (show $ ord minBound) ++ \" to \" ++ (show $ ord maxBound) ++ \".\") "],
 
                 makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"String\", len = _})) -> let floatStr = show n in Left String{chrs = floatStr, len = length floatStr}"],
                 makeLine (indent + 2) ["(Just (Float n), Just (String{chrs = \"Integer\", len = _})) -> Left $ Integer $ truncate n"],
@@ -1242,13 +1242,13 @@ generateOpCode "cast" indent stateCount =
                 
                 makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"String\", len = _})) -> Left $ String{chrs = cs, len = l}"],
                 makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"Integer\", len = _})) -> case (readMaybe cs :: Maybe Int) of ; Just v -> Left $ Integer v ; \
-                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type Integer.\")"],
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String '\" ++ cs ++ \"' to type Integer.\")"],
                 makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"BigInteger\", len = _})) -> case (readMaybe cs :: Maybe Integer) of ; Just v -> Left $ BigInteger v ; \
-                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type BigInteger.\")"],
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String '\" ++ cs ++ \"' to type BigInteger.\")"],
                 makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"Float\", len = _})) -> case (readMaybe cs :: Maybe Float) of ; Just v -> Left $ Float v ; \
-                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type Float.\")"],
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String '\" ++ cs ++ \"' to type Float.\")"],
                 makeLine (indent + 2) ["(Just (String{chrs = cs, len = l}), Just (String{chrs = \"Double\", len = _})) -> case (readMaybe cs :: Maybe Double) of ; Just v -> Left $ Double v ; \
-                \Nothing -> Right (\"Operator (cast) error. Failed to convert String \" ++ cs ++ \" to type Double.\")"],
+                \Nothing -> Right (\"Operator (cast) error. Failed to convert String '\" ++ cs ++ \"' to type Double.\")"],
 
                 makeLine (indent + 2) ["(Just (List{items = is, len = l}), Just (String{chrs = \"String\", len = _})) -> \
                 \let listStr = (\"[\" ++ (printList List{items = is, len = l} \"\" 0 False) ++ \"]\") ; listStrLen = length listStr ; in Left $ String{chrs = listStr, len = listStrLen}"],
