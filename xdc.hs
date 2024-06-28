@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.40
+--Version: Alpha 0.5.41
 --Compiler for EcksDee
 
 import Data.List
@@ -1309,6 +1309,21 @@ generateOpCode "readLine" indent stateCount =
         codeLines = 
             [
                 makeLine indent ["newState <- ", "(getLine >>= (\\input -> return $ push ", stateStr, " String{chrs = input, len = length input}", "))"],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+
+generateOpCode "printChar" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (Char c) -> putChar c >> return ", stateStr],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"Operator (printChar) error. Top of stack needs to be type Char! Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (printChar) error. Can't print Char from empty stack!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
