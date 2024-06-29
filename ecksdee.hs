@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-06-23.14
+--Version: 2024-06-29.91
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1000,7 +1000,9 @@ doPrintError :: EDState -> IO EDState
 doPrintError state = 
     case (stack state) of 
         ((String{chrs = err, len = _}):xs) -> throwError err state
-        _ -> throwError "Operator (printError) error. String needed on top of stack for error to print." state
+        (x:xs) -> let xType = chrs $ doQueryType' x in throwError ("Operator (printError) error. \
+            \String needed on top of stack for error to print! Attempted type: " ++ xType) state
+        [] -> throwError "Operator (printError) error. One operand required; none provided!" state
 
 --Reads a multi-line string from stdin until 
 -- an empty string is read or EOF is hit.
