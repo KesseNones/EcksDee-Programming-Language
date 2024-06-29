@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.45
+--Version: Alpha 0.5.46
 --Compiler for EcksDee
 
 import Data.List
@@ -1374,6 +1374,19 @@ generateOpCode "printError" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = ", stateStr]
             ]
     in (codeLines, stateCount + 1)
+
+generateOpCode "debugPrintStack" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        codeLines =
+            [   
+                makeLine indent ["putStrLn \"----------------------------------------------\\nDEBUG START\""],
+                makeLine indent ["putStrLn \"STACK START\""],
+                makeLine indent ["printStack (reverse $ stack ", stateStr, ")"],
+                makeLine indent ["putStrLn \"STACK END\""],
+                makeLine indent ["putStrLn (\"STACK LENGTH: \" ++ (show $ length $ stack ", stateStr, "))"],
+                makeLine indent ["putStrLn \"DEBUG END\\n----------------------------------------------\""]
+            ]
+    in (codeLines, stateCount)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
