@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.46
+--Version: Alpha 0.5.47
 --Compiler for EcksDee
 
 import Data.List
@@ -1387,6 +1387,28 @@ generateOpCode "debugPrintStack" indent stateCount =
                 makeLine indent ["putStrLn \"DEBUG END\\n----------------------------------------------\""]
             ]
     in (codeLines, stateCount)
+
+generateOpCode "addField" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [   
+                makeLine indent ["let (", stateStr', ", obj, fieldName, fieldVal) = pop3 ", stateStr],
+                makeLine indent ["newState <- case (obj, fieldName, fieldVal) of "],
+                makeLine (indent + 1) ["( Just (Object{fields = fs}), Just (String{chrs = name, len = _}), Just v ) -> \
+                \ case (M.lookup name fs) of ; \
+                \Just _ -> throwError (\"Operator (addField) error. Field \" ++ name ++ \" already exists in given object!\") ", stateStr, " ; ",
+                "Nothing -> return $ push ", stateStr', " Object{fields = M.insert name v fs}"],
+                makeLine (indent + 1) ["(Just v1, Just v2, Just v3) -> \
+                \let (v1Type, v2Type, v3Type) = (chrs $ doQueryType' v1, chrs $ doQueryType' v2, chrs $ doQueryType' v3) \
+                \in throwError (\"Operator (addField) error. Operands need to be Object String Value! \
+                \Attempted types: \" ++ v1Type ++ \", \" ++ v2Type ++ \", and \" ++ v3Type) ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Just v2, Just v3) -> throwError (\"Operator (addField) error. Three operands needed; only two provided!\") ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Nothing, Just v3) -> throwError (\"Operator (addField) error. Three operands needed; only one provided!\") ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Nothing, Nothing) -> throwError (\"Operator (addField) error. Three operands needed; none provided!\") ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
