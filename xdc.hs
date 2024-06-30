@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.47
+--Version: Alpha 0.5.48
 --Compiler for EcksDee
 
 import Data.List
@@ -1406,6 +1406,23 @@ generateOpCode "addField" indent stateCount =
                 makeLine (indent + 1) ["(Nothing, Just v2, Just v3) -> throwError (\"Operator (addField) error. Three operands needed; only two provided!\") ", stateStr'],
                 makeLine (indent + 1) ["(Nothing, Nothing, Just v3) -> throwError (\"Operator (addField) error. Three operands needed; only one provided!\") ", stateStr'],
                 makeLine (indent + 1) ["(Nothing, Nothing, Nothing) -> throwError (\"Operator (addField) error. Three operands needed; none provided!\") ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
+generateOpCode "removeField" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [   
+                makeLine indent ["let (", stateStr', ", obj, removalKey) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (obj, removalKey) of"],
+                makeLine (indent + 1) ["(Just (Object{fields = fs}), Just (String{chrs = name, len = l})) -> case (M.lookup name fs) of ; \
+                \Just _ -> return $ push ", stateStr', " Object{fields = M.delete name fs} ; \
+                \Nothing -> throwError (\"Operator (removeField) error. Field \" ++ name ++ \" doesn't exist in given object!\") ", stateStr'],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in throwError (\"Operator (removeField) error. Operands need to be type Object and String! Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError (\"Operator (removeField) error. Two operands needed; only one provided!\") ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (removeField) error. Two operands needed; none provided!\") ", stateStr'],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
