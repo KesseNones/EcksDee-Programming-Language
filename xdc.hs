@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.50
+--Version: Alpha 0.5.51
 --Compiler for EcksDee
 
 import Data.List
@@ -1465,6 +1465,28 @@ generateOpCode "mutateField" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"] 
             ]
     in (codeLines, stateCount + 1)      
+
+generateOpCode "readFile" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [   
+                makeLine indent ["let (", stateStr', ", fileName) = pop ", stateStr],
+                makeLine indent ["newState <- case fileName of"],
+                makeLine (indent + 1) ["Just (String{chrs = fName, len = l}) -> do"],
+                makeLine (indent + 2) ["openResult <- tryIOError $ openFile fName ReadMode"],
+                makeLine (indent + 2) ["case openResult of"],
+                makeLine (indent + 3) ["Left e -> throwError (\"Operator (readFile) error. Failed to open file \" ++ fName ++ \" because: \" ++ (show e)) ", stateStr],
+                makeLine (indent + 3) ["Right handle -> do"],
+                makeLine (indent + 4) ["fileStr <- hGetContents handle"],
+                makeLine (indent + 4) ["let postReadState = push ", stateStr', " (String{chrs = fileStr, len = length fileStr}) \
+                \in fileStr `deepseq` (hClose handle >> return postReadState)"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"Operator (readFile) error. Operand needs to be of type String. Attempted type: \" ++ vType) ", stateStr'],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (readFile) error. One operand needed; none provided!\") ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)    
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
