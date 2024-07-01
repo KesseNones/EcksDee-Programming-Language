@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.51
+--Version: Alpha 0.5.52
 --Compiler for EcksDee
 
 import Data.List
@@ -1487,6 +1487,29 @@ generateOpCode "readFile" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)    
+generateOpCode "writeFile" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [   
+                makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (secondToTop, top) of"],
+                makeLine (indent + 1) ["(Just (String{chrs = name, len = _}), Just (String{chrs = contents, len = _})) -> do"],
+                makeLine (indent + 2) ["openResult <- tryIOError $ openFile name WriteMode"],
+                makeLine (indent + 2) ["case openResult of"],
+                makeLine (indent + 3) ["Left err -> throwError (\"Operator (writeFile) error. Failed to open file \" ++ name ++ \" to write because: \" ++ (show err)) ", stateStr],
+                makeLine (indent + 3) ["Right handle -> do"],
+                makeLine (indent + 4) ["hPutStr handle contents"],
+                makeLine (indent + 4) ["hClose handle"],
+                makeLine (indent + 4) ["return ", stateStr'],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in throwError (\"Operator (writeFile) error. \
+                \Operands need to be of type String and String, Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError (\"Operator (writeFile) error. Two operands needed; only one provided!\") ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (writeFile) error. Two operands needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
