@@ -1427,6 +1427,24 @@ generateOpCode "removeField" indent stateCount =
             ]
     in (codeLines, stateCount + 1)
 
+generateOpCode "getField" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [   
+                makeLine indent ["let (", stateStr', ", obj, findKey) = pop2 ", stateStr],
+                makeLine indent ["newState <- case (obj, findKey) of"],
+                makeLine (indent + 1) ["(Just (Object{fields = fs}), Just (String{chrs = name, len = l})) -> \
+                \case (M.lookup name fs) of ; Just v -> return $ push (push ", stateStr', " Object{fields = fs} ", ") v", 
+                " ; Nothing -> throwError (\"Operator (getField) error. Field \" ++ name ++ \" doesn't exist in given object!\") ", stateStr],
+                makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in throwError (\"Operator (getField) error. Operands need to be type Object and String. Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Just v2) -> throwError (\"Operator (getField) error. Two operands needed; only one provided!\") ", stateStr],
+                makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (getField) error. Two operands needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (codeLines, stateCount + 1)  
+
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
