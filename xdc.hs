@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.5.48
+--Version: Alpha 0.5.50
 --Compiler for EcksDee
 
 import Data.List
@@ -1426,7 +1426,6 @@ generateOpCode "removeField" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)
-
 generateOpCode "getField" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         stateStr' = stateStr ++ "'"
@@ -1444,6 +1443,28 @@ generateOpCode "getField" indent stateCount =
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (codeLines, stateCount + 1)  
+generateOpCode "mutateField" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+            [   
+                makeLine indent ["let (", stateStr', ", obj, mutKey, newVal) = pop3 ", stateStr],
+                makeLine indent ["newState <- case (obj, mutKey, newVal) of"],
+                makeLine (indent + 1) ["(Just (Object{fields = fs}), Just (String{chrs = name, len = l}), Just v') -> \
+                \case (M.lookup name fs) of ; Just v -> if (compareTypesForMut v v') \
+                    \then return $ push ", stateStr', " Object{fields = M.insert name v' fs} \
+                    \else throwError (\"Operator (mutateField) error. New value is of type: \" ++ (chrs $ doQueryType' v') \
+                    \++ \" which doesn't match field \" ++ name ++ \" of type \" ++ (chrs $ doQueryType' v) ++ \". The types must match for consistency!\") ", stateStr',
+                    " ; Nothing -> throwError (\"Operator (mutateField) error. Field \" ++ name ++ \" doesn't exist in given object!\") ", stateStr'],
+                makeLine (indent + 1) ["(Just v1, Just v2, Just v3) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                \in throwError (\"Operator (mutateField) error. \
+                \Operands need to be of type Object String Value. Attempted types: \" ++ v1Type ++ \", \" ++ v2Type ++ \", and \" ++ (chrs $ doQueryType' v3)) ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Just v2, Just v3) -> throwError (\"Operator (mutateField) error. Three operands needed; only two provided!\") ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Nothing, Just v3) -> throwError (\"Operator (mutateField) error. Three operands needed; only one provided!\") ", stateStr'],
+                makeLine (indent + 1) ["(Nothing, Nothing, Nothing) -> throwError (\"Operator (mutateField) error. Three operands needed; none provided!\") ", stateStr'],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"] 
+            ]
+    in (codeLines, stateCount + 1)      
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
@@ -1521,6 +1542,19 @@ generateCodeString ast =
                 "doQueryType' (Box _) = String{chrs = \"Box\", len = length \"Box\"}",
                 "findTypeStrsForError :: Value -> Value -> (String, String)",
                 "findTypeStrsForError x y = (chrs $ doQueryType' x, chrs $ doQueryType' y)",
+
+                "compareTypesForMut :: Value -> Value -> Bool",
+                "compareTypesForMut (Boolean _) (Boolean _) = True",
+                "compareTypesForMut (BigInteger _) (BigInteger _) = True",
+                "compareTypesForMut (Integer _) (Integer _) = True",
+                "compareTypesForMut (Double _) (Double _) = True",
+                "compareTypesForMut (Float _) (Float _) = True",
+                "compareTypesForMut (String {chrs = _, len = _}) (String {chrs = _, len = _}) = True",
+                "compareTypesForMut (Char _) (Char _) = True",
+                "compareTypesForMut (List {items = _, len = _}) (List {items = _, len = _}) = True",
+                "compareTypesForMut Object{fields = _} Object{fields = _} = True",
+                "compareTypesForMut (Box _) (Box _) = True",
+                "compareTypesForMut _ _ = False",
 
                 "pop :: EDState -> (EDState, Maybe Value)",
                 "pop EDState{stack = []} = (EDState{stack = []}, Nothing)",
