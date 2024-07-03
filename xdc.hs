@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.6.0
+--Version: Alpha 0.7.0
 --Compiler for EcksDee
 
 import Data.List
@@ -1514,6 +1514,32 @@ generateOpCode "writeFile" indent stateCount =
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
 
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
+generateCodeString' If {ifTrue = trueBranch, ifFalse = falseBranch} lineAcc indent stateCount =
+    let internalCodeOffset = 4
+        (trueCode, finalTrueStateCount) = generateCodeString' trueBranch [] (indent + internalCodeOffset) stateCount
+        (falseCode, finalFalseStateCount) = generateCodeString' falseBranch [] (indent + internalCodeOffset) stateCount
+        trueCode' = trueCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalTrueStateCount]]
+        falseCode' = falseCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFalseStateCount]]
+        stateStr = "state" ++ (show stateCount)
+        codeLines = 
+            [
+                makeLine indent ["let (_, top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (Boolean b) -> do"],
+                makeLine (indent + 2) ["newState <- if b"],
+                makeLine (indent + 3) ["then do"],
+                makeLine (0) [strListToStr trueCode'],
+                makeLine (indent + 3) ["else do"],
+                makeLine (0) [strListToStr falseCode'],
+                makeLine (indent + 2) ["return newState"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"If statement error. If statement requires top of the stack \
+                \to be type Boolean to branch! Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"If statement error. No Boolean for if to check if stack is empty!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (lineAcc ++ codeLines, stateCount + 1)
+
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
     in (lineAcc ++ codeStr, stateCount')
@@ -1530,6 +1556,10 @@ generateCodeString' (Expression []) lineAcc indent stateCount = (lineAcc, stateC
 generateCodeString' (Expression (first:rest)) lineAcc indent stateCount = 
     let (lineAcc', stateCount') = generateCodeString' first lineAcc indent stateCount
     in generateCodeString' (Expression (rest)) lineAcc' indent stateCount'
+
+--Used in joining string lists to single strings.
+strListToStr :: [String] -> String
+strListToStr str = (intercalate "\n" str) ++ "\n"
 
 --Takes in AST and returns the final string of the Haskell code generated from it. 
 generateCodeString :: AstNode -> String
@@ -1853,7 +1883,7 @@ generateCodeString ast =
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
         linesFinal = newLines ++ [(nFourSpaces 1) ++ "(printStack $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
-    in (intercalate "\n" linesFinal) ++ "\n"
+    in strListToStr linesFinal
 
 main :: IO ()
 main = do
