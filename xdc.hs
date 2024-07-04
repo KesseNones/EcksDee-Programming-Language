@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.7.0
+--Version: Alpha 0.8.0
 --Compiler for EcksDee
 
 import Data.List
@@ -1539,6 +1539,68 @@ generateCodeString' If {ifTrue = trueBranch, ifFalse = falseBranch} lineAcc inde
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
     in (lineAcc ++ codeLines, stateCount + 1)
+
+generateCodeString' (While loopBody) lineAcc indent stateCount =
+    let internalCodeOffset = 2
+        (loopCode, finalLoopStateCount) = generateCodeString' loopBody [] (indent + internalCodeOffset) 0
+        loopStateStr = "state" ++ (show finalLoopStateCount)
+        loopCode' = loopCode ++ [makeLine (indent + internalCodeOffset) ["let (_, top) = pop ", loopStateStr, 
+            " in case top of ; \
+            \Just (Boolean b) -> if b then ", whileLambdaName, " ", loopStateStr, " else return ", loopStateStr, " ; \
+            \Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"While loop error. Top of stack needs to be type Boolean \
+                \for loop to try and run! Attempted type: \" ++ vType) ", loopStateStr, " ; \
+            \Nothing -> throwError (\"While loop error. No Boolean value for while loop to check because state is empty!\") ", loopStateStr, " ; "]  ]
+        stateStr = "state" ++ (show stateCount)
+        whileLambdaName = "while" ++ (show stateCount)
+        codeLines = 
+            [
+                makeLine indent ["let ", whileLambdaName, " = \\state0 -> do"],
+                makeLine 0 [strListToStr loopCode'],
+                makeLine indent ["let (_, top) = pop ", stateStr],
+                makeLine (indent + 0) ["newState <- case top of "],
+                makeLine (indent + 1) ["Just (Boolean b) -> do"],
+                makeLine (indent + 2) ["if b"],
+                makeLine (indent + 3) ["then do"],
+                makeLine (indent + 4) ["newState <- ", whileLambdaName, " ", stateStr],
+                makeLine (indent + 4) ["return newState"],
+                makeLine (indent + 3) ["else return ", stateStr],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"While loop error. Top of stack needs to be type Boolean \
+                \for loop to try and run! Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"While loop error. \
+                \No Boolean value for while loop to check because state is empty!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
+    in (lineAcc ++ codeLines, stateCount + 1)
+
+-- --This code looks sus but basically it runs the loop body 
+-- -- and then runs the whole loop recursion if it needs to run again.                                                                                                                      
+-- doNode ( While loopBody ) state = 
+--     if (null $ stack state)
+--         then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+--         else do 
+--             newState <- case (fsTop state) of 
+--                 Boolean True -> doNode loopBody (addFrame state)
+--                 Boolean False -> return state
+--                 x -> 
+--                     let xType = chrs $ doQueryType' x 
+--                     in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+--                         ++ xType) state
+
+--             --Checks to see if loop can run again or not.
+--             if (null $ stack newState)
+--                 then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+--                 else 
+--                     case (fsTop newState) of 
+--                         Boolean True -> doNode (While loopBody) newState
+--                         Boolean False -> return newState
+--                         x -> 
+--                             let xType = chrs $ doQueryType' x 
+--                             in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+--                                 ++ xType) newState
+
+
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
