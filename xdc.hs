@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.8.1
+--Version: Alpha 0.8.2
 --Compiler for EcksDee
 
 import Data.List
@@ -853,7 +853,7 @@ generateOpCode "drop" indent stateCount =
 generateOpCode "dropStack" indent stateCount =
     let codeLines = 
             [
-                makeLine indent ["let state", show $ stateCount + 1, " = EDState{stack = []}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
+                makeLine indent ["let state", show $ stateCount + 1, " = EDState{stack = [], fns = fns state", show stateCount, "}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "rot" indent stateCount = 
@@ -1574,33 +1574,36 @@ generateCodeString' (While loopBody) lineAcc indent stateCount =
             ]
     in (lineAcc ++ codeLines, stateCount + 1)
 
--- --This code looks sus but basically it runs the loop body 
--- -- and then runs the whole loop recursion if it needs to run again.                                                                                                                      
--- doNode ( While loopBody ) state = 
---     if (null $ stack state)
---         then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
---         else do 
---             newState <- case (fsTop state) of 
---                 Boolean True -> doNode loopBody (addFrame state)
---                 Boolean False -> return state
---                 x -> 
---                     let xType = chrs $ doQueryType' x 
---                     in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
---                         ++ xType) state
-
---             --Checks to see if loop can run again or not.
---             if (null $ stack newState)
---                 then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
---                 else 
---                     case (fsTop newState) of 
---                         Boolean True -> doNode (While loopBody) newState
---                         Boolean False -> return newState
---                         x -> 
---                             let xType = chrs $ doQueryType' x 
---                             in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
---                                 ++ xType) newState
+generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lineAcc indent stateCount =
+    let astToStr = \(Terminal (Word w)) -> w
+        codeStr = case (astToStr cmd) of
+            "def" -> 
+                let code = []
+                in code
+    in (lineAcc ++ codeStr, stateCount)
 
 
+
+-- --Pattern matches function def and call.
+-- doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
+--     case (astNodeToString cmd) of 
+--         "def" -> 
+--             let fName = astNodeToString name
+--             in case (M.lookup fName (fns state)) of 
+--                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
+--                     Nothing ->
+--                         let fns' = M.insert fName body (fns state)
+--                         in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
+
+--         "call" -> 
+--             let fName = astNodeToString name
+--             in case (M.lookup fName (fns state)) of
+--                 Just bod -> 
+--                     (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
+                
+--                 Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
+
+--         other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
@@ -1658,7 +1661,8 @@ generateCodeString ast =
                 (nFourSpaces 1) ++ "heapSize :: Int",
                 "}",
                 "data EDState = EDState {",
-                (nFourSpaces 1) ++ "stack :: [Value]",
+                (nFourSpaces 1) ++ "stack :: [Value],",
+                makeLine 1 ["fns :: M.Map String (EDState -> IO EDState)"],
                 "}",
                 "data GeneralException = GeneralException String deriving (Show, Typeable)",
                 "instance Exception GeneralException",
@@ -1694,8 +1698,8 @@ generateCodeString ast =
                 "compareTypesForMut _ _ = False",
 
                 "pop :: EDState -> (EDState, Maybe Value)",
-                "pop EDState{stack = []} = (EDState{stack = []}, Nothing)",
-                "pop state = (EDState{stack = tail $ stack state}, Just $ head $ stack state)",
+                "pop EDState{stack = [], fns = fs} = (EDState{stack = [], fns = fs}, Nothing)",
+                "pop state = (EDState{stack = tail $ stack state, fns = fns state}, Just $ head $ stack state)",
                 "",
 
                 "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
@@ -1713,7 +1717,7 @@ generateCodeString ast =
                 makeLine 1 ["in (state''', thirdToTop, secondToTop, top)"],
 
                 "push :: EDState -> Value -> EDState",
-                "push EDState{stack = xs} v = EDState{stack = v:xs}",
+                "push EDState{stack = xs, fns = fs} v = EDState{stack = v:xs, fns = fs}",
 
                 "printStack :: [Value] -> IO ()",
                 "printStack [] = return ()",
@@ -1941,7 +1945,7 @@ generateCodeString ast =
 
                 "main :: IO EDState",
                 "main = do",
-                (nFourSpaces 1) ++ "let state0 = EDState{stack = []}"
+                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty}"
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
         linesFinal = newLines ++ [(nFourSpaces 1) ++ "(printStack $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
