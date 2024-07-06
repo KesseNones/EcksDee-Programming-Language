@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.8.2
+--Version: Alpha 0.8.3
 --Compiler for EcksDee
 
 import Data.List
@@ -1550,7 +1550,7 @@ generateCodeString' (While loopBody) lineAcc indent stateCount =
             \Just v -> let vType = chrs $ doQueryType' v \
                 \in throwError (\"While loop error. Top of stack needs to be type Boolean \
                 \for loop to try and run! Attempted type: \" ++ vType) ", loopStateStr, " ; \
-            \Nothing -> throwError (\"While loop error. No Boolean value for while loop to check because state is empty!\") ", loopStateStr, " ; "]  ]
+            \Nothing -> throwError (\"While loop error. No Boolean value for while loop to check because stack is empty!\") ", loopStateStr, " ; "]  ]
         stateStr = "state" ++ (show stateCount)
         whileLambdaName = "while" ++ (show stateCount)
         codeLines = 
@@ -1576,13 +1576,26 @@ generateCodeString' (While loopBody) lineAcc indent stateCount =
 
 generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lineAcc indent stateCount =
     let astToStr = \(Terminal (Word w)) -> w
+        stateStr = "state" ++ (show stateCount)
         codeStr = case (astToStr cmd) of
             "def" -> 
-                let code = []
+                let fnNameStr = makeLine 0 ["\"", astToStr name, "\""]
+                    fnName = astToStr name
+                    internalCodeOffset = 1
+                    (funcBody, finalFuncBodyStateCount) = generateCodeString' body [] (indent + internalCodeOffset) 0
+                    funcBody' = funcBody ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFuncBodyStateCount]]
+                    code = 
+                        [
+                            makeLine indent ["let ", fnName, show stateCount, " = \\state0 -> do"],
+                            makeLine 0 [strListToStr funcBody'],
+                            makeLine indent ["newState <- case (M.lookup ", fnNameStr, " (fns ", stateStr, ")) of"],
+                            makeLine (indent + 1) ["Just _ -> throwError (\"Function def error. Function ", fnName, " already exists!\") ", stateStr],
+                            makeLine (indent + 1) ["Nothing -> \
+                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, show stateCount, " (fns ", stateStr, ")}"],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
                 in code
-    in (lineAcc ++ codeStr, stateCount)
-
-
+    in (lineAcc ++ codeStr, stateCount + 1)
 
 -- --Pattern matches function def and call.
 -- doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
