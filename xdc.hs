@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.8.0
+--Version: Alpha 0.8.1
 --Compiler for EcksDee
 
 import Data.List
@@ -1980,7 +1980,7 @@ main = do
             hPutStr handle pgmStr 
             hClose handle
             putStrLn ("Compiling " ++ haskellFileName)
-            res <- system ( "cat " ++ haskellFileName ++ " && " ++ "ghc " ++ haskellFileName)
+            res <- system ( "cat " ++ haskellFileName ++ " && " ++ "ghc -O2 " ++ haskellFileName)
             case res of 
                 ExitSuccess -> do
                     putStrLn "Cleanup"
