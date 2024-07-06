@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.8.3
+--Version: Alpha 0.9.0
 --Compiler for EcksDee
 
 import Data.List
@@ -1595,6 +1595,19 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
+            "call" ->
+                let fnName = astToStr name
+                    fnNameStr = makeLine 0 ["\"", fnName, "\""]
+                    stateStr = "state" ++ (show stateCount)
+                    code = 
+                        [
+                            makeLine indent ["newState <- case (M.lookup ", fnNameStr, "(", "fns ", stateStr, ")", ")", " of "],
+                            makeLine (indent + 1) ["Just fn -> (fn ", stateStr, ") >>= (\\state' -> return state')"],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Function call error. Function ", fnName, " isn't defined!\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+
     in (lineAcc ++ codeStr, stateCount + 1)
 
 -- --Pattern matches function def and call.
