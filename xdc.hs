@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.9.0
+--Version: Alpha 0.9.1
 --Compiler for EcksDee
 
 import Data.List
@@ -851,9 +851,10 @@ generateOpCode "drop" indent stateCount =
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "dropStack" indent stateCount =
-    let codeLines = 
+    let stateStr = "state" ++ (show stateCount)
+        codeLines = 
             [
-                makeLine indent ["let state", show $ stateCount + 1, " = EDState{stack = [], fns = fns state", show stateCount, "}"] --Will need to change this a bit to accommodate for transferring information from previous state. 
+                makeLine indent ["let state", show $ stateCount + 1, " = EDState{stack = [], fns = fns ", stateStr, ", vars = vars ", stateStr, "}"]  
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "rot" indent stateCount = 
@@ -1591,7 +1592,7 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
                             makeLine indent ["newState <- case (M.lookup ", fnNameStr, " (fns ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just _ -> throwError (\"Function def error. Function ", fnName, " already exists!\") ", stateStr],
                             makeLine (indent + 1) ["Nothing -> \
-                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, show stateCount, " (fns ", stateStr, ")}"],
+                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, show stateCount, " (fns ", stateStr, "), vars = vars ", stateStr, "}"],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
@@ -1688,7 +1689,8 @@ generateCodeString ast =
                 "}",
                 "data EDState = EDState {",
                 (nFourSpaces 1) ++ "stack :: [Value],",
-                makeLine 1 ["fns :: M.Map String (EDState -> IO EDState)"],
+                makeLine 1 ["fns :: M.Map String (EDState -> IO EDState),"],
+                makeLine 1 ["vars :: M.Map String Value"],
                 "}",
                 "data GeneralException = GeneralException String deriving (Show, Typeable)",
                 "instance Exception GeneralException",
@@ -1724,8 +1726,8 @@ generateCodeString ast =
                 "compareTypesForMut _ _ = False",
 
                 "pop :: EDState -> (EDState, Maybe Value)",
-                "pop EDState{stack = [], fns = fs} = (EDState{stack = [], fns = fs}, Nothing)",
-                "pop state = (EDState{stack = tail $ stack state, fns = fns state}, Just $ head $ stack state)",
+                "pop EDState{stack = [], fns = fs, vars = vs} = (EDState{stack = [], fns = fs, vars = vs}, Nothing)",
+                "pop state = (EDState{stack = tail $ stack state, fns = fns state, vars = vars state}, Just $ head $ stack state)",
                 "",
 
                 "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
@@ -1743,7 +1745,7 @@ generateCodeString ast =
                 makeLine 1 ["in (state''', thirdToTop, secondToTop, top)"],
 
                 "push :: EDState -> Value -> EDState",
-                "push EDState{stack = xs, fns = fs} v = EDState{stack = v:xs, fns = fs}",
+                "push EDState{stack = xs, fns = fs, vars = vs} v = EDState{stack = v:xs, fns = fs, vars = vs}",
 
                 "printStack :: [Value] -> IO ()",
                 "printStack [] = return ()",
@@ -1971,7 +1973,7 @@ generateCodeString ast =
 
                 "main :: IO EDState",
                 "main = do",
-                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty}"
+                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty, vars = M.empty}"
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
         linesFinal = newLines ++ [(nFourSpaces 1) ++ "(printStack $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
