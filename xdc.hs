@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.9.2
+--Version: Alpha 0.9.3
 --Compiler for EcksDee
 
 import Data.List
@@ -1628,6 +1628,17 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", stateStr, ", fns = (fns ", stateStr, "), vars = M.insert ", vNameStr, " v (vars ", stateStr, ")}"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Mak Error. \
                             \Can't create variable when stack is empty. Attempted variable name: ", vName, "\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+            "get" ->
+                let vName = astToStr name
+                    vNameStr = makeLine 0 ["\"", vName, "\""]
+                    code = 
+                        [
+                            makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
+                            makeLine (indent + 1) ["Just v -> return $ push ", stateStr, " v"],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Get Error. Variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
