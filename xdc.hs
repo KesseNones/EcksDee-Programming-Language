@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.9.3
+--Version: Alpha 0.9.4
 --Compiler for EcksDee
 
 import Data.List
@@ -1639,6 +1639,19 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just v -> return $ push ", stateStr, " v"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Get Error. Variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+            "del" ->
+                let vName = astToStr name
+                    vNameStr = makeLine 0 ["\"", vName, "\""]
+                    code = 
+                        [
+                            makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
+                            makeLine (indent + 1) ["Just v -> \
+                            \return $ EDState{stack = (stack ", stateStr, "), fns = (fns ", stateStr, "), vars = M.delete ", vNameStr, " (vars ", stateStr, ")}"],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Del Error. \
+                            \Variable ", vName, " doesn't exist or was already deleted!\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
