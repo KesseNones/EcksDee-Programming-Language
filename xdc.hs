@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.9.1
+--Version: Alpha 0.9.2
 --Compiler for EcksDee
 
 import Data.List
@@ -1611,26 +1611,83 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
 
     in (lineAcc ++ codeStr, stateCount + 1)
 
--- --Pattern matches function def and call.
--- doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
---     case (astNodeToString cmd) of 
---         "def" -> 
---             let fName = astNodeToString name
---             in case (M.lookup fName (fns state)) of 
---                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
---                     Nothing ->
---                         let fns' = M.insert fName body (fns state)
---                         in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
+generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateCount =
+    let astToStr = \(Terminal (Word w)) -> w
+        stateStr = "state" ++ (show stateCount)
+        codeStr = case (astToStr cmd) of
+            "mak" -> 
+                let vName = astToStr name
+                    vNameStr = makeLine 0 ["\"", vName, "\""]
+                    code = 
+                        [
+                            makeLine indent ["let (_, top) = pop ", stateStr],
+                            makeLine indent ["newState <- case top of"],
+                            makeLine (indent + 1) ["Just v -> "],
+                            makeLine (indent + 2) ["case (M.lookup ", vNameStr, " (vars ", stateStr,  ")) of"],
+                            makeLine (indent + 3) ["Just _ -> throwError (\"Variable (var) Mak Error. Variable ", vName, " already exists.\") ", stateStr],
+                            makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", stateStr, ", fns = (fns ", stateStr, "), vars = M.insert ", vNameStr, " v (vars ", stateStr, ")}"],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Mak Error. \
+                            \Can't create variable when stack is empty. Attempted variable name: ", vName, "\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
 
---         "call" -> 
---             let fName = astNodeToString name
---             in case (M.lookup fName (fns state)) of
---                 Just bod -> 
---                     (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
-                
---                 Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
+    in (lineAcc ++ codeStr, stateCount + 1)
 
---         other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
+-- --Runs all the different cases of variable actions.
+-- doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
+--     case (astNodeToString cmd) of
+--         --Used in making a new variable in vars.
+--         "mak" ->
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then 
+--                     throwError ("Variable (var) Mak Error. Can't create variable when stack is empty. Attempted variable name: " ++ vName) state 
+--                 else
+--                     case (M.lookup vName (vars state)) of
+--                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
+--                         Nothing -> 
+--                             let vars' = M.insert vName (fsTop state) (vars state)
+--                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+                           
+--         --Pushes variable value to stack.
+--         "get" -> 
+--             let vName = astNodeToString name
+--             in case (M.lookup vName (vars state)) of
+--                 Just v -> doNode (Expression rest) (fsPush v state)
+--                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
+
+--         --Removes variable from existence since var is manually scoped.
+--         "del" -> 
+--             let vName = astNodeToString name
+--             in case (M.lookup vName (vars state)) of 
+--                 Just v -> 
+--                     let vars' = M.delete vName (vars state)
+--                     in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
+--                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
+
+--         --Alters variable to new value on top of stack if the types match.
+--         "mut" -> 
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then
+--                     throwError ("Variable (var) Mut Error. Can't mutate variable when stack is empty! Attempted variable name: " ++ vName) state
+--                 else
+--                     let newVal = fsTop state
+--                     in case (M.lookup vName (vars state)) of 
+--                         Just v -> 
+--                             if (compareTypesForMut v newVal)
+--                                 then 
+--                                     let vars' = M.insert vName newVal (vars state)
+--                                     in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+--                                 else
+--                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
+--                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
+--                                         ++ " to different type: " ++ (chrs $ doQueryType' newVal)) state
+
+--                         Nothing -> throwError ("Variable (var) Mut Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
+
+--         other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
