@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.0
+--Version: Alpha 0.10.1
 --Compiler for EcksDee
 
 import Data.List
@@ -1674,6 +1674,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
+            other -> [makeLine indent ["newState <- throwError (\"Variable (var) Command Error. Invalid variable command given! Given: ", 
+                other, " Valid: mak, get, mut, del\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
 
     in (lineAcc ++ codeStr, stateCount + 1)
 
