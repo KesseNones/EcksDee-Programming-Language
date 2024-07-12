@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.3
+--Version: Alpha 0.10.4
 --Compiler for EcksDee
 
 import Data.List
@@ -1518,8 +1518,8 @@ generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecogni
 generateCodeString' :: AstNode -> [String] -> Int -> Int -> ([String], Int)
 generateCodeString' If {ifTrue = trueBranch, ifFalse = falseBranch} lineAcc indent stateCount =
     let internalCodeOffset = 4
-        (trueCode, finalTrueStateCount) = generateCodeString' trueBranch [] (indent + internalCodeOffset) stateCount
-        (falseCode, finalFalseStateCount) = generateCodeString' falseBranch [] (indent + internalCodeOffset) stateCount
+        (trueCode, finalTrueStateCount) = generateCodeString' trueBranch [] (indent + internalCodeOffset) (stateCount + 1)
+        (falseCode, finalFalseStateCount) = generateCodeString' falseBranch [] (indent + internalCodeOffset) (stateCount + 1)
         trueCode' = trueCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalTrueStateCount]]
         falseCode' = falseCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFalseStateCount]]
         stateStr = "state" ++ (show stateCount)
@@ -1683,8 +1683,103 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                 in code
             other -> [makeLine indent ["newState <- throwError (\"Variable (var) Command Error. Invalid variable command given! Given: ", 
                 other, " Valid: mak, get, mut, del\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
+    in (lineAcc ++ codeStr, stateCount + 1)
+
+generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
+    let astToStr = \(Terminal (Word w)) -> w
+        stateStr = "state" ++ (show stateCount)
+        codeStr = case (astToStr cmd) of
+            "mak" -> 
+                let vName = astToStr name
+                    vNameStr = makeLine 0 ["\"", vName, "\""]
+                    code = 
+                        [
+                            makeLine indent ["let (_, top) = pop ", stateStr],
+                            makeLine indent ["newState <- case top of"],
+                            makeLine (indent + 1) ["Just v -> "],
+                            makeLine (indent + 2) ["case (M.lookup ", vNameStr, " (head $ frames ", stateStr,  ")) of"],
+                            makeLine (indent + 3) ["Just _ -> throwError (\"Variable (loc) Mak Error. Variable ", vName, " already exists in current scope.\") ", stateStr],
+                            makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", 
+                                stateStr, ", fns = (fns ", stateStr, "), vars = vars ", stateStr, 
+                                ", frames = (M.insert ", vNameStr, " v (head $ frames ", stateStr, ")):(tail $ frames ", stateStr, ")}"],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Mak Error. \
+                            \Can't create variable when stack is empty. Attempted variable name: ", vName, "\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+            "get" ->
+                let vName = astToStr name
+                    vNameStr = makeLine 0 ["\"", vName, "\""]
+                    code = 
+                        [
+                            makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
+                            makeLine (indent + 1) ["Just v -> return $ push ", stateStr, " v"],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Get Error. Variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+            "mut" ->
+                let vName = astToStr name
+                    vNameStr = makeLine 0 ["\"", vName, "\""]
+                    code = 
+                        [
+                            makeLine indent ["let (_, top) = pop ", stateStr],
+                            makeLine indent ["newState <- case (top, M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
+                            makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
+                            \in if v1Type == v2Type \
+                                \then return EDState{stack = stack ", stateStr, 
+                                    ", fns = fns ", stateStr, ", vars = M.insert ", vNameStr, " v1 (vars ", stateStr, "), frames = frames ", stateStr, "} \
+                                \else throwError (\"Variable (var) Mut Error. \
+                                \Can't mutate variable ", vName, " of type \" ++ v2Type ++ \" to different type: \" ++ v1Type) ", stateStr],
+                            makeLine (indent + 1) ["(Just v1, Nothing) -> throwError (\"Variable (var) Mut Error. \
+                            \Variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
+                            makeLine (indent + 1) ["(Nothing, _) -> throwError (\"Variable (var) Mut Error. \
+                            \Can't mutate variable when stack is empty! Attempted variable name: ", vName, "\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+            other -> [makeLine indent ["newState <- throwError (\"Variable (var) Command Error. Invalid variable command given! Given: ", 
+                other, " Valid: mak, get, mut, del\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
 
     in (lineAcc ++ codeStr, stateCount + 1)
+
+-- --Runs all the different cases of local variable actions.
+-- doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
+--     case (astNodeToString cmd) of
+--         "mak" ->
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then throwError ("Local Variable (loc) Mak Error. Can't create local variable when stack is empty! Attempted local variable name: " ++ vName) state 
+--                 else
+--                     case (M.lookup vName (head $ frames state)) of
+--                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
+--                         Nothing ->
+--                             let frame' = M.insert vName (fsTop state) (head $ frames state)
+--                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
+                           
+--         "get" ->  
+--             case (getLoc (frames state) (astNodeToString name)) of
+--                 Just value -> doNode (Expression rest) (fsPush value state)
+--                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
+
+--         "mut" -> 
+--             let vName = astNodeToString name
+--             in if (null $ stack state)
+--                 then throwError ("Local Variable (loc) Mut Error. Can't mutate local variable when stack is empty! Attempted local variable name: " ++ vName) state
+--                 else
+--                     case (getLoc (frames state) vName) of
+--                         Just v -> 
+--                             if (compareTypesForMut (fsTop state) v)
+--                                 then
+--                                     doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
+--                                 else
+--                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
+--                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
+--                                         ++ " to different type: " ++ (chrs $ doQueryType' (fsTop state))) state
+
+--                         Nothing -> throwError ("Local Variable (loc) Mut Error. Local Variable " ++ vName ++ " not defined for mutation in any scope!") state
+
+--         other -> throwError ("Local Variable (loc) Command Error. Invalid local variable command given! Given: " ++ other ++ " valid: mak, get, mut") state
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
