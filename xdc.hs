@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.4
+--Version: Alpha 0.10.5
 --Compiler for EcksDee
 
 import Data.List
@@ -1683,7 +1683,7 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                 in code
             other -> [makeLine indent ["newState <- throwError (\"Variable (var) Command Error. Invalid variable command given! Given: ", 
                 other, " Valid: mak, get, mut, del\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
-    in (lineAcc ++ codeStr, stateCount + 1)
+    in (lineAcc ++ codeStr, stateCount + 1) 
 
 generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
     let astToStr = \(Terminal (Word w)) -> w
@@ -1698,12 +1698,12 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                             makeLine indent ["newState <- case top of"],
                             makeLine (indent + 1) ["Just v -> "],
                             makeLine (indent + 2) ["case (M.lookup ", vNameStr, " (head $ frames ", stateStr,  ")) of"],
-                            makeLine (indent + 3) ["Just _ -> throwError (\"Variable (loc) Mak Error. Variable ", vName, " already exists in current scope.\") ", stateStr],
+                            makeLine (indent + 3) ["Just _ -> throwError (\"Variable (loc) Mak Error. Local variable ", vName, " already exists in current scope.\") ", stateStr],
                             makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", 
                                 stateStr, ", fns = (fns ", stateStr, "), vars = vars ", stateStr, 
                                 ", frames = (M.insert ", vNameStr, " v (head $ frames ", stateStr, ")):(tail $ frames ", stateStr, ")}"],
-                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Mak Error. \
-                            \Can't create variable when stack is empty. Attempted variable name: ", vName, "\") ", stateStr],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Local variable (loc) Mak Error. \
+                            \Can't create local variable when stack is empty. Attempted local variable name: ", vName, "\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
@@ -1712,9 +1712,11 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                     vNameStr = makeLine 0 ["\"", vName, "\""]
                     code = 
                         [
-                            makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
+                            makeLine indent ["let getLoc = \\ls name -> case (ls, name) of ; ([], name) -> Nothing ; ((f:fs), name) -> \
+                            \case (M.lookup name f) of ; Just v -> Just v ; Nothing -> getLoc fs name ; "],
+                            makeLine indent ["newState <- case (getLoc (frames ", stateStr, ") ", vNameStr, ") of"],
                             makeLine (indent + 1) ["Just v -> return $ push ", stateStr, " v"],
-                            makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Get Error. Variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Local variable (loc) Get Error. Local variable ", vName, " not defined in any scope!\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
@@ -1745,18 +1747,7 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
 
 -- --Runs all the different cases of local variable actions.
 -- doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
---     case (astNodeToString cmd) of
---         "mak" ->
---             let vName = astNodeToString name
---             in if (null $ stack state)
---                 then throwError ("Local Variable (loc) Mak Error. Can't create local variable when stack is empty! Attempted local variable name: " ++ vName) state 
---                 else
---                     case (M.lookup vName (head $ frames state)) of
---                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
---                         Nothing ->
---                             let frame' = M.insert vName (fsTop state) (head $ frames state)
---                             in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
-                           
+--     case (astNodeToString cmd) of                           
 --         "get" ->  
 --             case (getLoc (frames state) (astNodeToString name)) of
 --                 Just value -> doNode (Expression rest) (fsPush value state)
