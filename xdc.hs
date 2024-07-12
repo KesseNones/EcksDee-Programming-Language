@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.1
+--Version: Alpha 0.10.3
 --Compiler for EcksDee
 
 import Data.List
@@ -854,7 +854,8 @@ generateOpCode "dropStack" indent stateCount =
     let stateStr = "state" ++ (show stateCount)
         codeLines = 
             [
-                makeLine indent ["let state", show $ stateCount + 1, " = EDState{stack = [], fns = fns ", stateStr, ", vars = vars ", stateStr, "}"]  
+                makeLine indent ["let state", show $ stateCount + 1, 
+                    " = EDState{stack = [], fns = fns ", stateStr, ", vars = vars ", stateStr, ", frames = frames ", stateStr, "}"]  
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "rot" indent stateCount = 
@@ -1522,9 +1523,11 @@ generateCodeString' If {ifTrue = trueBranch, ifFalse = falseBranch} lineAcc inde
         trueCode' = trueCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalTrueStateCount]]
         falseCode' = falseCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFalseStateCount]]
         stateStr = "state" ++ (show stateCount)
+        stateStr' = "state" ++ (show $ stateCount + 1)
         codeLines = 
             [
-                makeLine indent ["let (_, top) = pop ", stateStr],
+                makeLine indent ["let ", stateStr', " = addFrame ", stateStr],
+                makeLine indent ["let (_, top) = pop ", stateStr'],
                 makeLine indent ["newState <- case top of"],
                 makeLine (indent + 1) ["Just (Boolean b) -> do"],
                 makeLine (indent + 2) ["newState <- if b"],
@@ -1532,14 +1535,14 @@ generateCodeString' If {ifTrue = trueBranch, ifFalse = falseBranch} lineAcc inde
                 makeLine (0) [strListToStr trueCode'],
                 makeLine (indent + 3) ["else do"],
                 makeLine (0) [strListToStr falseCode'],
-                makeLine (indent + 2) ["return newState"],
+                makeLine (indent + 2) ["return $ removeFrame newState"],
                 makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
                 \in throwError (\"If statement error. If statement requires top of the stack \
                 \to be type Boolean to branch! Attempted type: \" ++ vType) ", stateStr],
                 makeLine (indent + 1) ["Nothing -> throwError (\"If statement error. No Boolean for if to check if stack is empty!\") ", stateStr],
-                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                makeLine indent ["let state", show $ stateCount + 2, " = newState"]
             ]
-    in (lineAcc ++ codeLines, stateCount + 1)
+    in (lineAcc ++ codeLines, stateCount + 2)
 
 generateCodeString' (While loopBody) lineAcc indent stateCount =
     let internalCodeOffset = 2
@@ -1563,8 +1566,8 @@ generateCodeString' (While loopBody) lineAcc indent stateCount =
                 makeLine (indent + 1) ["Just (Boolean b) -> do"],
                 makeLine (indent + 2) ["if b"],
                 makeLine (indent + 3) ["then do"],
-                makeLine (indent + 4) ["newState <- ", whileLambdaName, " ", stateStr],
-                makeLine (indent + 4) ["return newState"],
+                makeLine (indent + 4) ["newState <- ", whileLambdaName, " $ addFrame ", stateStr],
+                makeLine (indent + 4) ["return $ removeFrame newState"],
                 makeLine (indent + 3) ["else return ", stateStr],
                 makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
                 \in throwError (\"While loop error. Top of stack needs to be type Boolean \
@@ -1592,7 +1595,8 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
                             makeLine indent ["newState <- case (M.lookup ", fnNameStr, " (fns ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just _ -> throwError (\"Function def error. Function ", fnName, " already exists!\") ", stateStr],
                             makeLine (indent + 1) ["Nothing -> \
-                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, show stateCount, " (fns ", stateStr, "), vars = vars ", stateStr, "}"],
+                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, 
+                                show stateCount, " (fns ", stateStr, "), vars = vars ", stateStr, ", frames = frames ", stateStr, "}"], 
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
@@ -1603,7 +1607,7 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
                     code = 
                         [
                             makeLine indent ["newState <- case (M.lookup ", fnNameStr, "(", "fns ", stateStr, ")", ")", " of "],
-                            makeLine (indent + 1) ["Just fn -> (fn ", stateStr, ") >>= (\\state' -> return state')"],
+                            makeLine (indent + 1) ["Just fn -> (fn $ addFrame ", stateStr, ") >>= (\\state' -> return $ removeFrame state')"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Function call error. Function ", fnName, " isn't defined!\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
@@ -1625,7 +1629,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine (indent + 1) ["Just v -> "],
                             makeLine (indent + 2) ["case (M.lookup ", vNameStr, " (vars ", stateStr,  ")) of"],
                             makeLine (indent + 3) ["Just _ -> throwError (\"Variable (var) Mak Error. Variable ", vName, " already exists.\") ", stateStr],
-                            makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", stateStr, ", fns = (fns ", stateStr, "), vars = M.insert ", vNameStr, " v (vars ", stateStr, ")}"],
+                            makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", 
+                                stateStr, ", fns = (fns ", stateStr, "), vars = M.insert ", vNameStr, " v (vars ", stateStr, "), frames = frames ", stateStr, "}"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Mak Error. \
                             \Can't create variable when stack is empty. Attempted variable name: ", vName, "\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
@@ -1649,7 +1654,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                         [
                             makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just v -> \
-                            \return $ EDState{stack = (stack ", stateStr, "), fns = (fns ", stateStr, "), vars = M.delete ", vNameStr, " (vars ", stateStr, ")}"],
+                            \return $ EDState{stack = (stack ", stateStr, 
+                                "), fns = (fns ", stateStr, "), vars = M.delete ", vNameStr, " (vars ", stateStr, "), frames = frames ", stateStr, "}"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Del Error. \
                             \Variable ", vName, " doesn't exist or was already deleted!\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
@@ -1664,7 +1670,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine indent ["newState <- case (top, M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
                             makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
                             \in if v1Type == v2Type \
-                                \then return EDState{stack = stack ", stateStr, ", fns = fns ", stateStr, ", vars = M.insert ", vNameStr, " v1 (vars ", stateStr, ")} \
+                                \then return EDState{stack = stack ", stateStr, 
+                                    ", fns = fns ", stateStr, ", vars = M.insert ", vNameStr, " v1 (vars ", stateStr, "), frames = frames ", stateStr, "} \
                                 \else throwError (\"Variable (var) Mut Error. \
                                 \Can't mutate variable ", vName, " of type \" ++ v2Type ++ \" to different type: \" ++ v1Type) ", stateStr],
                             makeLine (indent + 1) ["(Just v1, Nothing) -> throwError (\"Variable (var) Mut Error. \
@@ -1678,28 +1685,6 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                 other, " Valid: mak, get, mut, del\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
 
     in (lineAcc ++ codeStr, stateCount + 1)
-
---         "mut" -> 
---             let vName = astNodeToString name
---             in if (null $ stack state)
---                 then
---                     throwError ("Variable (var) Mut Error. Can't mutate variable when stack is empty! Attempted variable name: " ++ vName) state
---                 else
---                     let newVal = fsTop state
---                     in case (M.lookup vName (vars state)) of 
---                         Just v -> 
---                             if (compareTypesForMut v newVal)
---                                 then 
---                                     let vars' = M.insert vName newVal (vars state)
---                                     in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
---                                 else
---                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
---                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
---                                         ++ " to different type: " ++ (chrs $ doQueryType' newVal)) state
-
---                         Nothing -> throwError ("Variable (var) Mut Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
-
---         other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
@@ -1759,7 +1744,8 @@ generateCodeString ast =
                 "data EDState = EDState {",
                 (nFourSpaces 1) ++ "stack :: [Value],",
                 makeLine 1 ["fns :: M.Map String (EDState -> IO EDState),"],
-                makeLine 1 ["vars :: M.Map String Value"],
+                makeLine 1 ["vars :: M.Map String Value,"],
+                makeLine 1 ["frames :: [M.Map String Value]"],
                 "}",
                 "data GeneralException = GeneralException String deriving (Show, Typeable)",
                 "instance Exception GeneralException",
@@ -1795,8 +1781,8 @@ generateCodeString ast =
                 "compareTypesForMut _ _ = False",
 
                 "pop :: EDState -> (EDState, Maybe Value)",
-                "pop EDState{stack = [], fns = fs, vars = vs} = (EDState{stack = [], fns = fs, vars = vs}, Nothing)",
-                "pop state = (EDState{stack = tail $ stack state, fns = fns state, vars = vars state}, Just $ head $ stack state)",
+                "pop EDState{stack = [], fns = fs, vars = vs, frames = fms} = (EDState{stack = [], fns = fs, vars = vs, frames = fms}, Nothing)",
+                "pop state = (EDState{stack = tail $ stack state, fns = fns state, vars = vars state, frames = frames state}, Just $ head $ stack state)",
                 "",
 
                 "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
@@ -1814,7 +1800,7 @@ generateCodeString ast =
                 makeLine 1 ["in (state''', thirdToTop, secondToTop, top)"],
 
                 "push :: EDState -> Value -> EDState",
-                "push EDState{stack = xs, fns = fs, vars = vs} v = EDState{stack = v:xs, fns = fs, vars = vs}",
+                "push EDState{stack = xs, fns = fs, vars = vs, frames = fms} v = EDState{stack = v:xs, fns = fs, vars = vs, frames = fms}",
 
                 "printStack :: [Value] -> IO ()",
                 "printStack [] = return ()",
@@ -2040,9 +2026,16 @@ generateCodeString ast =
                 makeLine 3 ["in doConcat' List{items = is, len = l} List{items = accs', len = accLen + 1} (index + 1) offset"],
                 makeLine 1 ["|    otherwise = List{items = accs, len = accLen}"],
 
+                "addFrame :: EDState -> EDState",
+                "addFrame EDState{stack = s, fns = fs, vars = vs, frames = fms} = EDState{stack = s, fns = fs, vars = vs, frames = (M.empty):fms}",
+
+                "removeFrame :: EDState -> EDState",
+                "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = [fm]} = EDState{stack = s, fns = fs, vars = vs, frames = [fm]}",
+                "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = fms} = EDState{stack = s, fns = fs, vars = vs, frames = tail fms}",
+
                 "main :: IO EDState",
                 "main = do",
-                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty, vars = M.empty}"
+                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty, vars = M.empty, frames = [M.empty]}"
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
         linesFinal = newLines ++ [(nFourSpaces 1) ++ "(printStack $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
