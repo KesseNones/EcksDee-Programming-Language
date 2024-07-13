@@ -1,6 +1,8 @@
 --Jesse A. Jones
---Version: Alpha 0.12.1
+--Version: Alpha 0.13.0
 --Compiler for EcksDee
+
+--FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
 
 import Data.List
 import Data.Char
@@ -1773,6 +1775,21 @@ generateCodeString' AttErr{attempt = att, onError = err} lineAcc indent stateCou
                 makeLine indent ["let handler = \\(GeneralException msg) -> errFunc $ addFrame $ push ", stateStr, " String{chrs = msg, len = length msg}"],
                 makeLine indent ["newState <- catch (attFunc $ addFrame ", stateStr, ") handler"],
                 makeLine indent ["let state", show $ stateCount + 1, " = removeFrame newState"]
+            ]
+    in (lineAcc ++ codeStr, stateCount + 1)
+
+generateCodeString' (TempStackChange runBlock) lineAcc indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        (runCode, runCodeFinalStateCount) = generateCodeString' runBlock [] (indent + 1) 0
+        runCode' = runCode ++ [makeLine (indent + 1) ["return state", show runCodeFinalStateCount]]
+        codeStr = 
+            [
+                makeLine indent ["let runFunc = \\state0 -> do"],
+                strListToStr runCode',
+                makeLine indent ["let oldStack = stack ", stateStr],
+                makeLine indent ["newState <- runFunc $ addFrame ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " \
+                \= removeFrame EDState{stack = oldStack, fns = fns newState, vars = vars newState, frames = frames newState}"]
             ]
     in (lineAcc ++ codeStr, stateCount + 1)
 
