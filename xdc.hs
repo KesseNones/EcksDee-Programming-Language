@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.11.0
+--Version: Alpha 0.12.0
 --Compiler for EcksDee
 
 import Data.List
@@ -1756,39 +1756,25 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
 
     in (lineAcc ++ codeStr, stateCount + 1)
 
--- --Recursively builds a new list of stack frames with the mutated variable in it.
--- --Altered to now linearly do this!
--- updateFrames :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> Bool -> [M.Map String Value]
--- updateFrames [] acc mutVal name hasUpdated = reverse acc
--- updateFrames (f:fs) acc mutVal name hasUpdated = 
---     if hasUpdated
---         then 
---             updateFrames fs (f : acc) mutVal name hasUpdated
---         else 
---             case (M.lookup name f) of
---                 Just _ -> 
---                     let f' = M.insert name mutVal f
---                     in updateFrames fs (f' : acc) mutVal name True 
---                 Nothing -> updateFrames fs (f : acc) mutVal name hasUpdated
+generateCodeString' AttErr{attempt = att, onError = err} lineAcc indent stateCount =
+    let internalCodeOffset = 4
+        stateStr = "state" ++ (show stateCount)
+        (attCode, finalAttCodeStateCount) = generateCodeString' att [] (indent + 1) 0
+        (errCode, finalErrCodeStateCount) = generateCodeString' err [] (indent + 1) 0
+        attCode' = attCode ++ [makeLine (indent + 1) ["return state", show finalAttCodeStateCount]]
+        errCode' = errCode ++ [makeLine (indent + 1) ["return state", show finalErrCodeStateCount]]
+        codeStr =
+            [
+                makeLine indent ["let attFunc = \\state0 -> do"],
+                makeLine 0 [strListToStr attCode'],
+                makeLine indent ["let errFunc = \\state0 -> do"],
+                makeLine 0 [strListToStr errCode'],
 
---         "mut" -> 
---             let vName = astNodeToString name
---             in if (null $ stack state)
---                 then throwError ("Local Variable (loc) Mut Error. Can't mutate local variable when stack is empty! Attempted local variable name: " ++ vName) state
---                 else
---                     case (getLoc (frames state) vName) of
---                         Just v -> 
---                             if (compareTypesForMut (fsTop state) v)
---                                 then
---                                     doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
---                                 else
---                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
---                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
---                                         ++ " to different type: " ++ (chrs $ doQueryType' (fsTop state))) state
-
---                         Nothing -> throwError ("Local Variable (loc) Mut Error. Local Variable " ++ vName ++ " not defined for mutation in any scope!") state
-
---         other -> throwError ("Local Variable (loc) Command Error. Invalid local variable command given! Given: " ++ other ++ " valid: mak, get, mut") state
+                makeLine indent ["let handler = \\(GeneralException msg) -> errFunc $ addFrame $ push ", stateStr, " String{chrs = msg, len = length msg}"],
+                makeLine indent ["newState <- catch (attFunc $ addFrame ", stateStr, ") handler"],
+                makeLine indent ["let state", show $ stateCount + 1, " = removeFrame newState"]
+            ]
+    in (lineAcc ++ codeStr, stateCount + 1)
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
