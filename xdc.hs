@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.12.0
+--Version: Alpha 0.12.1
 --Compiler for EcksDee
 
 import Data.List
@@ -1590,13 +1590,13 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
                     funcBody' = funcBody ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFuncBodyStateCount]]
                     code = 
                         [
-                            makeLine indent ["let ", fnName, show stateCount, " = \\state0 -> do"],
+                            makeLine indent ["let ", fnName, " = \\state0 -> do"],
                             makeLine 0 [strListToStr funcBody'],
                             makeLine indent ["newState <- case (M.lookup ", fnNameStr, " (fns ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just _ -> throwError (\"Function def error. Function ", fnName, " already exists!\") ", stateStr],
                             makeLine (indent + 1) ["Nothing -> \
                             \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, 
-                                show stateCount, " (fns ", stateStr, "), vars = vars ", stateStr, ", frames = frames ", stateStr, "}"], 
+                                "", " (fns ", stateStr, "), vars = vars ", stateStr, ", frames = frames ", stateStr, "}"], 
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
