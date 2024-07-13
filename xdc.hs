@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.5
+--Version: Alpha 0.10.6
 --Compiler for EcksDee
 
 import Data.List
@@ -1698,7 +1698,7 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                             makeLine indent ["newState <- case top of"],
                             makeLine (indent + 1) ["Just v -> "],
                             makeLine (indent + 2) ["case (M.lookup ", vNameStr, " (head $ frames ", stateStr,  ")) of"],
-                            makeLine (indent + 3) ["Just _ -> throwError (\"Variable (loc) Mak Error. Local variable ", vName, " already exists in current scope.\") ", stateStr],
+                            makeLine (indent + 3) ["Just _ -> throwError (\"Local variable (loc) Mak Error. Local variable ", vName, " already exists in current scope.\") ", stateStr],
                             makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", 
                                 stateStr, ", fns = (fns ", stateStr, "), vars = vars ", stateStr, 
                                 ", frames = (M.insert ", vNameStr, " v (head $ frames ", stateStr, ")):(tail $ frames ", stateStr, ")}"],
@@ -1720,7 +1720,7 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
-            "mut" ->
+            "mut" -> 
                 let vName = astToStr name
                     vNameStr = makeLine 0 ["\"", vName, "\""]
                     code = 
