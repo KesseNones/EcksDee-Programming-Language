@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.0
+--Version: Alpha 0.13.1
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -857,7 +857,8 @@ generateOpCode "dropStack" indent stateCount =
         codeLines = 
             [
                 makeLine indent ["let state", show $ stateCount + 1, 
-                    " = EDState{stack = [], fns = fns ", stateStr, ", vars = vars ", stateStr, ", frames = frames ", stateStr, "}"]  
+                    " = EDState{stack = [], fns = fns ", stateStr, ", vars = vars ", 
+                    stateStr, ", frames = frames ", stateStr, ", heap = heap ", stateStr, "}"]  
             ]
     in (codeLines, stateCount + 1)
 generateOpCode "rot" indent stateCount = 
@@ -1598,7 +1599,7 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
                             makeLine (indent + 1) ["Just _ -> throwError (\"Function def error. Function ", fnName, " already exists!\") ", stateStr],
                             makeLine (indent + 1) ["Nothing -> \
                             \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, 
-                                "", " (fns ", stateStr, "), vars = vars ", stateStr, ", frames = frames ", stateStr, "}"], 
+                                "", " (fns ", stateStr, "), vars = vars ", stateStr, ", frames = frames ", stateStr, ", heap = heap ", stateStr, "}"], 
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
@@ -1632,7 +1633,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine (indent + 2) ["case (M.lookup ", vNameStr, " (vars ", stateStr,  ")) of"],
                             makeLine (indent + 3) ["Just _ -> throwError (\"Variable (var) Mak Error. Variable ", vName, " already exists.\") ", stateStr],
                             makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", 
-                                stateStr, ", fns = (fns ", stateStr, "), vars = M.insert ", vNameStr, " v (vars ", stateStr, "), frames = frames ", stateStr, "}"],
+                                stateStr, ", fns = (fns ", stateStr, "), vars = M.insert ", 
+                                vNameStr, " v (vars ", stateStr, "), frames = frames ", stateStr, ", heap = heap ", stateStr, "}"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Mak Error. \
                             \Can't create variable when stack is empty. Attempted variable name: ", vName, "\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
@@ -1657,7 +1659,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine indent ["newState <- case (M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just v -> \
                             \return $ EDState{stack = (stack ", stateStr, 
-                                "), fns = (fns ", stateStr, "), vars = M.delete ", vNameStr, " (vars ", stateStr, "), frames = frames ", stateStr, "}"],
+                                "), fns = (fns ", stateStr, "), vars = M.delete ", 
+                                vNameStr, " (vars ", stateStr, "), frames = frames ", stateStr, ", heap = heap ", stateStr, "}"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Variable (var) Del Error. \
                             \Variable ", vName, " doesn't exist or was already deleted!\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
@@ -1673,7 +1676,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
                             makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
                             \in if v1Type == v2Type \
                                 \then return EDState{stack = stack ", stateStr, 
-                                    ", fns = fns ", stateStr, ", vars = M.insert ", vNameStr, " v1 (vars ", stateStr, "), frames = frames ", stateStr, "} \
+                                    ", fns = fns ", stateStr, ", vars = M.insert ", 
+                                    vNameStr, " v1 (vars ", stateStr, "), frames = frames ", stateStr, ", heap = heap ", stateStr, "} \
                                 \else throwError (\"Variable (var) Mut Error. \
                                 \Can't mutate variable ", vName, " of type \" ++ v2Type ++ \" to different type: \" ++ v1Type) ", stateStr],
                             makeLine (indent + 1) ["(Just v1, Nothing) -> throwError (\"Variable (var) Mut Error. \
@@ -1705,7 +1709,7 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                             makeLine (indent + 3) ["Just _ -> throwError (\"Local variable (loc) Mak Error. Local variable ", vName, " already exists in current scope.\") ", stateStr],
                             makeLine (indent + 3) ["Nothing -> return EDState{stack = stack ", 
                                 stateStr, ", fns = (fns ", stateStr, "), vars = vars ", stateStr, 
-                                ", frames = (M.insert ", vNameStr, " v (head $ frames ", stateStr, ")):(tail $ frames ", stateStr, ")}"],
+                                ", frames = (M.insert ", vNameStr, " v (head $ frames ", stateStr, ")):(tail $ frames ", stateStr, "), heap = heap ", stateStr, "}"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Local variable (loc) Mak Error. \
                             \Can't create local variable when stack is empty. Attempted local variable name: ", vName, "\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
@@ -1743,7 +1747,8 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                             makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
                             \in if v1Type == v2Type \
                                 \then return EDState{stack = stack ", stateStr, 
-                                    ", fns = fns ", stateStr, ", vars = vars ", stateStr, ", frames = updateFrames (frames ", stateStr, ") [] v1 ", vNameStr, " False} \
+                                    ", fns = fns ", stateStr, ", vars = vars ", stateStr, 
+                                    ", frames = updateFrames (frames ", stateStr, ") [] v1 ", vNameStr, " False, heap = heap ", stateStr, "} \
                                 \else throwError (\"Local variable (loc) Mut Error. \
                                 \Can't mutate variable ", vName, " of type \" ++ v2Type ++ \" to different type: \" ++ v1Type) ", stateStr],
                             makeLine (indent + 1) ["(Just v1, Nothing) -> throwError (\"Local variable (loc) Mut Error. \
@@ -1789,9 +1794,105 @@ generateCodeString' (TempStackChange runBlock) lineAcc indent stateCount =
                 makeLine indent ["let oldStack = stack ", stateStr],
                 makeLine indent ["newState <- runFunc $ addFrame ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " \
-                \= removeFrame EDState{stack = oldStack, fns = fns newState, vars = vars newState, frames = frames newState}"]
+                \= removeFrame EDState{stack = oldStack, fns = fns newState,\
+                \ vars = vars newState, frames = frames newState, heap = heap ", stateStr, "}"]
             ]
     in (lineAcc ++ codeStr, stateCount + 1)
+
+-- generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
+--     let stateStr = "state" ++ (show stateCount)
+--         codeStr = 
+--             [
+
+--             ]
+--     in (lineAcc ++ codeStr, stateCount + 1)
+
+-- --Parses box command.
+-- doNode (BoxOp cmd) state =
+--     case (astNodeToString cmd) of
+--         "make" -> 
+--             if (null $ stack state)
+--                 then
+--                     throwError "Operator (box make) error. Can't make a box with no data on stack to give it!" state
+--                 else
+--                     let (Heap{freeList = fl, h = hp, heapSize = hs}) = heap state
+--                         (state', v) = fsPop state
+--                         flSize = M.size fl
+--                     --If items exist in the free list, recycle in make, otherwise add on to heap.
+--                     in if (null fl)
+--                         then
+--                             let hp' = M.insert hs v hp
+--                                 hs' = hs + 1
+--                                 state'' = fsPush (Box hs) state'
+--                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
+--                                 frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
+--                         else
+--                             let ((replaceBn, _), fl') = M.deleteFindMin fl
+--                                 hp' = M.insert replaceBn v hp
+--                                 state'' = fsPush (Box replaceBn) state'
+--                             in return EDState{stack = stack state'', fns = fns state'', 
+--                                 vars = vars state'', frames = frames state'', 
+--                                 heap = Heap{freeList = fl', h = hp', heapSize = hs}}
+
+--         "open" -> 
+--             if (null $ stack state)
+--                 then 
+--                     throwError "Operator (box open) error. Can't open a Box with an empty stack! No Box to open!" state
+--                 else
+--                     case (fsTop state) of
+--                         Box n -> 
+--                             case (validateBox (heap state) n) of
+--                                 Left v -> return $ fsPush v state
+--                                 Right err -> throwError err state 
+--                         x -> 
+--                             let xType = chrs $ doQueryType' x 
+--                             in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
+--         "altr" -> 
+--             case (stack state) of 
+--                 [] -> throwError "Operator (box altr) error. Two operands expected on stack; none provided!" state
+--                 [x] -> throwError "Operator (box altr) error. Two operands expected on stack; only one provided!" state
+--                 vals ->
+--                     let (state', secondToTop, top) = fsPop2 state
+--                     in case (secondToTop, top) of
+--                         (Box bn, v) ->
+--                             case (validateBox (heap state') bn) of
+--                                 Left oldV -> 
+--                                     if (compareTypesForMut oldV v)
+--                                         then
+--                                             let h' = M.insert bn v (h $ heap state')
+--                                                 state'' = fsPush (Box bn) state'
+--                                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+--                                                 frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
+--                                         else
+--                                             let (oldVType, vType) = findTypeStrsForError oldV v
+--                                             in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
+--                                                 " of type " ++ vType ++ " doesn't match old value of type " ++ oldVType 
+--                                                 ++ ". Types must match for value to be changed for given Box!") state'
+--                                 Right err -> throwError err state
+--                         (x, v) ->
+--                             let (xType, vType) = findTypeStrsForError x v
+--                             in throwError ("Operator (box altr) error. Second to top of stack needs to be type Box and top needs to be type Value. TL;DR Needs types Box Value ; Attempted types: "
+--                                 ++ xType ++ " and " ++ vType) state'
+--         "free" -> 
+--             if (null $ stack state)
+--                 then
+--                     throwError "Operator (box free) error. Can't free a Box when stack is empty and no Box exists!" state
+--                 else
+--                     let (state', top) = fsPop state
+--                     in case (top) of
+--                         Box freeBn ->
+--                             case (validateBox (heap state) freeBn) of
+--                                 Left _ ->
+--                                     let fl' = M.insert freeBn () (freeList $ heap state')
+--                                     in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
+--                                         heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}}
+--                                 Right err -> throwError err state'
+--                         x ->
+--                             let xType = chrs $ doQueryType' x
+--                             in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
+--                                 ++ xType) state
+--         "null" -> return $ fsPush (Box (-1)) state
+--         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
@@ -1845,14 +1946,14 @@ generateCodeString ast =
                 ((nFourSpaces 1) ++ "deriving(Eq, Show, Ord)"),
                 "data Heap = Heap {",
                 (nFourSpaces 1) ++ "freeList :: M.Map Int (),",
-                (nFourSpaces 1) ++ "h :: M.Map Int Value,",
-                (nFourSpaces 1) ++ "heapSize :: Int",
+                (nFourSpaces 1) ++ "hp :: M.Map Int Value",
                 "}",
                 "data EDState = EDState {",
                 (nFourSpaces 1) ++ "stack :: [Value],",
                 makeLine 1 ["fns :: M.Map String (EDState -> IO EDState),"],
                 makeLine 1 ["vars :: M.Map String Value,"],
-                makeLine 1 ["frames :: [M.Map String Value]"],
+                makeLine 1 ["frames :: [M.Map String Value],"],
+                makeLine 1 ["heap :: Heap"],
                 "}",
                 "data GeneralException = GeneralException String deriving (Show, Typeable)",
                 "instance Exception GeneralException",
@@ -1888,8 +1989,10 @@ generateCodeString ast =
                 "compareTypesForMut _ _ = False",
 
                 "pop :: EDState -> (EDState, Maybe Value)",
-                "pop EDState{stack = [], fns = fs, vars = vs, frames = fms} = (EDState{stack = [], fns = fs, vars = vs, frames = fms}, Nothing)",
-                "pop state = (EDState{stack = tail $ stack state, fns = fns state, vars = vars state, frames = frames state}, Just $ head $ stack state)",
+                "pop EDState{stack = [], fns = fs, vars = vs, frames = fms, heap = h} = \
+                \(EDState{stack = [], fns = fs, vars = vs, frames = fms, heap = h}, Nothing)",
+                "pop state = (EDState{stack = tail $ stack state, fns = fns state, vars = vars state, \
+                \frames = frames state, heap = heap state}, Just $ head $ stack state)",
                 "",
 
                 "pop2 :: EDState -> (EDState, Maybe Value, Maybe Value)",
@@ -1907,7 +2010,7 @@ generateCodeString ast =
                 makeLine 1 ["in (state''', thirdToTop, secondToTop, top)"],
 
                 "push :: EDState -> Value -> EDState",
-                "push EDState{stack = xs, fns = fs, vars = vs, frames = fms} v = EDState{stack = v:xs, fns = fs, vars = vs, frames = fms}",
+                "push EDState{stack = xs, fns = fs, vars = vs, frames = fms, heap = h} v = EDState{stack = v:xs, fns = fs, vars = vs, frames = fms, heap = h}",
 
                 "printStack :: [Value] -> IO ()",
                 "printStack [] = return ()",
@@ -2134,15 +2237,18 @@ generateCodeString ast =
                 makeLine 1 ["|    otherwise = List{items = accs, len = accLen}"],
 
                 "addFrame :: EDState -> EDState",
-                "addFrame EDState{stack = s, fns = fs, vars = vs, frames = fms} = EDState{stack = s, fns = fs, vars = vs, frames = (M.empty):fms}",
+                "addFrame EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = h} = \
+                \EDState{stack = s, fns = fs, vars = vs, frames = (M.empty):fms, heap = h}",
 
                 "removeFrame :: EDState -> EDState",
-                "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = [fm]} = EDState{stack = s, fns = fs, vars = vs, frames = [fm]}",
-                "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = fms} = EDState{stack = s, fns = fs, vars = vs, frames = tail fms}",
+                "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = [fm], heap = h} = \
+                \EDState{stack = s, fns = fs, vars = vs, frames = [fm], heap = h}",
+                "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = h} = \
+                \EDState{stack = s, fns = fs, vars = vs, frames = tail fms, heap = h}",
 
                 "main :: IO EDState",
                 "main = do",
-                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty, vars = M.empty, frames = [M.empty]}"
+                (nFourSpaces 1) ++ "let state0 = EDState{stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, hp = M.empty}}"
             ]
         (newLines, stateCount) = generateCodeString' ast linesInit 1 0  
         linesFinal = newLines ++ [(nFourSpaces 1) ++ "(printStack $ reverse $ stack state" ++ (show stateCount) ++ ") >> return state" ++ (show stateCount)]
