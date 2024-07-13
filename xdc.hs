@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.7
+--Version: Alpha 0.10.8
 --Compiler for EcksDee
 
 import Data.List
@@ -1550,7 +1550,7 @@ generateCodeString' (While loopBody) lineAcc indent stateCount =
         loopStateStr = "state" ++ (show finalLoopStateCount)
         loopCode' = loopCode ++ [makeLine (indent + internalCodeOffset) ["let (_, top) = pop ", loopStateStr, 
             " in case top of ; \
-            \Just (Boolean b) -> if b then ", whileLambdaName, " ", loopStateStr, " else return ", loopStateStr, " ; \
+            \Just (Boolean b) -> if b then ", whileLambdaName, " $ addFrame $ removeFrame ", loopStateStr, " else return $ removeFrame ", loopStateStr, " ; \
             \Just v -> let vType = chrs $ doQueryType' v \
                 \in throwError (\"While loop error. Top of stack needs to be type Boolean \
                 \for loop to try and run! Attempted type: \" ++ vType) ", loopStateStr, " ; \
@@ -1567,7 +1567,7 @@ generateCodeString' (While loopBody) lineAcc indent stateCount =
                 makeLine (indent + 2) ["if b"],
                 makeLine (indent + 3) ["then do"],
                 makeLine (indent + 4) ["newState <- ", whileLambdaName, " $ addFrame ", stateStr],
-                makeLine (indent + 4) ["return $ removeFrame newState"],
+                makeLine (indent + 4) ["return newState"],
                 makeLine (indent + 3) ["else return ", stateStr],
                 makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
                 \in throwError (\"While loop error. Top of stack needs to be type Boolean \
