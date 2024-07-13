@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.10.6
+--Version: Alpha 0.10.7
 --Compiler for EcksDee
 
 import Data.List
@@ -1688,6 +1688,8 @@ generateCodeString' Variable{varName = name, varCmd = cmd} lineAcc indent stateC
 generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
     let astToStr = \(Terminal (Word w)) -> w
         stateStr = "state" ++ (show stateCount)
+        getLocCode = makeLine indent ["let getLoc = \\ls name -> case (ls, name) of ; ([], name) -> Nothing ; ((f:fs), name) -> \
+                            \case (M.lookup name f) of ; Just v -> Just v ; Nothing -> getLoc fs name ; "]
         codeStr = case (astToStr cmd) of
             "mak" -> 
                 let vName = astToStr name
@@ -1712,8 +1714,7 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                     vNameStr = makeLine 0 ["\"", vName, "\""]
                     code = 
                         [
-                            makeLine indent ["let getLoc = \\ls name -> case (ls, name) of ; ([], name) -> Nothing ; ((f:fs), name) -> \
-                            \case (M.lookup name f) of ; Just v -> Just v ; Nothing -> getLoc fs name ; "],
+                            getLocCode,
                             makeLine indent ["newState <- case (getLoc (frames ", stateStr, ") ", vNameStr, ") of"],
                             makeLine (indent + 1) ["Just v -> return $ push ", stateStr, " v"],
                             makeLine (indent + 1) ["Nothing -> throwError (\"Local variable (loc) Get Error. Local variable ", vName, " not defined in any scope!\") ", stateStr],
@@ -1725,33 +1726,50 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
                     vNameStr = makeLine 0 ["\"", vName, "\""]
                     code = 
                         [
+                            getLocCode,
+                            makeLine indent ["let updateFrames = \\oldFrames acc mutVal name hasUpdated -> \
+                            \case (oldFrames, acc, mutVal, name, hasUpdated) of ; \
+                            \([], acc, mutVal, name, hasUpdated) -> reverse acc ; \
+                            \((f:fs), acc, mutVal, name, hasUpdated) -> if hasUpdated \
+                                \then updateFrames fs (f : acc) mutVal name hasUpdated \
+                                \else case (M.lookup name f) of ; \
+                                \Just _ -> updateFrames fs ((M.insert name mutVal f) : acc) mutVal name True ; \
+                                \Nothing -> updateFrames fs (f : acc) mutVal name hasUpdated"],
+
                             makeLine indent ["let (_, top) = pop ", stateStr],
-                            makeLine indent ["newState <- case (top, M.lookup ", vNameStr, " (vars ", stateStr, ")) of"],
+                            makeLine indent ["newState <- case (top, getLoc (frames ", stateStr, ") ", vNameStr, ") of"],
                             makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 \
                             \in if v1Type == v2Type \
                                 \then return EDState{stack = stack ", stateStr, 
-                                    ", fns = fns ", stateStr, ", vars = M.insert ", vNameStr, " v1 (vars ", stateStr, "), frames = frames ", stateStr, "} \
-                                \else throwError (\"Variable (var) Mut Error. \
+                                    ", fns = fns ", stateStr, ", vars = vars ", stateStr, ", frames = updateFrames (frames ", stateStr, ") [] v1 ", vNameStr, " False} \
+                                \else throwError (\"Local variable (loc) Mut Error. \
                                 \Can't mutate variable ", vName, " of type \" ++ v2Type ++ \" to different type: \" ++ v1Type) ", stateStr],
-                            makeLine (indent + 1) ["(Just v1, Nothing) -> throwError (\"Variable (var) Mut Error. \
-                            \Variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
-                            makeLine (indent + 1) ["(Nothing, _) -> throwError (\"Variable (var) Mut Error. \
-                            \Can't mutate variable when stack is empty! Attempted variable name: ", vName, "\") ", stateStr],
+                            makeLine (indent + 1) ["(Just v1, Nothing) -> throwError (\"Local variable (loc) Mut Error. \
+                            \Local variable ", vName, " doesn't exist or was deleted!\") ", stateStr],
+                            makeLine (indent + 1) ["(Nothing, _) -> throwError (\"Local variable (loc) Mut Error. \
+                            \Can't mutate variable when stack is empty! Attempted local variable name: ", vName, "\") ", stateStr],
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
-            other -> [makeLine indent ["newState <- throwError (\"Variable (var) Command Error. Invalid variable command given! Given: ", 
-                other, " Valid: mak, get, mut, del\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
+            other -> [makeLine indent ["newState <- throwError (\"Local variable (loc) Command Error. Invalid local variable command given! Given: ", 
+                other, " Valid: mak, get, mut\") ", "state", show stateCount], makeLine indent ["let state", show $ stateCount + 1, " = newState"]]
 
     in (lineAcc ++ codeStr, stateCount + 1)
 
--- --Runs all the different cases of local variable actions.
--- doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
---     case (astNodeToString cmd) of                           
---         "get" ->  
---             case (getLoc (frames state) (astNodeToString name)) of
---                 Just value -> doNode (Expression rest) (fsPush value state)
---                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
+-- --Recursively builds a new list of stack frames with the mutated variable in it.
+-- --Altered to now linearly do this!
+-- updateFrames :: [M.Map String Value] -> [M.Map String Value] -> Value -> String -> Bool -> [M.Map String Value]
+-- updateFrames [] acc mutVal name hasUpdated = reverse acc
+-- updateFrames (f:fs) acc mutVal name hasUpdated = 
+--     if hasUpdated
+--         then 
+--             updateFrames fs (f : acc) mutVal name hasUpdated
+--         else 
+--             case (M.lookup name f) of
+--                 Just _ -> 
+--                     let f' = M.insert name mutVal f
+--                     in updateFrames fs (f' : acc) mutVal name True 
+--                 Nothing -> updateFrames fs (f : acc) mutVal name hasUpdated
 
 --         "mut" -> 
 --             let vName = astNodeToString name
