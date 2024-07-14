@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.5
+--Version: Alpha 0.13.6
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1877,31 +1877,21 @@ generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
+            "null" ->
+                let code =
+                        [
+                            makeLine indent ["let state", show $ stateCount + 1, " = push ", stateStr, " (Box (-1))"]
+                        ]
+                in code 
+            x -> 
+                let code = 
+                        [
+                            makeLine indent ["newState <- throwError (\"Operator (box) error. \
+                            \Invalid Box command ", x, " given! Valid commands: make, open, altr, free, null\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
     in (lineAcc ++ codeStr, stateCount + 1)
-
--- --Parses box command.
--- doNode (BoxOp cmd) state =
---     case (astNodeToString cmd) of
---         "free" -> 
---             if (null $ stack state)
---                 then
---                     throwError "Operator (box free) error. Can't free a Box when stack is empty and no Box exists!" state
---                 else
---                     let (state', top) = fsPop state
---                     in case (top) of
---                         Box freeBn ->
---                             case (validateBox (heap state) freeBn) of
---                                 Left _ ->
---                                     let fl' = M.insert freeBn () (freeList $ heap state')
---                                     in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
---                                         heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}}
---                                 Right err -> throwError err state'
---                         x ->
---                             let xType = chrs $ doQueryType' x
---                             in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
---                                 ++ xType) state
---         "null" -> return $ fsPush (Box (-1)) state
---         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
 generateCodeString' (Terminal (Word op)) lineAcc indent stateCount =
     let (codeStr, stateCount') = generateOpCode op indent stateCount
