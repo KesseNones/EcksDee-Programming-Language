@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.4
+--Version: Alpha 0.13.5
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1861,37 +1861,27 @@ generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
+            "free" ->
+                let code = 
+                        [
+                            makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                            makeLine indent ["newState <- case top of"],
+                            makeLine (indent + 1) ["Just (Box freeBn) -> \
+                                \case (validateBox (heap ", stateStr', ") freeBn) of ; \
+                                \Left _ -> let Heap{freeList = fl, hp = h} = (heap ", stateStr', ") \
+                                    \in return $ changeHeap (", stateStr', ") (Heap{freeList = M.insert freeBn () fl, hp = h}) ; \
+                                \Right err -> throwError err ", stateStr'],
+                            makeLine (indent + 1) ["Just x -> throwError (\"Operator (box free) error. \
+                                \Top of stack needs to be of type Box to be free'd! Attempted type: \" ++ (chrs $ doQueryType' x)) ", stateStr'],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Operator (box free) error. Can't free a Box when stack is empty and no Box exists!\") ", stateStr'],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
     in (lineAcc ++ codeStr, stateCount + 1)
 
 -- --Parses box command.
 -- doNode (BoxOp cmd) state =
 --     case (astNodeToString cmd) of
---         "altr" -> 
---             case (stack state) of 
---                 [] -> throwError "Operator (box altr) error. Two operands expected on stack; none provided!" state
---                 [x] -> throwError "Operator (box altr) error. Two operands expected on stack; only one provided!" state
---                 vals ->
---                     let (state', secondToTop, top) = fsPop2 state
---                     in case (secondToTop, top) of
---                         (Box bn, v) ->
---                             case (validateBox (heap state') bn) of
---                                 Left oldV -> 
---                                     if (compareTypesForMut oldV v)
---                                         then
---                                             let h' = M.insert bn v (h $ heap state')
---                                                 state'' = fsPush (Box bn) state'
---                                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
---                                                 frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
---                                         else
---                                             let (oldVType, vType) = findTypeStrsForError oldV v
---                                             in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
---                                                 " of type " ++ vType ++ " doesn't match old value of type " ++ oldVType 
---                                                 ++ ". Types must match for value to be changed for given Box!") state'
---                                 Right err -> throwError err state
---                         (x, v) ->
---                             let (xType, vType) = findTypeStrsForError x v
---                             in throwError ("Operator (box altr) error. Second to top of stack needs to be type Box and top needs to be type Value. TL;DR Needs types Box Value ; Attempted types: "
---                                 ++ xType ++ " and " ++ vType) state'
 --         "free" -> 
 --             if (null $ stack state)
 --                 then
