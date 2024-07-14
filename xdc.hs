@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.2
+--Version: Alpha 0.13.3
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1820,35 +1820,26 @@ generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
+            "open" ->
+                let code = 
+                        [
+                            makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                            makeLine indent ["newState <- case top of"],
+                            makeLine (indent + 1) ["Just (Box bn) -> \
+                                \case (validateBox (heap ", stateStr, ") bn) of ; Left v -> return $ push ", 
+                                stateStr, " v ; Right err -> throwError err ", stateStr],
+                            makeLine (indent + 1) ["Just v -> throwError (\"Operator (box open) error. \
+                                \Top of stack needs to be of type Box! Attempted type: \" ++ (chrs $ doQueryType' v)) ", stateStr],
+                            makeLine (indent + 1) ["Nothing -> throwError (\"Operator (box open) error. \
+                                \Can't open a Box with an empty stack! No Box to open!\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
     in (lineAcc ++ codeStr, stateCount + 1)
 
 -- --Parses box command.
 -- doNode (BoxOp cmd) state =
 --     case (astNodeToString cmd) of
---         "make" -> 
---             if (null $ stack state)
---                 then
---                     throwError "Operator (box make) error. Can't make a box with no data on stack to give it!" state
---                 else
---                     let (Heap{freeList = fl, h = hp, heapSize = hs}) = heap state
---                         (state', v) = fsPop state
---                         flSize = M.size fl
---                     --If items exist in the free list, recycle in make, otherwise add on to heap.
---                     in if (null fl)
---                         then
---                             let hp' = M.insert hs v hp
---                                 hs' = hs + 1
---                                 state'' = fsPush (Box hs) state'
---                             in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
---                                 frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
---                         else
---                             let ((replaceBn, _), fl') = M.deleteFindMin fl
---                                 hp' = M.insert replaceBn v hp
---                                 state'' = fsPush (Box replaceBn) state'
---                             in return EDState{stack = stack state'', fns = fns state'', 
---                                 vars = vars state'', frames = frames state'', 
---                                 heap = Heap{freeList = fl', h = hp', heapSize = hs}}
-
 --         "open" -> 
 --             if (null $ stack state)
 --                 then 
@@ -2264,6 +2255,19 @@ generateCodeString ast =
                 "changeHeap :: EDState -> Heap -> EDState",
                 "changeHeap EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = _} newHeap \
                 \= EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = newHeap}",
+
+                "validateBox :: Heap -> Int -> Either Value String",
+                "validateBox Heap{freeList = fl, hp = h} bn =",
+                makeLine 1 ["if bn == (-1) then Right \"Operator (box) error. Box interaction with a NULL Box occuring! Can't operate using a NULL Box!\""],
+                makeLine 1 ["else if (bn > (-1)) && (bn < M.size h)"],
+                makeLine 2 ["then"],
+                makeLine 3 ["case (M.lookup bn fl) of"],
+                makeLine 4 ["Just _ -> Right (\"Operator (box) error. Box number \" \
+                \++ (show bn) ++ \" isn't a valid Box number! Box \" ++ (show bn) ++ \" has been free'd!\")"],
+                makeLine 4 ["Nothing -> case (M.lookup bn h) of Just v -> Left v ; \
+                \Nothing -> Right (\"Operator (box) error. Box number \" ++ (show bn) ++ \"doesn't exist in the heap!\")"],
+                makeLine 2 ["else Right (\"Operator (box) error. Box number \" \
+                \++ (show bn) ++ \" isn't a valid Box number! Box number out of range of heap of size \" ++ (show $ M.size h))"],
 
                 "main :: IO EDState",
                 "main = do",
