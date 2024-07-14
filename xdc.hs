@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.1
+--Version: Alpha 0.13.2
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1799,13 +1799,28 @@ generateCodeString' (TempStackChange runBlock) lineAcc indent stateCount =
             ]
     in (lineAcc ++ codeStr, stateCount + 1)
 
--- generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
---     let stateStr = "state" ++ (show stateCount)
---         codeStr = 
---             [
-
---             ]
---     in (lineAcc ++ codeStr, stateCount + 1)
+generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeStr = case ((\(Terminal (Word w)) -> w) cmd) of
+            "make" ->
+                let code =
+                        [
+                            makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                            makeLine indent ["newState <- case top of"],
+                            makeLine (indent + 1) ["Just v -> \
+                            \let Heap{freeList = fl, hp = h} = heap ", stateStr', " ; \
+                            \flSize = M.size fl ; \
+                            \in if flSize > 0 \
+                                \then let ((replaceBn, _), fl') = M.deleteFindMin fl ; h' = M.insert replaceBn v h ; \
+                                \in return $ changeHeap (push ", stateStr', " (Box replaceBn)) (Heap{freeList = fl', hp = h'}) \
+                                \else return $ changeHeap (push ", stateStr', " (Box (M.size h))) (Heap{freeList = fl, hp = M.insert (M.size h) v h})"],
+                            makeLine (indent + 1) ["Nothing -> \
+                            \throwError (\"Operator (box make) error. Can't make a box with no data on stack to give it!\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
+    in (lineAcc ++ codeStr, stateCount + 1)
 
 -- --Parses box command.
 -- doNode (BoxOp cmd) state =
@@ -2245,6 +2260,10 @@ generateCodeString ast =
                 \EDState{stack = s, fns = fs, vars = vs, frames = [fm], heap = h}",
                 "removeFrame EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = h} = \
                 \EDState{stack = s, fns = fs, vars = vs, frames = tail fms, heap = h}",
+
+                "changeHeap :: EDState -> Heap -> EDState",
+                "changeHeap EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = _} newHeap \
+                \= EDState{stack = s, fns = fs, vars = vs, frames = fms, heap = newHeap}",
 
                 "main :: IO EDState",
                 "main = do",
