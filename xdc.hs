@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.3
+--Version: Alpha 0.13.4
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1835,24 +1835,37 @@ generateCodeString' (BoxOp cmd) lineAcc indent stateCount =
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
                 in code
+            "altr" ->
+                let code = 
+                        [
+                            makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                            makeLine indent ["newState <- case (secondToTop, top) of"],
+                            makeLine (indent + 1) ["(Just (Box bn), Just v) -> \
+                                \case (validateBox (heap ", stateStr', ") bn) of ; \
+                                \Left oldV -> if (compareTypesForMut oldV v) \
+                                    \then let Heap{freeList = fl, hp = h} = heap ", stateStr, " \
+                                        \in return $ changeHeap (push ", stateStr', " (Box bn)) (Heap{freeList = fl, hp = M.insert bn v h}) \
+                                    \else let (oldVType, vType) = findTypeStrsForError oldV v \
+                                        \in throwError (\"Operator (box altr) error. \
+                                        \New value for Box \" ++ (show bn) ++ \" of type \" ++ vType \
+                                        \++ \" doesn't match old value of types \" ++ oldVType ++ \". Types must match for value to be changed for given Box!\") ", stateStr', " \
+                                \; Right err -> throwError err ", stateStr],
+                            makeLine (indent + 1) ["(Just x, Just v) -> let (xType, vType) = findTypeStrsForError x v \
+                            \in throwError (\"Operator (box altr) error. \
+                            \Second to top of stack needs to be type Box and top needs \
+                            \to be type Value. TL;DR Needs types Box Value ; Attempted types: \" ++ xType ++ \" and \" ++ vType) ", stateStr'],
+                            makeLine (indent + 1) ["(Nothing, Just v) -> \
+                            \throwError (\"Operator (box altr) error. Two operands expected on stack; only one provided!\") ", stateStr],
+                            makeLine (indent + 1) ["(Nothing, Nothing) -> \
+                            \throwError (\"Operator (box altr) error. Two operands expected on stack; none provided!\") ", stateStr],
+                            makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                        ]
+                in code
     in (lineAcc ++ codeStr, stateCount + 1)
 
 -- --Parses box command.
 -- doNode (BoxOp cmd) state =
 --     case (astNodeToString cmd) of
---         "open" -> 
---             if (null $ stack state)
---                 then 
---                     throwError "Operator (box open) error. Can't open a Box with an empty stack! No Box to open!" state
---                 else
---                     case (fsTop state) of
---                         Box n -> 
---                             case (validateBox (heap state) n) of
---                                 Left v -> return $ fsPush v state
---                                 Right err -> throwError err state 
---                         x -> 
---                             let xType = chrs $ doQueryType' x 
---                             in throwError ("Operator (box open) error. Top of stack needs to be of type Box! Attempted type: " ++ xType) state
 --         "altr" -> 
 --             case (stack state) of 
 --                 [] -> throwError "Operator (box altr) error. Two operands expected on stack; none provided!" state
