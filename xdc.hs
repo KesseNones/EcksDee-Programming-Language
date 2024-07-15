@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.13.6
+--Version: Alpha 0.13.7
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1795,7 +1795,7 @@ generateCodeString' (TempStackChange runBlock) lineAcc indent stateCount =
                 makeLine indent ["newState <- runFunc $ addFrame ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " \
                 \= removeFrame EDState{stack = oldStack, fns = fns newState,\
-                \ vars = vars newState, frames = frames newState, heap = heap ", stateStr, "}"]
+                \ vars = vars newState, frames = frames newState, heap = heap newState}"]
             ]
     in (lineAcc ++ codeStr, stateCount + 1)
 
