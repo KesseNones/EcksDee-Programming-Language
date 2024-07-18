@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.14.0
+--Version: Alpha 0.14.1
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -2014,7 +2014,7 @@ main = do
     putStrLn ("Generating abstract syntax tree of " ++ fileName)
     let tokens = removeComments False [] (tokenize fileStr)
     let ast = parseExpression tokens
-    putStrLn $ show $ ast --DELETE LATER!!!!
+    --putStrLn $ show $ ast --DELETE LATER!!!!
 
     let pgmStr = generateCodeString ast
     --This name replaces the .xd file extension with .hs so ghc can compile it.
@@ -2029,13 +2029,13 @@ main = do
             hPutStr handle pgmStr 
             hClose handle
             putStrLn ("Compiling " ++ haskellFileName)
-            res <- system ( "cat " ++ haskellFileName ++ " && " ++ "ghc -O2 " ++ haskellFileName)
+            res <- system ("ghc -O2 " ++ haskellFileName)
             case res of 
                 ExitSuccess -> do
                     putStrLn "Cleanup"
                     let baseName = init $ init $ init haskellFileName
-                    cleanupRes <- system ("cat " ++ haskellFileName ++ " && " ++ "rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
+                    cleanupRes <- system ("rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
                     case cleanupRes of
                         ExitSuccess -> (putStrLn "Cleanup Successful") >> putStrLn ("Compilation complete!")
                         ExitFailure errMsg -> putStrLn ("Cleanup failed because " ++ (show errMsg))
-                ExitFailure err -> putStrLn ("Compilation of " ++ haskellFileName ++ " failed because " ++ (show err))
+                ExitFailure err -> putStrLn ("Compilation of " ++ haskellFileName ++ " failed")
