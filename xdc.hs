@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.14.3
+--Version: Alpha 0.14.4
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1314,7 +1314,7 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
             "def" -> 
                 let fnNameStr = makeLine 0 ["\"", astToStr name, "\""]
                     fnName = astToStr name
-                    internalCodeOffset = 1
+                    internalCodeOffset = 2
                     (funcBody, finalFuncBodyStateCount) = generateCodeString' body [] (indent + internalCodeOffset) 0
                     funcBody' = funcBody ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFuncBodyStateCount]]
                     code = 
@@ -2017,7 +2017,6 @@ main = do
     putStrLn ("Generating abstract syntax tree of " ++ fileName)
     let tokens = removeComments False [] (tokenize fileStr)
     let ast = parseExpression tokens
-    --putStrLn $ show $ ast --DELETE LATER!!!!
 
     let pgmStr = generateCodeString ast
     --This name replaces the .xd file extension with .hs so ghc can compile it.
