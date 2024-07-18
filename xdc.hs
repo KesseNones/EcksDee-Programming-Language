@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.14.1
+--Version: Alpha 0.14.2
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -2004,6 +2004,9 @@ main = do
         then (args !! 0) 
         else error "Please provide an EcksDee file to compile!"
 
+    --Determines if cleanup is disabled, which is mostly for debugging/curiosity.
+    let canCleanup = not (((length args) > 1) && ((args !! 1) == "--no-cleanup"))
+
     putStrLn ("Opening and reading " ++ fileName)
     --Magic *snorts in Mr Bean*
     openResult <- tryIOError $ openFile fileName ReadMode
@@ -2032,10 +2035,13 @@ main = do
             res <- system ("ghc -O2 " ++ haskellFileName)
             case res of 
                 ExitSuccess -> do
-                    putStrLn "Cleanup"
-                    let baseName = init $ init $ init haskellFileName
-                    cleanupRes <- system ("rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
-                    case cleanupRes of
-                        ExitSuccess -> (putStrLn "Cleanup Successful") >> putStrLn ("Compilation complete!")
-                        ExitFailure errMsg -> putStrLn ("Cleanup failed because " ++ (show errMsg))
-                ExitFailure err -> putStrLn ("Compilation of " ++ haskellFileName ++ " failed")
+                    if canCleanup
+                        then do
+                            putStrLn "Cleanup"
+                            let baseName = init $ init $ init haskellFileName
+                            cleanupRes <- system ("rm " ++ baseName ++ ".o" ++ " && " ++ "rm " ++ baseName ++ ".h*")
+                            case cleanupRes of
+                                ExitSuccess -> (putStrLn "Cleanup Successful") >> putStrLn ("Compilation complete!")
+                                ExitFailure errMsg -> putStrLn ("Cleanup failed because " ++ (show errMsg))
+                        else putStrLn "Compilation complete!"
+                ExitFailure err -> putStrLn ("Compilation of " ++ haskellFileName ++ " failed!")
