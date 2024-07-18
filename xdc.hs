@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.14.2
+--Version: Alpha 0.14.3
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -2005,7 +2005,7 @@ main = do
         else error "Please provide an EcksDee file to compile!"
 
     --Determines if cleanup is disabled, which is mostly for debugging/curiosity.
-    let canCleanup = not (((length args) > 1) && ((args !! 1) == "--no-cleanup"))
+    let canCleanup = not (((length $ take 5 args) > 1) && ((args !! 1) == "--no-cleanup"))
 
     putStrLn ("Opening and reading " ++ fileName)
     --Magic *snorts in Mr Bean*
