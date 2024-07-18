@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.14.4
+--Version: Alpha 0.14.5
 --Compiler for EcksDee
 
 --FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
@@ -1490,12 +1490,12 @@ generateCodeString' LocVar{name = name, cmd = cmd} lineAcc indent stateCount =
     in (lineAcc ++ codeStr, stateCount + 1)
 
 generateCodeString' AttErr{attempt = att, onError = err} lineAcc indent stateCount =
-    let internalCodeOffset = 4
+    let internalCodeOffset = 3
         stateStr = "state" ++ (show stateCount)
-        (attCode, finalAttCodeStateCount) = generateCodeString' att [] (indent + 1) 0
-        (errCode, finalErrCodeStateCount) = generateCodeString' err [] (indent + 1) 0
-        attCode' = attCode ++ [makeLine (indent + 1) ["return state", show finalAttCodeStateCount]]
-        errCode' = errCode ++ [makeLine (indent + 1) ["return state", show finalErrCodeStateCount]]
+        (attCode, finalAttCodeStateCount) = generateCodeString' att [] (indent + internalCodeOffset) 0
+        (errCode, finalErrCodeStateCount) = generateCodeString' err [] (indent + internalCodeOffset) 0
+        attCode' = attCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalAttCodeStateCount]]
+        errCode' = errCode ++ [makeLine (indent + internalCodeOffset) ["return state", show finalErrCodeStateCount]]
         codeStr =
             [
                 makeLine indent ["let attFunc = \\state0 -> do"],
