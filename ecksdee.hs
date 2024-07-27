@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-05-28.436
+--Version: 2024-06-29.91
 --Toy Programming Language Named EcksDee
 
 {-
@@ -477,8 +477,8 @@ doGreaterThanEqualTo' a b =
 doLessThanEqualTo :: EDState -> IO EDState
 doLessThanEqualTo state = 
     case (stack state) of 
-        [] -> throwError "Operator (<=) error. Less than comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (<=) error. Less than comparison requires two operands; only one provided!" state
+        [] -> throwError "Operator (<=) error. Less than equal to comparison requires two operands; none provided!" state
+        [x] -> throwError "Operator (<=) error. Less than equal to comparison requires two operands; only one provided!" state
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doLessThanEqualTo' b a) of
@@ -624,7 +624,7 @@ doPush' a b =
 doPop :: EDState -> IO EDState
 doPop state = 
     case (stack state) of 
-        [] -> throwError "Operator (pop) error. Pop operator needs a list to pop from; none provided!" state
+        [] -> throwError "Operator (pop). error. Pop operator needs one operand; none provided!" state
         vals -> 
             let (state', list) = fsPop state
             in case (doPop' list) of 
@@ -654,7 +654,7 @@ doPop' (String {chrs = cs, len = l}) =
     in Left (newStr, Just poppedChar) 
 doPop' x = 
     let xType = chrs $ doQueryType' x
-    in Right ("Operator (pop) error. Pop operator needs a List/String to pop items on. Attempted type: "
+    in Right ("Operator (pop) error. Pop operator needs a List/String to pop items on top of stack. Attempted type: "
         ++ xType)
 
 --Pushes an item to the front of a list on the stack.
@@ -982,7 +982,7 @@ doPrint state =
                 x -> 
                     let xType = chrs $ doQueryType' x
                     in throwError ("Operator (print) error. " 
-                        ++ "Top of stack needs to be a Sring to be printed! "
+                        ++ "Top of stack needs to be a String to be printed! "
                         ++ "Attempted type: " ++ xType) state
 
 --Reads a line from stdin, and pushes it onto stack.
@@ -1000,7 +1000,9 @@ doPrintError :: EDState -> IO EDState
 doPrintError state = 
     case (stack state) of 
         ((String{chrs = err, len = _}):xs) -> throwError err state
-        _ -> throwError "Operator (printError) error. String needed on top of stack for error to print." state
+        (x:xs) -> let xType = chrs $ doQueryType' x in throwError ("Operator (printError) error. \
+            \String needed on top of stack for error to print! Attempted type: " ++ xType) state
+        [] -> throwError "Operator (printError) error. One operand required; none provided!" state
 
 --Reads a multi-line string from stdin until 
 -- an empty string is read or EOF is hit.
