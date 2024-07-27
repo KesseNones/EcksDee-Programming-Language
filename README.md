@@ -2752,6 +2752,7 @@ The first big thing needed is a Haskell compiler since EcksDee is interpreted vi
 Ideally get GHC (Glasgow Haskell Compiler) since that's what I've used to develop the interpreter.
 Likely other Haskell compilers would also work but it's not known for sure.
 
+### How to Run: The Interpreter method
 With a Haskell compiler, compile the ecksdee.hs file to turn it into an executable. 
 
 Once the interpreter executable has been made, then you just have to have some code file,
@@ -2762,10 +2763,12 @@ On unix based systems in the terminal run it like so: <br>
 Where ```DIR_TO_PROGRAM``` is the EcksDee program you want to run.
 
 For example say you have a classic hello world program.  <br>
-The command series would look like this:
+The commands and outputs in Bash would look like this:
 ```
-ghc ecksdee
-./ecksdee helloWorld.xd
+$> ghc ecksdee
+[1 of 1] Compiling Main             ( ecksdee.hs, ecksdee.o )
+Linking ecksdee ...
+$> ./ecksdee helloWorld.xd
 Hello, World!
 ``` 
 
@@ -2779,7 +2782,73 @@ That's an example of running it in bash on a unix based system.
 It's likely running it on windows is trickier because windows can be annoying 
 for this kind of thing. More information on how to run it 
 in windows will be gathered and shared here later.
+Also, if `ecksdee` is already an existing executable, then you don't need to type in the `ghc ecksdee` line.
 
+### How to Run: The Compiler Method
+That's right! This language has a compiler now! 
+
+The compiler is known as `xdc` which is short for `XD Compiler` or `EcksDee Compiler` in full.
+It's a compiler that's kind of cheaty with how it works 
+because it basically translates EcksDee programs to Haskell 
+programs and then has ghc compile those which, let's be honest, is the bulk of the work.
+HOWEVER, this still means that xdc is an indirect compiler!
+
+Because xdc is a cheaty cheater who cheats, you still need a Haskell compiler, though this time specifically
+GHC since that's what `xdc.hs` calls when compiling the `.hs` file generated. Also, I'm really not sure how
+this would run on Windows since `xdc.hs` also runs commands in a bash format but it might be okay. 
+
+All that aside, here's how to compile and then run a basic hello world program:
+```
+$> ghc xdc
+[1 of 1] Compiling Main             ( xdc.hs, xdc.o )
+Linking xdc ...
+$> ./xdc helloWorld.xd
+Opening and reading helloWorld.xd
+Generating abstract syntax tree of helloWorld.xd
+Writing to helloWorld.hs
+Compiling helloWorld.hs
+[1 of 1] Compiling Main             ( helloWorld.hs, helloWorld.o )
+Linking helloWorld ...
+Cleanup
+Cleanup Successful
+Compilation complete!
+$> ./helloWorld
+Hello, World!
+```
+This looks like a lot, but it's mostly command output. 
+Once complete, the executable `helloWorld` exists and can be run by simply typing `./helloWorld` 
+which is faster and easier than having to call the `ecksdee` interpreter executable every time.
+
+#### How to Run: The Compiler Method: Performance
+Compiled EcksDee programs are certainly faster than interpreted, ranging from a few factors faster to a couple of orders of magnitude faster!
+This is definitely worth doing therefore to reap the benefits of a faster program when you're sure your code works.
+
+However, compilation time can often take a while since the code generated is clunky and inefficient.
+On top of that, it's not as much of a speedup as I believe it could potentially be with more tinkering on my part.
+
+#### How to Run: The Compiler Method: The `--no-cleanup` Flag
+As a last little aside to the compilation section, if you want to see the Haskell code generated 
+by xdc for some reason, you can add the `--no-cleanup` flag to the end of your xdc program running command
+to make it not cleanup generated files. 
+
+For example, in a directory containing
+`xdc` and `helloWorld.xd`, normal compilation proceedures previously shown would leave the directory
+with one extra file: `helloWorld`, with the rest cleaned up.
+
+If the user were to instead run the command as: `./xdc helloWorld.xd --no-cleanup`,
+the compilation output would omit the cleanup dialog since it doesn't happen and the 
+directory would contain the files: `xdc`, `helloWorld.xd`, `helloWorld`, `helloWorld.hs`, `helloWorld.hi`, and `helloWorld.o`.
+This is bulkier for sure but can be insightful in seeing more of the behind-the-scenes process in how xdc compiles EcksDee programs.
+Also, I derive use from this for debugging and ideally future performance improvements.
+
+#### How to Run: The Compiler Method: When to Use and Conclusion
+Typically, you don't need to compile your programs and can instead just use the `ecksdee` executable to act as an interpreter.
+You only really want to compile for repeated use of the program itself since it's faster and more streamlined to call in the first place.
+
+Overall, this was a really cool thing to create to help speedup EcksDee a bit and feel like a wizard making.
+Is it that useful? Eh. But it's sitll cool, at least to me.
+
+### How to Run: Conclusion 
 There you have it. If you have a unix based system, a Haskell compiler, 
 and these GitHub files, you absolutely can run your own EcksDee programs. Have fun! 
 
@@ -2796,7 +2865,7 @@ If you use Sublime Text there now exists a syntax highlighter useable for EcksDe
 This makes EcksDee significantly nicer to code in since 
 it's easier to see mistakes and it just looks prettier overall.
 
-## Convention
+## Extra Thing II: Convention
 In writing code in EcksDee, there is a convention to naming stuff for some consistency within EcksDee code.
 This comes with the obvious caveat that the user can do whatever they want and it's not that big of a deal
 but it's still a good idea to have a consistent look in a language when possible.

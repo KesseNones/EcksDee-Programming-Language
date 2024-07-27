@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 0.14.6
+--Version: Alpha 1.0.0
 --Compiler for EcksDee
 
 import Data.List
