@@ -1,8 +1,6 @@
 --Jesse A. Jones
---Version: Alpha 0.14.5
+--Version: Alpha 0.14.6
 --Compiler for EcksDee
-
---FIX ISSUE WHERE USER NAMING FUNCTIONS CERTAIN THINGS ENDS THE UNIVERSE
 
 import Data.List
 import Data.Char
@@ -1314,17 +1312,18 @@ generateCodeString' Function{funcCmd = cmd, funcName = name, funcBod = body} lin
             "def" -> 
                 let fnNameStr = makeLine 0 ["\"", astToStr name, "\""]
                     fnName = astToStr name
+                    fnLambdaName = 'a' : fnName
                     internalCodeOffset = 2
                     (funcBody, finalFuncBodyStateCount) = generateCodeString' body [] (indent + internalCodeOffset) 0
                     funcBody' = funcBody ++ [makeLine (indent + internalCodeOffset) ["return state", show finalFuncBodyStateCount]]
                     code = 
                         [
-                            makeLine indent ["let ", fnName, " = \\state0 -> do"],
+                            makeLine indent ["let ", fnLambdaName, " = \\state0 -> do"],
                             makeLine 0 [strListToStr funcBody'],
                             makeLine indent ["newState <- case (M.lookup ", fnNameStr, " (fns ", stateStr, ")) of"],
                             makeLine (indent + 1) ["Just _ -> throwError (\"Function def error. Function ", fnName, " already exists!\") ", stateStr],
                             makeLine (indent + 1) ["Nothing -> \
-                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnName, 
+                            \return EDState{stack = stack ", stateStr, ", fns = M.insert ", fnNameStr, " ", fnLambdaName, 
                                 "", " (fns ", stateStr, "), vars = vars ", stateStr, ", frames = frames ", stateStr, ", heap = heap ", stateStr, "}"], 
                             makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                         ]
