@@ -2797,21 +2797,47 @@ This makes EcksDee significantly nicer to code in since
 it's easier to see mistakes and it just looks prettier overall.
 
 ## Convention
-On the topic of text discussed in the last section, there is a minor convention for EcksDee to be used.
-Of course, the user can do whatever they want but this convention helps establish some consistency.
+In writing code in EcksDee, there is a convention to naming stuff for some consistency within EcksDee code.
+This comes with the obvious caveat that the user can do whatever they want and it's not that big of a deal
+but it's still a good idea to have a consistent look in a language when possible.
 
 ### Variables
-Variables should be named using `camelCase` where it's all letters with capitals seperating each word and the initial word of the chain starts with lowercase,
+Variables should be named using `camelCase` where it's all letters with capitals separating each word and the initial word of the chain starts with lowercase,
 ex: `isLeapYear`, `timeUntilApocalypse`, `ageOfUniverse`, etc.
+
+Variables intended to be constants should be `PascalCase` or `UPPER_CASE_SNAKE_CASE` to help set them apart from regular variables since constants are meant to *never* change.
 
 ### Functions
 Functions are also named using `camelCase` however, helper functions, functions that you don't want to call directly, should start with an `_`,
-ex: `_findSuccessor`, `_buildCache`, etc. 
+ex: `_findSuccessor`, `_buildCache`, etc. This `_` at the start of a function helps make calling it more awkward 
+and sets a convention that it's something you should think about calling before doing so, as in, 
+a function that should only be privately called by another function as a helper. This is similar to how Python or C does it.
+
+Functions that represent constants, as in data not meant to change, should be `CAPITAL_SNAKE_CASE` or at least `PascalCase`.
+When named differently like this, it helps indicate that these aren't traditional functions but are meant to hold some set of fixed actions that
+don't alter any data on the stack. This would be useful for macro-esque constants that definitely don't change.
+For example, a physics program could have: `func def C 299792458.0 ;` at the top of the program, where the constant `C` could then be used anywhere in code by doing: `func call C ;`.
+Alternatively, the user could just do: `299792458.0 var mak C ; drop ` at the top of the program and just `var get` this variable whenever needed but there's the tiny chance 
+`C` could be changed since `var` isn't immutable since it can be changed using `mut`. 
 
 ### Comments
 Put comments above the code you're describing, not below.
 
-More information on the EcksDee convention will be put here once more information is thought of.
+If a comment is short, it is constructed like so: `/' This is a comment '/` 
+where a space seperates comment start, the comment text, and the comment end.
+A larger multi-line comment however, should be constructed instead like this:
+```
+/'
+This is a 
+multi-line comment!
+!
+!!!!!
+Wow!
+'/
+```
+This helps distinguish where the comment starts and stops since the comment starters and stoppers are on their own lines.
+
+*More information on the EcksDee convention will be put here once more information is thought of.*
 
 ## Conclusion:
 EcksDee has been a fun programming language to develop 
