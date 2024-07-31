@@ -1514,6 +1514,36 @@ BigInteger 127
 Integer 368
 ```
 
+#### Operator: ```bitNot```
+##### Performance:
+```
+Integer: O(1)
+BigInteger: O(n)
+```
+(Constant time for Integer and linear time for BigInteger)
+
+Given a stack `x` where `x` is of type `Integer` or `BigInteger`, 
+pops `x` from stack and performs bitwise NOT on it, flipping the bits of the number
+and pushing the result to the stack `y`, leaving stack: `y`.
+Example Program:
+```
+0 bitNot 
+255b bitNot dup bitNot
+666 bitNot
+0 1 - dup bitNot
+6734769734563748967892389689728934672384968923748692346897234897689723489689234623b dup bitNot
+```
+Final Stack:
+```
+Integer (-1)
+BigInteger (-256)
+BigInteger 255
+Integer (-667)
+Integer (-1)
+Integer 0
+BigInteger 6734769734563748967892389689728934672384968923748692346897234897689723489689234623
+BigInteger (-6734769734563748967892389689728934672384968923748692346897234897689723489689234624)
+```
 
 ### While Loops
 While loops are a form of operator known as a fancy operator 
