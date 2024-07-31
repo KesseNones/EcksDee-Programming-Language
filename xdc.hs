@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 1.0.3
+--Version: Alpha 1.0.4
 --Compiler for EcksDee
 
 import Data.List
@@ -1290,6 +1290,22 @@ generateOpCode "bitXor" indent stateCount =
                     makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (bitXor) error. Two operands needed; none provided!\") ", stateStr'],
                     makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
+    in (codeLines, stateCount + 1)
+generateOpCode "bitNot" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines = 
+            [
+                makeLine indent ["let (", stateStr', ", top) = pop ", stateStr],
+                makeLine indent ["newState <- case top of"],
+                makeLine (indent + 1) ["Just (Integer v) -> return $ push ", stateStr', " (Integer $ complement v)"],
+                makeLine (indent + 1) ["Just (BigInteger v) -> return $ push ", stateStr', " (BigInteger $ complement v)"],
+                makeLine (indent + 1) ["Just v -> let vType = chrs $ doQueryType' v \
+                \in throwError (\"Operator (bitNot) error. Bitwise NOT requires one operand \
+                \of type Integer or BigInteger! Attempted type: \" ++ vType) ", stateStr],
+                makeLine (indent + 1) ["Nothing -> throwError (\"Operator (bitNot) error. One operand needed; none provided!\") ", stateStr],
+                makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+            ]
     in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
