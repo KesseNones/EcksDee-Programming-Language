@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-07-31.207
+--Version: 2024-07-31.224
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1318,6 +1318,15 @@ doBitXor state =
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
             throwError ("Operator (bitXor) error. Bitwise XOR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
 
+doBitNot :: EDState -> IO EDState
+doBitNot state =
+    case (stack state) of
+        [] -> throwError "Operator (bitNot) error. One operand needed; none provided!" state
+        (Integer x):xs -> return $ fsPush (Integer (complement x)) (fst $ fsPop state)
+        (BigInteger x):xs -> return $ fsPush (BigInteger (complement x)) (fst $ fsPop state)
+        x:xs -> let xType = chrs $ doQueryType' x ; 
+            in throwError ("Operator (bitNot) error. Bitwise NOT requires one operand of type Integer or BigInteger! Attempted type: " ++ xType) state 
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1394,6 +1403,7 @@ doOp "writeFile" = doWriteFile
 doOp "bitOr" = doBitOr
 doOp "bitAnd" = doBitAnd
 doOp "bitXor" = doBitXor
+doOp "bitNot" = doBitNot
 
 -- Error thrown if reached here.
 doOp op = throwError ("Unrecognized operator: " ++ op)  
