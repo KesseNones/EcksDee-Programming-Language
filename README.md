@@ -1457,6 +1457,7 @@ BigInteger: O(n)
 Given a stack `x y` where `x` and `y` are both type `t` where `t` is a `BigInteger` or `Integer`,
 pops `x` and `y` from the stack and performs a bitwise OR on them, pushing the resulting number `z`
 of type `t`, yielding stack: `z`.
+
 Example Program:
 ```
 666 69 bitOr
@@ -1479,6 +1480,7 @@ BigInteger: O(n)
 Given a stack `x y` where `x` and `y` are both type `t` where `t` is a `BigInteger` or `Integer`,
 pops `x` and `y` from the stack and performs a bitwise AND on them, pushing the resulting number `z`
 of type `t`, yielding stack: `z`.
+
 Example Program:
 ```
 666 69 bitAnd
@@ -1501,6 +1503,7 @@ BigInteger: O(n)
 Given a stack `x y` where `x` and `y` are both type `t` where `t` is a `BigInteger` or `Integer`,
 pops `x` and `y` from the stack and performs a bitwise eXclusive OR (XOR) on them, pushing the resulting number `z`
 of type `t`, yielding stack: `z`.
+
 Example Program:
 ```
 64 64 bitXor
@@ -1525,6 +1528,7 @@ BigInteger: O(n)
 Given a stack `x` where `x` is of type `Integer` or `BigInteger`, 
 pops `x` from stack and performs bitwise NOT on it, flipping the bits of the number
 and pushing the result to the stack `y`, leaving stack: `y`.
+
 Example Program:
 ```
 0 bitNot 
@@ -1543,6 +1547,37 @@ Integer (-1)
 Integer 0
 BigInteger 6734769734563748967892389689728934672384968923748692346897234897689723489689234623
 BigInteger (-6734769734563748967892389689728934672384968923748692346897234897689723489689234624)
+```
+
+#### Operator: ```bitShift```
+##### Performance:
+```
+Integer: O(1)
+BigInteger: O(n)
+```
+(Constant time for Integer and linear time for BigInteger)
+
+Given a stack `x y` where `x` is of type `Integer` or `BigInteger` and `y` is of type `Integer`, 
+pops `x` and `y` from stack and performs a bitshift based on the number `y`. 
+If the shift amount given is 0, nothing happens, if it's positive, the number `x` is shifted to the left `y` bits (gets bigger by `y` bits),
+if it's negative, the number `x` is shifted to the right `y` bits (gets smaller by `y` bits). 
+When completed, the resulting number `z` is pushed to the stack, leaving stack: `z`.
+
+Example Program:
+```
+64 7 bitShift
+666 0 2 - bitShift
+1024b 2 bitShift
+1b 128 bitShift
+34578397834957b 0 3582349856986 - bitShift 
+```
+Final Stack:
+```
+Integer 8192
+Integer 166
+BigInteger 4096
+BigInteger 340282366920938463463374607431768211456
+BigInteger 0
 ```
 
 ### While Loops
