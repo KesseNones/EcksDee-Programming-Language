@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-07-31.177
+--Version: 2024-07-31.207
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1307,6 +1307,17 @@ doBitAnd state =
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
             throwError ("Operator (bitAnd) error. Bitwise AND requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
 
+doBitXor :: EDState -> IO EDState
+doBitXor state = 
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of 
+        [] -> throwError "Operator (bitXor) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitXor) error. Two operands needed; only one provided!" state
+        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
+            throwError ("Operator (bitXor) error. Bitwise XOR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1382,6 +1393,7 @@ doOp "writeFile" = doWriteFile
 --Bitwise operators
 doOp "bitOr" = doBitOr
 doOp "bitAnd" = doBitAnd
+doOp "bitXor" = doBitXor
 
 -- Error thrown if reached here.
 doOp op = throwError ("Unrecognized operator: " ++ op)  

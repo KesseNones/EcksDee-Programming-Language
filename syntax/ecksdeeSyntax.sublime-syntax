@@ -244,5 +244,5 @@ contexts:
       scope: keyword.operator.xd
 
     #BitWise operators.
-    - match: '\bbit(Or|And)\b'
+    - match: '\bbit(Or|And|Xor)\b'
       scope: keyword.operator.xd
