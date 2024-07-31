@@ -1294,7 +1294,7 @@ doBitOr state =
         (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
         (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
-            throwError ("Operator (bitOr) error. Bitwise OR requires two operands matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+            throwError ("Operator (bitOr) error. Bitwise OR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
 
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
