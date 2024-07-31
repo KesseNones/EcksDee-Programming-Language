@@ -1446,6 +1446,28 @@ qux : {foo : BigInteger 2829682985925825728957927572800002}}
 foo : Integer 666}
 ```
 
+#### Operator: ```bitOr```
+##### Performance:
+```
+Integer: O(1)
+BigInteger: O(n)
+```
+(Constant time for Integer and linear time for BigInteger)
+
+Given a stack `x y` where `x` and `y` are both type `t` where `t` is a `BigInteger` or `Integer`,
+pops `x` and `y` from the stack and performs a bitwise OR on them, pushing the resulting number `z`
+of type `t`, yielding stack: `z`.
+Example Program:
+```
+666 69 bitOr
+64b 1b bitOr
+```
+Final Stack:
+```
+Integer 735
+BigInteger 65
+```
+
 ### While Loops
 While loops are a form of operator known as a fancy operator 
 because more is required to use it than just having some stuff 
