@@ -103,6 +103,11 @@ An object is constructed very similarly to a list where an empty object is pushe
 on the stack like so: ```{}```. The operator ```addField``` can then be used to 
 add fields to the object. The Object operators will be discussed later. 
 
+#### Box 
+This is a useful abstraction for data structures and heap-based memory. 
+The Box is used whenever you use EcksDee's heap to contain what's on the heap.
+Think of Box as similar to pointers or references in other languages.
+
 ### Operators
 Now that all the types of data have been covered that can be pushed onto the stack, 
 it's time to cover all the basic operators that can be used on the data.
