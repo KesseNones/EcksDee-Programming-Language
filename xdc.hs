@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 1.0.2
+--Version: Alpha 1.0.3
 --Compiler for EcksDee
 
 import Data.List
@@ -1271,6 +1271,23 @@ generateOpCode "bitAnd" indent stateCount =
                     \Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
                     makeLine (indent + 1) ["(Nothing, Just _) -> throwError (\"Operator (bitAnd) error. Two operands needed; only one provided!\") ", stateStr'],
                     makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (bitAnd) error. Two operands needed; none provided!\") ", stateStr'],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                ]
+    in (codeLines, stateCount + 1)
+generateOpCode "bitXor" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+                [
+                    makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just (Integer v1), Just (Integer v2)) -> return $ push ", stateStr', " (Integer (v1 `xor` v2))"],
+                    makeLine (indent + 1) ["(Just (BigInteger v1), Just (BigInteger v2)) -> return $ push ", stateStr', " (BigInteger (v1 `xor` v2))"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 ; \
+                    \in throwError (\"Operator (bitXor) error. Bitwise XOR requires two operands matching types Integer or BigInteger! \
+                    \Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
+                    makeLine (indent + 1) ["(Nothing, Just _) -> throwError (\"Operator (bitXor) error. Two operands needed; only one provided!\") ", stateStr'],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (bitXor) error. Two operands needed; none provided!\") ", stateStr'],
                     makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
