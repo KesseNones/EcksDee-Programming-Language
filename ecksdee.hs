@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-06-29.91
+--Version: 2024-07-31.246
 --Toy Programming Language Named EcksDee
 
 {-
@@ -23,6 +23,7 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Typeable
 import System.IO.Error (tryIOError)
+import Data.Bits
 
 data Value =                                         
         BigInteger Integer
@@ -1284,6 +1285,60 @@ doDebugPrintStack state = do
     putStrLn "DEBUG END\n----------------------------------------------"
     return state
 
+doBitOr :: EDState -> IO EDState
+doBitOr state = 
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of 
+        [] -> throwError "Operator (bitOr) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitOr) error. Two operands needed; only one provided!" state
+        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
+            throwError ("Operator (bitOr) error. Bitwise OR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
+doBitAnd :: EDState -> IO EDState
+doBitAnd state = 
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of 
+        [] -> throwError "Operator (bitAnd) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitAnd) error. Two operands needed; only one provided!" state
+        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 .&. x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 .&. x2)) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
+            throwError ("Operator (bitAnd) error. Bitwise AND requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
+doBitXor :: EDState -> IO EDState
+doBitXor state = 
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of 
+        [] -> throwError "Operator (bitXor) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitXor) error. Two operands needed; only one provided!" state
+        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
+            throwError ("Operator (bitXor) error. Bitwise XOR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
+doBitNot :: EDState -> IO EDState
+doBitNot state =
+    case (stack state) of
+        [] -> throwError "Operator (bitNot) error. One operand needed; none provided!" state
+        (Integer x):xs -> return $ fsPush (Integer (complement x)) (fst $ fsPop state)
+        (BigInteger x):xs -> return $ fsPush (BigInteger (complement x)) (fst $ fsPop state)
+        x:xs -> let xType = chrs $ doQueryType' x ; 
+            in throwError ("Operator (bitNot) error. Bitwise NOT requires one operand of type Integer or BigInteger! Attempted type: " ++ xType) state 
+
+doBitShift :: EDState -> IO EDState
+doBitShift state =
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of
+        [] -> throwError "Operator (bitShift) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitShift) error. Two operands needed; only one provided!" state
+        (Integer shiftAmount):(Integer x):xs -> return $ fsPush (Integer $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
+        (Integer shiftAmount):(BigInteger x):xs -> return $ fsPush (BigInteger $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; 
+            in throwError ("Operator (bitShift) error. Top of stack must be type Integer and second \
+                \to top must be either type Integer or BigInteger! Valid types: Integer/BigInteger Integer. Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1355,6 +1410,13 @@ doOp "mutateField" = doMutateField
 --File IO Operators
 doOp "readFile" = doReadFile 
 doOp "writeFile" = doWriteFile
+
+--Bitwise operators
+doOp "bitOr" = doBitOr
+doOp "bitAnd" = doBitAnd
+doOp "bitXor" = doBitXor
+doOp "bitNot" = doBitNot
+doOp "bitShift" = doBitShift
 
 -- Error thrown if reached here.
 doOp op = throwError ("Unrecognized operator: " ++ op)  
