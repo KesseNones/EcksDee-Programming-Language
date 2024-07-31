@@ -1490,6 +1490,31 @@ Integer 0
 BigInteger 1
 ```
 
+#### Operator: ```bitXor```
+##### Performance:
+```
+Integer: O(1)
+BigInteger: O(n)
+```
+(Constant time for Integer and linear time for BigInteger)
+
+Given a stack `x y` where `x` and `y` are both type `t` where `t` is a `BigInteger` or `Integer`,
+pops `x` and `y` from the stack and performs a bitwise eXclusive OR (XOR) on them, pushing the resulting number `z`
+of type `t`, yielding stack: `z`.
+Example Program:
+```
+64 64 bitXor
+64b 63b bitXor
+1002 666 bitXor
+```
+Final Stack:
+```
+Integer 0
+BigInteger 127
+Integer 368
+```
+
+
 ### While Loops
 While loops are a form of operator known as a fancy operator 
 because more is required to use it than just having some stuff 
