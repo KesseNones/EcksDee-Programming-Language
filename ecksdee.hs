@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-07-31.224
+--Version: 2024-07-31.246
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1327,6 +1327,18 @@ doBitNot state =
         x:xs -> let xType = chrs $ doQueryType' x ; 
             in throwError ("Operator (bitNot) error. Bitwise NOT requires one operand of type Integer or BigInteger! Attempted type: " ++ xType) state 
 
+doBitShift :: EDState -> IO EDState
+doBitShift state =
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of
+        [] -> throwError "Operator (bitShift) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitShift) error. Two operands needed; only one provided!" state
+        (Integer shiftAmount):(Integer x):xs -> return $ fsPush (Integer $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
+        (Integer shiftAmount):(BigInteger x):xs -> return $ fsPush (BigInteger $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; 
+            in throwError ("Operator (bitShift) error. Top of stack must be type Integer and second \
+                \to top must be either type Integer or BigInteger! Valid types: Integer/BigInteger Integer. Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1404,6 +1416,7 @@ doOp "bitOr" = doBitOr
 doOp "bitAnd" = doBitAnd
 doOp "bitXor" = doBitXor
 doOp "bitNot" = doBitNot
+doOp "bitShift" = doBitShift
 
 -- Error thrown if reached here.
 doOp op = throwError ("Unrecognized operator: " ++ op)  
