@@ -242,3 +242,7 @@ contexts:
     #File IO out
     - match: '\bwriteFile\b'
       scope: keyword.operator.xd
+
+    #BitWise operators.
+    - match: '\bbitOr\b'
+      scope: keyword.operator.xd
