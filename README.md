@@ -1468,6 +1468,28 @@ Integer 735
 BigInteger 65
 ```
 
+#### Operator: ```bitAnd```
+##### Performance:
+```
+Integer: O(1)
+BigInteger: O(n)
+```
+(Constant time for Integer and linear time for BigInteger)
+
+Given a stack `x y` where `x` and `y` are both type `t` where `t` is a `BigInteger` or `Integer`,
+pops `x` and `y` from the stack and performs a bitwise AND on them, pushing the resulting number `z`
+of type `t`, yielding stack: `z`.
+Example Program:
+```
+666 69 bitAnd
+64b 1b bitAnd
+```
+Final Stack:
+```
+Integer 0
+BigInteger 1
+```
+
 ### While Loops
 While loops are a form of operator known as a fancy operator 
 because more is required to use it than just having some stuff 
