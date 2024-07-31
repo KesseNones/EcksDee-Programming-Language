@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 1.0.1
+--Version: Alpha 1.0.2
 --Compiler for EcksDee
 
 import Data.List
@@ -799,23 +799,6 @@ generateOpCode "pow" indent stateCount =
                     makeLine indent ["let state", show $ stateCount + 1, " = newState"]
                 ]
     in (codeLines, stateCount + 1)
-generateOpCode "bitOr" indent stateCount =
-    let stateStr = "state" ++ (show stateCount)
-        stateStr' = stateStr ++ "'"
-        codeLines =
-                [
-                    makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
-                    makeLine indent ["newState <- case (secondToTop, top) of"],
-                    makeLine (indent + 1) ["(Just (Integer v1), Just (Integer v2)) -> return $ push ", stateStr', " (Integer (v1 .|. v2))"],
-                    makeLine (indent + 1) ["(Just (BigInteger v1), Just (BigInteger v2)) -> return $ push ", stateStr', " (BigInteger (v1 .|. v2))"],
-                    makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 ; \
-                    \in throwError (\"Operator (bitOr) error. Bitwise OR requires two operands matching types Integer or BigInteger! \
-                    \Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
-                    makeLine (indent + 1) ["(Nothing, Just _) -> throwError (\"Operator (bitOr) error. Two operands needed; only one provided!\") ", stateStr'],
-                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (bitOr) error. Two operands needed; none provided!\") ", stateStr'],
-                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
-                ]
-    in (codeLines, stateCount + 1)
 
 generateOpCode "push" indent stateCount = makeListPushCode indent stateCount
 generateOpCode "p" indent stateCount = makeListPushCode indent stateCount
@@ -1255,6 +1238,41 @@ generateOpCode "writeFile" indent stateCount =
                 makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (writeFile) error. Two operands needed; none provided!\") ", stateStr],
                 makeLine indent ["let state", show $ stateCount + 1, " = newState"]
             ]
+    in (codeLines, stateCount + 1)
+
+generateOpCode "bitOr" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+                [
+                    makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just (Integer v1), Just (Integer v2)) -> return $ push ", stateStr', " (Integer (v1 .|. v2))"],
+                    makeLine (indent + 1) ["(Just (BigInteger v1), Just (BigInteger v2)) -> return $ push ", stateStr', " (BigInteger (v1 .|. v2))"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 ; \
+                    \in throwError (\"Operator (bitOr) error. Bitwise OR requires two operands matching types Integer or BigInteger! \
+                    \Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
+                    makeLine (indent + 1) ["(Nothing, Just _) -> throwError (\"Operator (bitOr) error. Two operands needed; only one provided!\") ", stateStr'],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (bitOr) error. Two operands needed; none provided!\") ", stateStr'],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                ]
+    in (codeLines, stateCount + 1)
+generateOpCode "bitAnd" indent stateCount =
+    let stateStr = "state" ++ (show stateCount)
+        stateStr' = stateStr ++ "'"
+        codeLines =
+                [
+                    makeLine indent ["let (", stateStr', ", secondToTop, top) = pop2 ", stateStr],
+                    makeLine indent ["newState <- case (secondToTop, top) of"],
+                    makeLine (indent + 1) ["(Just (Integer v1), Just (Integer v2)) -> return $ push ", stateStr', " (Integer (v1 .&. v2))"],
+                    makeLine (indent + 1) ["(Just (BigInteger v1), Just (BigInteger v2)) -> return $ push ", stateStr', " (BigInteger (v1 .&. v2))"],
+                    makeLine (indent + 1) ["(Just v1, Just v2) -> let (v1Type, v2Type) = findTypeStrsForError v1 v2 ; \
+                    \in throwError (\"Operator (bitAnd) error. Bitwise AND requires two operands matching types Integer or BigInteger! \
+                    \Attempted types: \" ++ v1Type ++ \" and \" ++ v2Type) ", stateStr'],
+                    makeLine (indent + 1) ["(Nothing, Just _) -> throwError (\"Operator (bitAnd) error. Two operands needed; only one provided!\") ", stateStr'],
+                    makeLine (indent + 1) ["(Nothing, Nothing) -> throwError (\"Operator (bitAnd) error. Two operands needed; none provided!\") ", stateStr'],
+                    makeLine indent ["let state", show $ stateCount + 1, " = newState"]
+                ]
     in (codeLines, stateCount + 1)
 
 generateOpCode op indent stateCount = ([makeLine indent ["throwError \"Unrecognized operator: ", op, "\" state", show stateCount]], stateCount)
