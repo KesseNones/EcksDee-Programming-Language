@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-06-29.91
+--Version: 2024-07-31.153
 --Toy Programming Language Named EcksDee
 
 {-
@@ -23,6 +23,7 @@ import Control.DeepSeq
 import Control.Exception
 import Data.Typeable
 import System.IO.Error (tryIOError)
+import Data.Bits
 
 data Value =                                         
         BigInteger Integer
@@ -1284,6 +1285,17 @@ doDebugPrintStack state = do
     putStrLn "DEBUG END\n----------------------------------------------"
     return state
 
+doBitOr :: EDState -> IO EDState
+doBitOr state = 
+    let grabFirstInTriple = \(x, _, _) -> x
+    in case (stack state) of 
+        [] -> throwError "Operator (bitOr) error. Two operands needed; none provided!" state
+        [x] -> throwError "Operator (bitOr) error. Two operands needed; only one provided!" state
+        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
+        x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
+            throwError ("Operator (bitOr) error. Bitwise OR requires two operands matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1355,6 +1367,8 @@ doOp "mutateField" = doMutateField
 --File IO Operators
 doOp "readFile" = doReadFile 
 doOp "writeFile" = doWriteFile
+
+doOp "bitOr" = doBitOr
 
 -- Error thrown if reached here.
 doOp op = throwError ("Unrecognized operator: " ++ op)  
