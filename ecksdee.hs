@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-07-31.246
+--Version: 2024-08-17.99
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1610,7 +1610,7 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state =
                         ++ " to be type Boolean to branch! Attempted type: " ++ xType) state
 
 --Pattern matches function def and call.
-doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
+doNode Function {funcCmd = cmd, funcName = name, funcBod = body} state =
     case (astNodeToString cmd) of 
         "def" -> 
             let fName = astNodeToString name
@@ -1618,20 +1618,20 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
                     Nothing ->
                         let fns' = M.insert fName body (fns state)
-                        in doNode (Expression rest) EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
+                        in return EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
 
         "call" -> 
             let fName = astNodeToString name
             in case (M.lookup fName (fns state)) of
                 Just bod -> 
-                    (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
+                    (doNode bod (addFrame state)) >>= (\state' -> return state')
                 
                 Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
 
         other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
 
 --Runs all the different cases of variable actions.
-doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
+doNode Variable{varName = name, varCmd = cmd} state =
     case (astNodeToString cmd) of
         --Used in making a new variable in vars.
         "mak" ->
@@ -1644,13 +1644,13 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
                         Nothing -> 
                             let vars' = M.insert vName (fsTop state) (vars state)
-                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+                            in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
                            
         --Pushes variable value to stack.
         "get" -> 
             let vName = astNodeToString name
             in case (M.lookup vName (vars state)) of
-                Just v -> doNode (Expression rest) (fsPush v state)
+                Just v -> return (fsPush v state)
                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
         --Removes variable from existence since var is manually scoped.
@@ -1659,7 +1659,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
             in case (M.lookup vName (vars state)) of 
                 Just v -> 
                     let vars' = M.delete vName (vars state)
-                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
+                    in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
         --Alters variable to new value on top of stack if the types match.
@@ -1675,7 +1675,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
                             if (compareTypesForMut v newVal)
                                 then 
                                     let vars' = M.insert vName newVal (vars state)
-                                    in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+                                    in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
                                 else
                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1686,7 +1686,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
         other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
 
 --Runs all the different cases of local variable actions.
-doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
+doNode LocVar{name = name, cmd = cmd} state =
     case (astNodeToString cmd) of
         "mak" ->
             let vName = astNodeToString name
@@ -1697,11 +1697,11 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
                         Nothing ->
                             let frame' = M.insert vName (fsTop state) (head $ frames state)
-                            in doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
+                            in return EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
                            
         "get" ->  
             case (getLoc (frames state) (astNodeToString name)) of
-                Just value -> doNode (Expression rest) (fsPush value state)
+                Just value -> return (fsPush value state)
                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
 
         "mut" -> 
@@ -1713,7 +1713,7 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
                         Just v -> 
                             if (compareTypesForMut (fsTop state) v)
                                 then
-                                    doNode (Expression rest) EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
+                                    return EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
                                 else
                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
