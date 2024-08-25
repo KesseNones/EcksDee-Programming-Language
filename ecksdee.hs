@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-25.037
+--Version: 2024-08-25.160
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1427,88 +1427,6 @@ createOpsHash =
                 ("bitShift", doBitShift)
             ]
     in HM.fromList opsList
-
--- performs the operation identified by the string. for example, doOp state "+"
--- will perform the "+" operation, meaning that it will pop two values, sum them,
--- and push the result. 
-doOp :: String -> EDState -> IO EDState
--- here's how we turn the strings into their corresponding operation. 
-doOp "+"  = doAdd
-doOp "-"  = doSub
-doOp "*"  = doMul
-doOp "/"  = doDiv  
-doOp "swap"  = doSwap  
-doOp "drop"  = doDrop  
-doOp "dropStack" = doDropStack
-doOp "rot"  = doRot  
-doOp "dup"  = doDup 
-doOp "=="  = doEqual 
-doOp "/="  = doNotEqual 
-doOp ">"  = doGreaterThan 
-doOp "<"  = doLessThan 
-doOp ">="  = doGreaterThanEqualTo 
-doOp "<=" = doLessThanEqualTo 
-doOp "%" = doModulo
-doOp "++" = doConcat
-doOp "and" = doAnd 
-doOp "or" = doOr 
-doOp "xor" = doXor
-doOp "not" = doNot
-doOp "pow" = doPow --Exponential operation
---List operations
-doOp "push" = doPush
-doOp "p" = doPush --Alias for push
-doOp "pop" = doPop
-doOp "po" = doPop --Alias for pop
-doOp "fpush" = doFpush
-doOp "fp" = doFpush --Alias for fpush
-doOp "fpop" = doFpop
-doOp "fpo" = doFpop --Alias for fpop
-doOp "index" = doIndex 
-doOp "length" = doLength
-doOp "len" = doLength --Alias for length
-doOp "isEmpty" = doIsEmpty
-doOp "clear" = doClear
-doOp "contains" = doContains
-doOp "changeItemAt" = doChangeItemAt --Changes item in list at a specified index.
-doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
-
---Type stuff
-doOp "cast" = doCast
-doOp "queryType" = doQueryType
---IO stuff
-doOp "printLine" = doPrintLine
-doOp "readLine" = doReadLine
-doOp "printChar" = doPrintChar
-doOp "readChar" = doReadChar
-doOp "print" = doPrint
-doOp "read" = doRead
-
---Error display
-doOp "printError" = doPrintError
-
---Debug Operator
-doOp "debugPrintStack" = doDebugPrintStack
-
---Object Operators
-doOp "addField" = doAddField 
-doOp "removeField" = doRemoveField 
-doOp "getField" = doGetField 
-doOp "mutateField" = doMutateField 
-
---File IO Operators
-doOp "readFile" = doReadFile 
-doOp "writeFile" = doWriteFile
-
---Bitwise operators
-doOp "bitOr" = doBitOr
-doOp "bitAnd" = doBitAnd
-doOp "bitXor" = doBitXor
-doOp "bitNot" = doBitNot
-doOp "bitShift" = doBitShift
-
--- Error thrown if reached here.
-doOp op = throwError ("Unrecognized operator: " ++ op)  
 
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
