@@ -2140,7 +2140,7 @@ main = do
         code <- hGetContents file
 
         -- convert it into a list of tokens
-        let tokens = code `deepseq` removeComments False [] ( tokenize code )
+        let tokens = removeComments False [] ( tokenize code )
 
         --Parse and run AST, printing result.
         let ast = parseExpression tokens
