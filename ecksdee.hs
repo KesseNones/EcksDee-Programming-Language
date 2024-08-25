@@ -1843,7 +1843,10 @@ doNode ( While loopBody ) state =
 doNode ( Terminal ( Val v ) ) state = return $ fsPush v state
 
 -- ...if it's a word, execute the operation
-doNode ( Terminal ( Word o ) ) state = doOp o state
+doNode ( Terminal ( Word o ) ) state = 
+    case HM.lookup o (ops state) of
+        Just func -> func state
+        Nothing -> throwError ("Unrecognized operator: " ++ o) state
 
 -- "doing" an empty expression does nothing
 doNode ( Expression [] ) state = return $ removeFrame state
