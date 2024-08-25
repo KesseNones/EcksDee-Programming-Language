@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-25.015
+--Version: 2024-08-25.037
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1341,6 +1341,93 @@ doBitShift state =
             in throwError ("Operator (bitShift) error. Top of stack must be type Integer and second \
                 \to top must be either type Integer or BigInteger! Valid types: Integer/BigInteger Integer. Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
 
+createOpsHash :: HM.HashMap String (EDState -> IO EDState)
+createOpsHash = 
+    let opsList = 
+            [
+                --Basic arithmetic ops.
+                ("+", doAdd),
+                ("-", doSub),
+                ("*", doMul),
+                ("/", doDiv),
+                ("%", doModulo),
+                ("pow", doPow),
+
+                --Basic stack operators.
+                ("swap", doSwap),
+                ("drop", doDrop),
+                ("dropStack", doDropStack),
+                ("rot", doRot),
+                ("dup", doDup),
+
+                --Basic comparison operators.
+                ("==", doEqual),
+                ("/=", doNotEqual),
+                (">", doGreaterThan),
+                ("<", doLessThan),
+                (">=", doGreaterThanEqualTo),
+                ("<=", doLessThanEqualTo),
+
+                ("++", doConcat),
+
+                --Basic logical operators.
+                ("and", doAnd),
+                ("or", doOr),
+                ("xor", doXor),
+                ("not", doNot),
+
+                --Basic list operations.
+                ("push", doPush),
+                ("p", doPush),
+                ("pop", doPop),
+                ("po", doPop),
+                ("fpush", doFpush),
+                ("fp", doFpush),
+                ("fpop", doFpop),
+                ("fpo", doFpop),
+                ("index", doIndex),
+                ("length", doLength),
+                ("len", doLength),
+                ("isEmpty", doIsEmpty),
+                ("clear", doClear),
+                ("contains", doContains),
+                ("changeItemAt", doChangeItemAt),
+                
+                ("isWhitespace", doIsWhite),
+                
+                --Type stuff.
+                ("cast", doCast),
+                ("queryType", doQueryType),
+
+                --IO stuff.
+                ("printLine", doPrintLine),
+                ("readLine", doReadLine),
+                ("printChar", doPrintChar),
+                ("readChar", doReadChar),
+                ("print", doPrint),
+                ("read", doRead),
+                ("printError", doPrintError),
+                ("debugPrintStack", doDebugPrintStack),
+
+                --Object operators.
+                ("addField", doAddField),
+                ("removeField", doRemoveField),
+                ("getField", doGetField),
+                ("mutateField", doMutateField),
+
+                --File IO Operations.
+                ("readFile", doReadFile),
+                ("writeFile", doWriteFile),
+
+                --Bitwise operators.
+                ("bitOr", doBitOr),
+                ("bitAnd", doBitAnd),
+                ("bitXor", doBitXor),
+                ("bitNot", doBitNot),
+                ("bitShift", doBitShift)
+            ]
+    in HM.fromList opsList
+
 -- performs the operation identified by the string. for example, doOp state "+"
 -- will perform the "+" operation, meaning that it will pop two values, sum them,
 -- and push the result. 
@@ -1920,7 +2007,7 @@ parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] t
     
 --Makes new interpretor state with default values.
 fsNew :: IO EDState
-fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, h = M.empty, heapSize = 0}, ops = HM.empty}
+fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, h = M.empty, heapSize = 0}, ops = createOpsHash}
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
