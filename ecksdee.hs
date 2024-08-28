@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.235
+--Version: 2024-08-28.276
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1748,33 +1748,30 @@ doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
 
 --This code looks sus but basically it runs the loop body 
 -- and then runs the whole loop recursion if it needs to run again.                                                                                                                      
-doNode ( While loopBody ) state = 
-    if (null $ stack state)
-        then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
-        else do 
-            newState <- case (fsTop state) of 
-                Boolean True -> doNode loopBody (addFrame state)
-                Boolean False -> return state
-                x -> 
-                    let xType = chrs $ doQueryType' x 
-                    in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
-                        ++ xType) state
+doNode (Expression((While loopBody):rest)) state = 
+    let emptyStackErrorThrow = \state -> throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+        nonBooleanTypeErrorThrow = \state x -> 
+            let xType = chrs $ doQueryType' x 
+            in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+                ++ xType) state
+    
+    --Determines first if loop needs to run at all, then checks to see if it needs ot run again.
+    in case (stack state) of
+        [] -> emptyStackErrorThrow state
+        ((Boolean True):_) -> 
+            (doNode loopBody (addFrame state)) >>= \state' ->
+                case (stack state') of
+                    [] -> emptyStackErrorThrow state'
+                    ((Boolean True):_) -> doNode (Expression((While loopBody):rest)) state'
+                    ((Boolean False):_) -> doNode (Expression rest) state'
+                    (x:_) -> nonBooleanTypeErrorThrow state' x
 
-            --Checks to see if loop can run again or not.
-            if (null $ stack newState)
-                then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
-                else 
-                    case (fsTop newState) of 
-                        Boolean True -> doNode (While loopBody) newState
-                        Boolean False -> return newState
-                        x -> 
-                            let xType = chrs $ doQueryType' x 
-                            in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
-                                ++ xType) newState
+        ((Boolean False):_) -> doNode (Expression rest) state
+        (x:_) -> nonBooleanTypeErrorThrow state x 
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
-doNode ( Terminal ( Val v ) ) state = return $ fsPush v state
+doNode (Expression((Terminal(Val v)):rest)) state = doNode (Expression rest) (fsPush v state)
 
 --Operation executes either functionally or monadically.
 doNode (Expression( (Terminal(Word o)):rest )) state = 
@@ -1787,12 +1784,7 @@ doNode (Expression( (Terminal(Word o)):rest )) state =
             Nothing -> throwError ("Unrecognized operator: " ++ o) state 
 
 -- "doing" an empty expression does nothing
-doNode ( Expression [] ) state = return $ removeFrame state
-
--- "doing" a non-empty expression tries to execute every node in the expression
-doNode ( Expression ( first:rest ) ) state = do  
-    stateAfterFirst <- doNode first state
-    doNode (Expression (rest)) stateAfterFirst                                     
+doNode ( Expression [] ) state = return $ removeFrame state                                   
 
 -- arguments:
 --  alreadyParsed :: [AstNode]: a list of nodes parsed so far. Starts empty.
