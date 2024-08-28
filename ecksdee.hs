@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.167
+--Version: 2024-08-28.198
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1625,7 +1625,7 @@ doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state =
                         ++ " to be type Boolean to branch! Attempted type: " ++ xType) state
 
 --Pattern matches function def and call.
-doNode Function {funcCmd = cmd, funcName = name, funcBod = body} state =
+doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
     case (astNodeToString cmd) of 
         "def" -> 
             let fName = astNodeToString name
@@ -1633,13 +1633,14 @@ doNode Function {funcCmd = cmd, funcName = name, funcBod = body} state =
                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
                     Nothing ->
                         let fns' = M.insert fName body (fns state)
-                        in return EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}
+                        in doNode (Expression rest) (EDState{stack = (stack state), fns = fns', vars = (vars state), 
+                            frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state})
 
         "call" -> 
             let fName = astNodeToString name
             in case (M.lookup fName (fns state)) of
                 Just bod -> 
-                    (doNode bod (addFrame state)) >>= (\state' -> return state')
+                    (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
                 
                 Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
 
