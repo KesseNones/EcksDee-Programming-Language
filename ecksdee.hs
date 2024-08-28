@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.157
+--Version: 2024-08-28.167
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1521,7 +1521,7 @@ doNode (TempStackChange runBlock) state =
     (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state', ops = ops state', ioOps = ioOps state'})
 
 --Parses box command.
-doNode (BoxOp cmd) state =
+doNode (Expression ((BoxOp cmd):rest)) state =
     case (astNodeToString cmd) of
         "make" -> 
             if (null $ stack state)
@@ -1537,15 +1537,15 @@ doNode (BoxOp cmd) state =
                             let hp' = M.insert hs v hp
                                 hs' = hs + 1
                                 state'' = fsPush (Box hs) state'
-                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
-                                frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}, ops = ops state'', ioOps = ioOps state''}
+                            in doNode (Expression rest) (EDState{stack = stack state'', fns = fns state'', vars = vars state'',
+                                frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}, ops = ops state'', ioOps = ioOps state''})
                         else
                             let ((replaceBn, _), fl') = M.deleteFindMin fl
                                 hp' = M.insert replaceBn v hp
                                 state'' = fsPush (Box replaceBn) state'
-                            in return EDState{stack = stack state'', fns = fns state'', 
+                            in doNode (Expression rest) (EDState{stack = stack state'', fns = fns state'', 
                                 vars = vars state'', frames = frames state'', 
-                                heap = Heap{freeList = fl', h = hp', heapSize = hs}, ops = ops state'', ioOps = ioOps state''}
+                                heap = Heap{freeList = fl', h = hp', heapSize = hs}, ops = ops state'', ioOps = ioOps state''})
 
         "open" -> 
             if (null $ stack state)
@@ -1555,7 +1555,7 @@ doNode (BoxOp cmd) state =
                     case (fsTop state) of
                         Box n -> 
                             case (validateBox (heap state) n) of
-                                Left v -> return $ fsPush v state
+                                Left v -> doNode (Expression rest) (fsPush v state)
                                 Right err -> throwError err state 
                         x -> 
                             let xType = chrs $ doQueryType' x 
@@ -1574,8 +1574,9 @@ doNode (BoxOp cmd) state =
                                         then
                                             let h' = M.insert bn v (h $ heap state')
                                                 state'' = fsPush (Box bn) state'
-                                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
-                                                frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}, ops = ops state'', ioOps = ioOps state''}
+                                            in doNode (Expression rest) (EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+                                                frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', 
+                                                heapSize = heapSize $ heap state}, ops = ops state'', ioOps = ioOps state''})
                                         else
                                             let (oldVType, vType) = findTypeStrsForError oldV v
                                             in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
@@ -1597,14 +1598,15 @@ doNode (BoxOp cmd) state =
                             case (validateBox (heap state) freeBn) of
                                 Left _ ->
                                     let fl' = M.insert freeBn () (freeList $ heap state')
-                                    in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
-                                        heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}, ops = ops state', ioOps = ioOps state'}
+                                    in doNode (Expression rest) (EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
+                                        heap = Heap{freeList = fl', h = (h $ heap state'), 
+                                        heapSize = (heapSize $ heap state')}, ops = ops state', ioOps = ioOps state'})
                                 Right err -> throwError err state'
                         x ->
                             let xType = chrs $ doQueryType' x
                             in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
                                 ++ xType) state
-        "null" -> return $ fsPush (Box (-1)) state
+        "null" -> doNode (Expression rest) (fsPush (Box (-1)) state)
         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
 -- Runs true branch if top of stack is true 
