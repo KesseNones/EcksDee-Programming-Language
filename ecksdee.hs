@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.228
+--Version: 2024-08-28.235
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1707,7 +1707,7 @@ doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
         other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
 
 --Runs all the different cases of local variable actions.
-doNode LocVar{name = name, cmd = cmd} state =
+doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
         "mak" ->
             let vName = astNodeToString name
@@ -1718,11 +1718,12 @@ doNode LocVar{name = name, cmd = cmd} state =
                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
                         Nothing ->
                             let frame' = M.insert vName (fsTop state) (head $ frames state)
-                            in return EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state, ops = ops state, ioOps = ioOps state}
+                            in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = (vars state), 
+                                frames = (frame' : (tail $ frames state)), heap = heap state, ops = ops state, ioOps = ioOps state})
                            
         "get" ->  
             case (getLoc (frames state) (astNodeToString name)) of
-                Just value -> return (fsPush value state)
+                Just value -> doNode (Expression rest) (fsPush value state)
                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
 
         "mut" -> 
@@ -1734,8 +1735,8 @@ doNode LocVar{name = name, cmd = cmd} state =
                         Just v -> 
                             if (compareTypesForMut (fsTop state) v)
                                 then
-                                    return EDState{stack = (stack state), fns = (fns state), vars = (vars state), 
-                                        frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state, ops = ops state, ioOps = ioOps state}
+                                    doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = (vars state), 
+                                        frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state, ops = ops state, ioOps = ioOps state})
                                 else
                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
