@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.211
+--Version: 2024-08-28.228
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1649,7 +1649,7 @@ doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):r
         other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
 
 --Runs all the different cases of variable actions.
-doNode Variable{varName = name, varCmd = cmd} state =
+doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
         --Used in making a new variable in vars.
         "mak" ->
@@ -1662,13 +1662,14 @@ doNode Variable{varName = name, varCmd = cmd} state =
                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
                         Nothing -> 
                             let vars' = M.insert vName (fsTop state) (vars state)
-                            in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}
+                            in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', 
+                                frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state})
                            
         --Pushes variable value to stack.
         "get" -> 
             let vName = astNodeToString name
             in case (M.lookup vName (vars state)) of
-                Just v -> return (fsPush v state)
+                Just v -> doNode (Expression rest) (fsPush v state)
                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
         --Removes variable from existence since var is manually scoped.
@@ -1677,7 +1678,8 @@ doNode Variable{varName = name, varCmd = cmd} state =
             in case (M.lookup vName (vars state)) of 
                 Just v -> 
                     let vars' = M.delete vName (vars state)
-                    in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state} 
+                    in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = 
+                        (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}) 
                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
         --Alters variable to new value on top of stack if the types match.
@@ -1693,7 +1695,8 @@ doNode Variable{varName = name, varCmd = cmd} state =
                             if (compareTypesForMut v newVal)
                                 then 
                                     let vars' = M.insert vName newVal (vars state)
-                                    in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}
+                                    in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', 
+                                        frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state})
                                 else
                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
