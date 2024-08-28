@@ -1513,7 +1513,7 @@ doNode (Expression((AttErr{attempt = att, onError = err}):rest)) state = (catch 
         handler :: GeneralException -> IO EDState
         handler (GeneralException msg) = 
             let state' = fsPush (String {chrs = msg, len = length msg}) (addFrame state)
-            in (doNode err state') >>= (\state'' -> doNode (Expression rest) state'')
+            in doNode err state'
 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
