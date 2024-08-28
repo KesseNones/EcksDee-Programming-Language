@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.204
+--Version: 2024-08-28.211
 --Toy Programming Language Named EcksDee
 
 {-
@@ -1508,12 +1508,12 @@ doNode :: AstNode -> EDState -> IO EDState
 
 --Attempt on Error doNode case where it tries to run code in attempt branch 
 -- and instead runs the code in on Error if there's a problem.
-doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame state)) handler 
+doNode (Expression((AttErr{attempt = att, onError = err}):rest)) state = (catch (doNode att (addFrame state)) handler) >>= (\state' -> doNode (Expression rest) state') 
     where 
         handler :: GeneralException -> IO EDState
         handler (GeneralException msg) = 
             let state' = fsPush (String {chrs = msg, len = length msg}) (addFrame state)
-            in doNode err state'
+            in (doNode err state') >>= (\state'' -> doNode (Expression rest) state'')
 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
