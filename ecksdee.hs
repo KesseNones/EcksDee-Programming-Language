@@ -1612,18 +1612,19 @@ doNode (Expression ((BoxOp cmd):rest)) state =
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
-doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
+doNode (Expression((If { ifTrue = trueBranch, ifFalse = falseBranch }):rest)) state = 
     if (null $ stack state)
         then
             throwError "If statement error. No Boolean for if to check because stack is empty!" state
-        else
-            case (fsTop state) of 
+        else do
+            state' <- case (fsTop state) of 
                 (Boolean True) -> doNode trueBranch (addFrame state)
                 (Boolean False) -> doNode falseBranch (addFrame state)
                 x ->
                     let xType = chrs $ doQueryType' x
                     in throwError ("If statement error. If statement requires top of the stack" 
                         ++ " to be type Boolean to branch! Attempted type: " ++ xType) state
+            doNode (Expression rest) state'
 
 --Pattern matches function def and call.
 doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
