@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-28.276
+--Version: 2024-08-30.155
 --Toy Programming Language Named EcksDee
 
 {-
@@ -10,6 +10,8 @@
             It would make user debugging much less ass.
         -Casting edge case may exist where BigInteger to Char works when it shouldn't! (Fixed? Needs more testing.)
 -}
+
+{-# LANGUAGE StrictData #-}
 
 import Data.List
 import Data.Char
