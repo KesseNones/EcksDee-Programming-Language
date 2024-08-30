@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: Alpha 1.1.0
+--Version: Alpha 1.1.1
 --Compiler for EcksDee
 
 import Data.List
@@ -1729,6 +1729,7 @@ generateCodeString :: AstNode -> String
 generateCodeString ast =
     let linesInit = 
             [
+                "{-# LANGUAGE StrictData #-}",
                 "import Data.List",
                 "import Data.Char",
                 "import Data.Maybe",
