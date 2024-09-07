@@ -1,5 +1,5 @@
 --Jesse A. Jones
---Version: 2024-08-17.99
+--Version: 2024-08-30.155
 --Toy Programming Language Named EcksDee
 
 {-
@@ -11,6 +11,8 @@
         -Casting edge case may exist where BigInteger to Char works when it shouldn't! (Fixed? Needs more testing.)
 -}
 
+{-# LANGUAGE StrictData #-}
+
 import Data.List
 import Data.Char
 import Data.Maybe 
@@ -19,6 +21,7 @@ import Text.Read (readMaybe)
 import System.IO
 import System.Environment
 import qualified Data.Map.Strict as M
+import qualified Data.HashMap.Strict as HM
 import Control.DeepSeq
 import Control.Exception
 import Data.Typeable
@@ -88,7 +91,9 @@ data EDState = EDState {
     fns :: M.Map String AstNode,
     vars :: M.Map String Value,
     frames :: [M.Map String Value],
-    heap :: Heap 
+    heap :: Heap,
+    ops :: HM.HashMap String (EDState -> Either EDState String),
+    ioOps :: HM.HashMap String (EDState -> IO EDState) 
 }
 
 data GeneralException = GeneralException String deriving (Show, Typeable)
@@ -187,147 +192,147 @@ doConcat' a b =
         ++ aType ++ " and " ++ bType)
 
 --Concatentates two Strings/Lists together.
-doConcat :: EDState -> IO EDState
+doConcat :: EDState -> Either EDState String
 doConcat state = 
     case (stack state) of 
-        [] -> throwError "Operator (++) error. Concatenation requires two operands; none provided!" state 
-        [x] -> throwError "Operator (++) error. Concatenation requires two operands; only one provided!" state
+        [] -> Right "Operator (++) error. Concatenation requires two operands; none provided!"  
+        [x] -> Right "Operator (++) error. Concatenation requires two operands; only one provided!" 
         vals -> 
             let (state', a, b) = fsPop2 state
             in case (doConcat' a b) of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Adds two values on stack if they can be added.
-doAdd :: EDState -> IO EDState
+doAdd :: EDState -> Either EDState String
 doAdd state = 
     let stck = (stack state)
     in case stck of 
-        [] -> throwError "Operator (+) error. Addition requires two operands; none provided!" state
-        [x] -> throwError "Operator (+) error. Addition requires two operands; only one provided!" state
+        [] -> Right "Operator (+) error. Addition requires two operands; none provided!"
+        [x] -> Right "Operator (+) error. Addition requires two operands; only one provided!" 
         vals ->  
             let (state', a, b) = fsPop2 state
                 addRes = addVals a b
             in case addRes of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Subtracts two values on stack if they can be subtracted.
-doSub :: EDState -> IO EDState
+doSub :: EDState -> Either EDState String
 doSub state = 
     case (stack state) of 
-        [] -> throwError "Operator (-) error. Subtraction requires two operands; none provided!" state
-        [x] -> throwError "Operator (-) error. Subtraction requires two operands; only one provided!" state
+        [] -> Right "Operator (-) error. Subtraction requires two operands; none provided!" 
+        [x] -> Right "Operator (-) error. Subtraction requires two operands; only one provided!" 
         vals ->  
             let (state', b, a) = fsPop2 state
                 subRes = subVals a b
             in case subRes of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Multiplies two values on top of stack if they can be multiplied.
-doMul :: EDState -> IO EDState
+doMul :: EDState -> Either EDState String
 doMul state =  
     case (stack state) of 
-        [] -> throwError "Operator (*) error. Multiplication requires two operands; none provided!" state
-        [x] -> throwError "Operator (*) error. Multiplication requires two operands; only one provided!" state
+        [] -> Right "Operator (*) error. Multiplication requires two operands; none provided!" 
+        [x] -> Right "Operator (*) error. Multiplication requires two operands; only one provided!" 
         vals -> 
             let (state', a, b) = fsPop2 state
                 mulRes = multVals a b
             in case mulRes of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Divides two values on top of stack if they can be divided.
 --Errors out if problem happens.
-doDiv :: EDState -> IO EDState
+doDiv :: EDState -> Either EDState String
 doDiv state =  
     case (stack state) of 
-        [] -> throwError "Operator (/) error. Division requires two operands; none provided!" state
-        [x] -> throwError "Operator (/) error. Division requires two operands; only one provided!" state
+        [] -> Right "Operator (/) error. Division requires two operands; none provided!" 
+        [x] -> Right "Operator (/) error. Division requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
                 divRes = divideVals a b
             in case divRes of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Mods two values on top of stack if they can be modded.
 --Errors out if problem happens.
-doModulo :: EDState -> IO EDState
+doModulo :: EDState -> Either EDState String
 doModulo state = 
     case (stack state) of 
-        [] -> throwError "Operator (%) error. Modulo requires two operands; none provided!" state
-        [x] -> throwError "Operator (%) error. Modulo requires two operands; only one provided!" state
+        [] -> Right "Operator (%) error. Modulo requires two operands; none provided!" 
+        [x] -> Right "Operator (%) error. Modulo requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (modVals a b) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Swaps the top two values at the top of the stack.
-doSwap :: EDState -> IO EDState
+doSwap :: EDState -> Either EDState String
 doSwap state = 
     case (stack state) of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [] -> Left ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state} )
+        [x] -> Left ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state} )
         vals ->  
             let (state', b, a) = fsPop2 state
                 state'' = fsPush a state' 
-            in return (fsPush b state'')
+            in Left (fsPush b state'')
 
 --Removes top value from stack.
-doDrop :: EDState -> IO EDState
+doDrop :: EDState -> Either EDState String
 doDrop state = 
     if null (stack state) 
     then 
-        return (state)
+        Left (state)
     else 
         let (state', _) = fsPop state
-        in return (state')
+        in Left (state')
 
 --Clears the entire stack to empty. 
 -- Avoids having to type drop over and over again.
-doDropStack :: EDState -> IO EDState
-doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms, heap = hp} = return (EDState{stack = [], fns = fs, vars = vs, frames = fms, heap = hp})
+doDropStack :: EDState -> Either EDState String
+doDropStack EDState{stack = _, fns = fs, vars = vs, frames = fms, heap = hp, ops = o, ioOps = io} = Left (EDState{stack = [], fns = fs, vars = vs, frames = fms, heap = hp, ops = o, ioOps = io})
 
 --Rotates the top values on the stack.
 --If there's 0 or 1 items, nothing happens.
 --2 Items is identical to swap.
 --3 items performs the rotation.
-doRot :: EDState -> IO EDState
+doRot :: EDState -> Either EDState String
 doRot state = 
     case (stack state) of 
-        [] -> return ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
-        [x] -> return ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
-        [x, y] -> return ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state} )
+        [] ->  Left ( EDState{stack = [], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state} )
+        [x] -> Left ( EDState{stack = [x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state} )
+        [x, y] -> Left ( EDState{stack = [y, x], fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state} )
         vals -> 
             let (state', c, b, a) = fsPop3 state
                 state'' = fsPush a state'
                 state''' = fsPush c state''
-            in return (fsPush b state''') 
+            in Left (fsPush b state''') 
 
 --Duplicates top element of stack or does nothing.
-doDup :: EDState -> IO EDState
+doDup :: EDState -> Either EDState String
 doDup state = 
     case (stack state) of 
-        [] -> return state
+        [] -> Left state
         vals ->  
             let (_, top) = fsPop state
-            in return (fsPush top state)
+            in Left (fsPush top state)
 
 --Checks equality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
-doEqual :: EDState -> IO EDState
+doEqual :: EDState -> Either EDState String
 doEqual state = 
     case (stack state) of 
-        [] -> throwError "Operator (==) error. Equality comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (==) error. Equality comparison requires two operands; only one provided!" state
+        [] -> Right "Operator (==) error. Equality comparison requires two operands; none provided!" 
+        [x] -> Right "Operator (==) error. Equality comparison requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doEqual' a b) of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Makes sure the types match and then performs the equality operation if so, 
 -- otherwise returns error string.
@@ -350,16 +355,16 @@ doEqual' a b =
 
 --Checks inequality of two elements at the top of the stack.
 --Pushes true if they are equal and False if not.
-doNotEqual :: EDState -> IO EDState
+doNotEqual :: EDState -> Either EDState String
 doNotEqual state = 
     case (stack state) of 
-        [] -> throwError "Operator (/=) error. Inequality comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (/=) error. Inequality comparison requires two operands; only one provided!" state
+        [] -> Right "Operator (/=) error. Inequality comparison requires two operands; none provided!" 
+        [x] -> Right "Operator (/=) error. Inequality comparison requires two operands; only one provided!" 
         vals ->  
             let (state', b, a) = fsPop2 state
             in case (doNotEqual' a b) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state' 
+                Left v -> Left (fsPush v state')
+                Right err -> Right err 
 
 --Makes sure the types match and then performs the inequality operation if so, 
 -- otherwise errors out.
@@ -382,16 +387,16 @@ doNotEqual' a b =
 
 --Checks if second to top element is greater than top element of stack.
 --Pushes True if true and false if not.
-doGreaterThan :: EDState -> IO EDState
+doGreaterThan :: EDState -> Either EDState String
 doGreaterThan state =  
     case (stack state) of 
-        [] -> throwError "Operator (>) error. Greater than comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (>) error. Greater than comparison requires two operands; only one provided!" state
+        [] -> Right "Operator (>) error. Greater than comparison requires two operands; none provided!" 
+        [x] -> Right "Operator (>) error. Greater than comparison requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doGreaterThan' b a) of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
                 
 --Makes sure the types match and then performs the > operation if so, 
 -- otherwise errors out.
@@ -413,16 +418,16 @@ doGreaterThan' a b =
 
 --Checks if second to top element is less than top element of stack.
 --Pushes True if true and false if not.
-doLessThan :: EDState -> IO EDState
+doLessThan :: EDState -> Either EDState String
 doLessThan state = 
     case (stack state) of 
-        [] -> throwError "Operator (<) error. Less than comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (<) error. Less than comparison requires two operands; only one provided!" state
+        [] -> Right "Operator (<) error. Less than comparison requires two operands; none provided!" 
+        [x] -> Right "Operator (<) error. Less than comparison requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doLessThan' b a) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Makes sure the types match and then performs the < operation if so, 
 -- otherwise errors out.
@@ -444,16 +449,16 @@ doLessThan' a b =
 
 --Checks if second to top element is greater than equal to the top element of stack.
 --Pushes True if true and false if not.
-doGreaterThanEqualTo :: EDState -> IO EDState
+doGreaterThanEqualTo :: EDState -> Either EDState String
 doGreaterThanEqualTo state = 
     case (stack state) of 
-        [] -> throwError "Operator (>=) error. Greater than equal to comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (>=) error. Greater than equal to comparison requires two operands; only one provided!" state
+        [] -> Right "Operator (>=) error. Greater than equal to comparison requires two operands; none provided!" 
+        [x] -> Right "Operator (>=) error. Greater than equal to comparison requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doGreaterThanEqualTo' b a) of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Makes sure the types match and then performs the >= operation if so, 
 -- otherwise errors out.
@@ -475,16 +480,16 @@ doGreaterThanEqualTo' a b =
 
 --Checks if second to top element is less than equal to top element of stack.
 --Pushes True if true and false if not.
-doLessThanEqualTo :: EDState -> IO EDState
+doLessThanEqualTo :: EDState -> Either EDState String
 doLessThanEqualTo state = 
     case (stack state) of 
-        [] -> throwError "Operator (<=) error. Less than equal to comparison requires two operands; none provided!" state
-        [x] -> throwError "Operator (<=) error. Less than equal to comparison requires two operands; only one provided!" state
+        [] -> Right "Operator (<=) error. Less than equal to comparison requires two operands; none provided!" 
+        [x] -> Right "Operator (<=) error. Less than equal to comparison requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doLessThanEqualTo' b a) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Makes sure the types match and then performs the <= operation if so, 
 -- otherwise errors out.
@@ -506,16 +511,16 @@ doLessThanEqualTo' a b =
 
 --Performs logical AND function on top two elements of stack.
 --If the operands are booleans, then AND is performed.
-doAnd :: EDState -> IO EDState
+doAnd :: EDState -> Either EDState String
 doAnd state = 
     case (stack state) of 
-        [] -> throwError "Operator (and) error. Logical AND requires two operands; none provided!" state 
-        [x] -> throwError "Operator (and) error. Logical AND requires two operands; only one provided!" state
+        [] -> Right "Operator (and) error. Logical AND requires two operands; none provided!"  
+        [x] -> Right "Operator (and) error. Logical AND requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state 
             in case (doAnd' a b) of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Performs logical AND function on two operands and returns an updated EDState.
 -- On failure, an error is returned.
@@ -531,16 +536,16 @@ doAnd' a b =
 
 --Performs logical OR function on top two elements of stack.
 --If the operands are booleans, then OR is performed.
-doOr :: EDState -> IO EDState
+doOr :: EDState -> Either EDState String
 doOr state = 
     case (stack state) of 
-        [] -> throwError "Operator (or) error. Logical OR requires two operands; none provided!" state 
-        [x] -> throwError "Operator (or) error. Logical OR requires two operands; only one provided!" state
+        [] -> Right "Operator (or) error. Logical OR requires two operands; none provided!"  
+        [x] -> Right "Operator (or) error. Logical OR requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state
             in case (doOr' a b) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Performs logical OR function on two operands and returns an updated EDState.
 -- On failure, an error is returned.
@@ -556,16 +561,16 @@ doOr' a b =
 
 --Performs logical XOR function on top two elements of stack.
 --If the operands are booleans, then XOR is performed.
-doXor :: EDState -> IO EDState
+doXor :: EDState -> Either EDState String
 doXor state = 
     case (stack state) of 
-        [] -> throwError "Operator (xor) error. Logical XOR requires two operands; none provided!" state 
-        [x] -> throwError "Operator (xor) error. Logical XOR requires two operands; only one provided!" state
+        [] -> Right "Operator (xor) error. Logical XOR requires two operands; none provided!"  
+        [x] -> Right "Operator (xor) error. Logical XOR requires two operands; only one provided!" 
         vals -> 
             let (state', b, a) = fsPop2 state 
             in case (doXor' a b) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Performs logical XOR function on two operands and returns an updated EDState.
 -- On failure, an error is thrown.
@@ -582,15 +587,15 @@ doXor' a b =
 
 --Performs the logical NOT operator on given boolean 
 -- and throws errors when things go wrong.
-doNot :: EDState -> IO EDState
+doNot :: EDState -> Either EDState String
 doNot state = 
     case (stack state) of 
-        [] -> throwError "Operator (not) error. Logical NOT operation requires one operand; none provided!" state
+        [] -> Right "Operator (not) error. Logical NOT operation requires one operand; none provided!" 
         vals -> 
             let (state', top) = fsPop state
             in case (doNot' top) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state' 
+                Left v -> Left (fsPush v state')
+                Right err -> Right err 
 
 --Performs negation if input value is of type boolean.
 doNot' :: Value -> Either Value String
@@ -601,16 +606,16 @@ doNot' x =
         ++ "Attempted type was: " ++ xType)
 
 --Pushes an item to the end of a list on the stack.
-doPush :: EDState -> IO EDState
+doPush :: EDState -> Either EDState String
 doPush state = 
     case (stack state) of 
-        [] -> throwError "Operator (push) error. Two operands required for push; none provided!" state
-        [x] -> throwError "Operator (push) error. Two operands required for push; only one provided!" state
+        [] -> Right "Operator (push) error. Two operands required for push; none provided!" 
+        [x] -> Right "Operator (push) error. Two operands required for push; only one provided!" 
         vals ->  
             let (state', list, val) = fsPop2 state
             in case (doPush' list val) of
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state'
+                Left v -> Left (fsPush v state')
+                Right err -> Right err
 
 --Pushes item/char to list/string
 doPush' :: Value -> Value -> Either Value String
@@ -622,18 +627,18 @@ doPush' a b =
             ++ aType ++ " and " ++ bType)
 
 --Pops an item from the list or string and pushes it to the stack.
-doPop :: EDState -> IO EDState
+doPop :: EDState -> Either EDState String
 doPop state = 
     case (stack state) of 
-        [] -> throwError "Operator (pop). error. Pop operator needs one operand; none provided!" state
+        [] -> Right "Operator (pop). error. Pop operator needs one operand; none provided!" 
         vals -> 
             let (state', list) = fsPop state
             in case (doPop' list) of 
                 Left (list', Just v) -> 
                     let state'' = fsPush list' state'
-                    in return (fsPush v state'')
-                Left (list', Nothing) -> return (fsPush list' state')
-                Right err -> throwError err state'
+                    in Left (fsPush v state'')
+                Left (list', Nothing) -> Left (fsPush list' state')
+                Right err -> Right err
 
 --Pops item/char from list and returns new list with popped item if it exists.
 doPop' :: Value -> Either (Value, Maybe Value) String
@@ -659,16 +664,16 @@ doPop' x =
         ++ xType)
 
 --Pushes an item to the front of a list on the stack.
-doFpush :: EDState -> IO EDState
+doFpush :: EDState -> Either EDState String
 doFpush state = 
     case (stack state) of 
-        [] -> throwError "Operator (fpush) error. Two operands required for fpush; none provided!" state
-        [x] -> throwError "Operator (fpush) error. Two operands required for fpush; only one provided!" state
+        [] -> Right "Operator (fpush) error. Two operands required for fpush; none provided!" 
+        [x] -> Right "Operator (fpush) error. Two operands required for fpush; only one provided!" 
         vals -> 
             let (state', collection, val) = fsPop2 state
             in case (doFpush' collection val) of
-                Left collection' -> return (fsPush collection' state')
-                Right err -> throwError err state'
+                Left collection' -> Left (fsPush collection' state')
+                Right err -> Right err
 
 --Pushes item to front.
 doFpush' :: Value -> Value -> Either Value String
@@ -692,18 +697,18 @@ doFpush'' List{items = is, len = l} index insVal
             in List{items = is', len = l + 1}
 
 --Pops an item from the front of the list and pushes it to the stack.
-doFpop :: EDState -> IO EDState
+doFpop :: EDState -> Either EDState String
 doFpop state = 
     case (stack state) of 
-        [] -> throwError "Operator (fpop) error. Needs one operand to work; none provided!" state
+        [] -> Right "Operator (fpop) error. Needs one operand to work; none provided!" 
         vals -> 
             let (state', list) = fsPop state
             in case (doFpop' list) of 
                 Left (list', Just v) -> 
                     let state'' = fsPush list' state'
-                    in return (fsPush v state'')
-                Left (list', Nothing) -> return (fsPush list' state')
-                Right err -> throwError err state'
+                    in Left (fsPush v state'')
+                Left (list', Nothing) -> Left (fsPush list' state')
+                Right err -> Right err
 
 --Pops item and pushes to stack if exists.
 doFpop' :: Value -> Either (Value, Maybe Value) String
@@ -742,18 +747,18 @@ doFpop'' List{items = as, len = al} List{items = bs, len = bl} index
     |   otherwise = List{items = bs, len = bl} 
 
 --Fetches an item from a list of a specific index.
-doIndex :: EDState -> IO EDState
+doIndex :: EDState -> Either EDState String
 doIndex state = 
     case (stack state) of 
-        [] -> throwError "Operator (index) error. Two operands required for index; none provided!" state
-        [x] -> throwError "Operator (index) error. Two operands required for index; only one provided!" state
+        [] -> Right "Operator (index) error. Two operands required for index; none provided!" 
+        [x] -> Right "Operator (index) error. Two operands required for index; only one provided!" 
         vals ->  
             let (state', list, index) = fsPop2 state
             in case (doIndex' list index) of
                 Left v -> 
                     let state'' = fsPush list state'
-                    in return (fsPush v state'')
-                Right err -> throwError err state' 
+                    in Left (fsPush v state'')
+                Right err -> Right err 
 
 --Retrieves item at index in list or string.
 doIndex' :: Value -> Value -> Either Value String
@@ -777,15 +782,15 @@ doIndex' a b =
 
 --Takes the length of a list or string at the top 
 -- of the stack and pushes resulting length to top of stack.
-doLength :: EDState -> IO EDState
+doLength :: EDState -> Either EDState String
 doLength state = 
     case (stack state) of 
-        [] -> throwError "Operator (length) error. Operand needed for length; none provided!" state
+        [] -> Right "Operator (length) error. Operand needed for length; none provided!" 
         vals -> 
             let top = (fsTop state)
             in case (doLength' top) of
-                Left v -> return (fsPush v state)
-                Right err -> throwError err state
+                Left v -> Left (fsPush v state)
+                Right err -> Right err
 
 --Performs actual length function.
 doLength' :: Value -> Either Value String
@@ -798,15 +803,15 @@ doLength' x =
 
 --Determines if the list or string at the top
 -- of the stack is empty or not.
-doIsEmpty :: EDState -> IO EDState
+doIsEmpty :: EDState -> Either EDState String
 doIsEmpty state = 
     case (stack state) of 
-        [] -> throwError "Operator (isEmpty) error. One operand needed; none provided!" state
+        [] -> Right "Operator (isEmpty) error. One operand needed; none provided!" 
         vals -> 
             let top = (fsTop state)
             in case (doIsEmpty' top) of 
-                Left v -> return (fsPush v state)
-                Right err -> throwError err state
+                Left v -> Left (fsPush v state)
+                Right err -> Right err
 
 --Performs actual length function.
 doIsEmpty' :: Value -> Either Value String
@@ -819,15 +824,15 @@ doIsEmpty' x =
         ++ xType)
 
 --Sets the string or list at the top of the stack to empty.
-doClear :: EDState -> IO EDState
+doClear :: EDState -> Either EDState String
 doClear state = 
     case (stack state) of 
-        [] -> throwError "Operator (clear) error. One operand needed; none provided!" state
+        [] -> Right "Operator (clear) error. One operand needed; none provided!" 
         vals ->  
             let (state', items) = fsPop state
             in case (doClear' items) of
-                Left items' -> return (fsPush items' state')
-                Right err -> throwError err state'
+                Left items' -> Left (fsPush items' state')
+                Right err -> Right err
 
 --Performs clear operation.
 doClear' :: Value -> Either Value String
@@ -840,16 +845,16 @@ doClear' x =
         ++ xType)
 
 --Used to turn a value of one type into another.
-doCast :: EDState -> IO EDState
+doCast :: EDState -> Either EDState String
 doCast state = 
     case (stack state) of 
-        [] -> throwError "Operator (cast) error. Two operands required for cast; none provided!" state
-        [x] -> throwError "Operator (cast) error. Two operands required for cast; only one provided!" state
+        [] -> Right "Operator (cast) error. Two operands required for cast; none provided!" 
+        [x] -> Right "Operator (cast) error. Two operands required for cast; only one provided!" 
         vals ->  
             let (state', val, castType) = fsPop2 state
             in case (doCast' val castType) of 
-                Left v -> return (fsPush v state')
-                Right err -> throwError err state' 
+                Left v -> Left (fsPush v state')
+                Right err -> Right err 
 
 --Performs the actual cast operation.
 doCast' :: Value -> Value -> Either Value String
@@ -1040,96 +1045,95 @@ doReadChar state = getChar >>= (\inChar -> return (fsPush (Char inChar) state))
 --Determines if a character at the top 
 -- of the stack is a whitespace character, 
 -- pushes true if yes and false if no.
-doIsWhite :: EDState -> IO EDState
+doIsWhite :: EDState -> Either EDState String
 doIsWhite state = 
     case (stack state) of 
-        [] -> throwError "Operator (isWhitespace) error. Operand on stack needed; none provided!" state
+        [] -> Right "Operator (isWhitespace) error. Operand on stack needed; none provided!" 
         vals -> case (head vals) of 
-            Char c -> return (fsPush (Boolean (isSpace c)) state)
+            Char c -> Left (fsPush (Boolean (isSpace c)) state)
             x -> 
                 let xType = chrs $ doQueryType' x
-                in throwError ("Operator (isWhitespace) error. Type on stack top needs to be of type Char. Attempted type: "
-                    ++ xType) state
+                in Right ("Operator (isWhitespace) error. Type on stack top needs to be of type Char. Attempted type: " ++ xType) 
 
 --Determines if a list, string, 
 -- or object contains a value, char, or field, respectively.
-doContains :: EDState -> IO EDState
+doContains :: EDState -> Either EDState String
 doContains state = 
     case (stack state) of 
-        [] -> throwError "Operator (contains) error. Two operands on stack needed; none provided!" state
-        [x] -> throwError "Operator (contains) error. Two operands on stack needed; only one provided!" state
+        [] -> Right "Operator (contains) error. Two operands on stack needed; none provided!" 
+        [x] -> Right "Operator (contains) error. Two operands on stack needed; only one provided!" 
         vals -> 
             let (state', secondToTop, top) = fsPop2 state
             in case (top, secondToTop) of 
-                (v, List {items = is, len = _}) -> return (fsPush (Boolean $ v `elem` is) state)
-                (Char c, String {chrs = cs, len = _}) -> return (fsPush (Boolean $ c `elem` cs) state)
+                (v, List {items = is, len = _}) -> Left (fsPush (Boolean $ v `elem` is) state)
+                (Char c, String {chrs = cs, len = _}) -> Left (fsPush (Boolean $ c `elem` cs) state)
                 (String{chrs = name, len = _}, Object{fields = fs}) -> 
                     let contains = case (M.lookup name fs) of 
                             Just _ -> True 
                             Nothing -> False
-                    in return (fsPush (Boolean contains) state)
+                    in Left (fsPush (Boolean contains) state)
                 (a, b) -> 
                     let (aType, bType) = findTypeStrsForError b a
-                    in throwError ("Operator (contains) error." 
+                    in Right ("Operator (contains) error." 
                         ++ " First pushed element must be List/String/Object " 
                         ++ "and second item needs to be Value, Char, or String, respectively. "
-                        ++ "Attempted types: " ++ aType ++ " and " ++ bType ) state
+                        ++ "Attempted types: " ++ aType ++ " and " ++ bType ) 
 
 --Changes an item at a given index in a list to a new item on the stack.
-doChangeItemAt :: EDState -> IO EDState
+doChangeItemAt :: EDState -> Either EDState String
 doChangeItemAt state = 
     case (stack state) of 
-        [] -> throwError "Operator (changeItemAt) error. Three operands needed; none provided!" state
-        [x] -> throwError "Operator (changeItemAt) error. Three operands needed; only one provided!" state
-        [x, y] -> throwError "Operator (changeItemAt) error. Three operands needed; only two provided!" state
+        [] -> Right "Operator (changeItemAt) error. Three operands needed; none provided!" 
+        [x] -> Right "Operator (changeItemAt) error. Three operands needed; only one provided!" 
+        [x, y] -> Right "Operator (changeItemAt) error. Three operands needed; only two provided!" 
         vals ->  
             let (state', chngLs, chngItem, index) = fsPop3 state
             in case (chngLs, chngItem, index) of 
                 (List {items = is, len = l}, v, Integer i) -> 
                     if (i > -1 && i < l) 
                         then 
-                            return (fsPush ( List { items = M.insert i v is, len = l } ) state')
+                            Left (fsPush ( List { items = M.insert i v is, len = l } ) state')
                         else 
-                            throwError ("Operator (changeItemAt) error. Index " 
+                            Right ("Operator (changeItemAt) error. Index " 
                                 ++ (show i) ++ " out of range for list of size " 
                                 ++ (show l) 
-                                ++ "!") state'
+                                ++ "!") 
                 (a, b, c) -> 
                     let (aType, bType, cType) = (chrs $ doQueryType' a, chrs $ doQueryType' b, chrs $ doQueryType' c)
-                    in throwError ("Operator (changeItemAt) error."
+                    in Right ("Operator (changeItemAt) error."
                     ++ " Top three items of stack need to be of type: "
                     ++ "List Value Integer (ordered from bottom to top). Attempted types: "
-                    ++ aType ++ ", " ++ bType ++ ", and " ++ cType) state'
+                    ++ aType ++ ", " ++ bType ++ ", and " ++ cType) 
 
 --Raises one Float or Double to another Float or Double 
 --and returns as such, consuming the original two numbers.
-doPow :: EDState -> IO EDState
+doPow :: EDState -> Either EDState String
 doPow state =  
     case (stack state) of 
-        [] -> throwError "Operator (pow) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (pow) error. Two operands needed; only one provided!" state
+        [] -> Right "Operator (pow) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (pow) error. Two operands needed; only one provided!" 
         vals ->  
             let (state', base, expnt) = fsPop2 state
             in case (base, expnt) of 
-                (Float bs, Float ex) -> return (fsPush (Float (bs ** ex)) state')
-                (Double bs, Double ex) -> return (fsPush (Double (bs ** ex)) state')
+                (Float bs, Float ex) -> Left (fsPush (Float (bs ** ex)) state')
+                (Double bs, Double ex) -> Left (fsPush (Double (bs ** ex)) state')
                 (a, b) ->
                     let (aType, bType) = findTypeStrsForError a b
-                    in throwError ("Operator (pow) error. Operands need to be both of type Float or Double. Attempted types: " 
-                        ++ aType ++ " and " ++ bType) state' 
+                    in Right ("Operator (pow) error. Operands need to be both of type Float or Double. Attempted types: " 
+                        ++ aType ++ " and " ++ bType)  
 
 --Adds a field to a given object.
-doAddField :: EDState -> IO EDState
+doAddField :: EDState -> Either EDState String
 doAddField state =
     case (stack state) of 
-        [] -> throwError "Operator (addField) error. Three operands needed; none provided!" state
-        [x] -> throwError "Operator (addField) error. Three operands needed; only one provided!" state
-        [x, y] -> throwError "Operator (addField) error. Three operands needed; only two provided!" state
+        [] -> Right "Operator (addField) error. Three operands needed; none provided!" 
+        [x] -> Right "Operator (addField) error. Three operands needed; only one provided!" 
+        [x, y] -> Right "Operator (addField) error. Three operands needed; only two provided!" 
         vals ->  
             let (state', obj, fieldName, fieldVal) = fsPop3 state
             in case (doAddField' obj fieldName fieldVal) of 
-                Left obj' -> return (fsPush obj' state')
-                Right err -> throwError err state' 
+                Left obj' -> Left (fsPush obj' state')
+                Right err -> Right err 
 
 --Adds field to object.
 doAddField' :: Value -> Value -> Value -> Either Value String
@@ -1147,66 +1151,66 @@ doAddField' a b c =
         ++ aType ++ ", " ++ bType ++ ", and " ++ cType)
 
 --Removes a field from a given object. Does nothing if the field doesn't exist.
-doRemoveField :: EDState -> IO EDState
+doRemoveField :: EDState -> Either EDState String
 doRemoveField state = 
     case (stack state) of 
-        [] -> throwError "Operator (removeField) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (removeField) error. Two operands needed; only one provided!" state
+        [] -> Right "Operator (removeField) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (removeField) error. Two operands needed; only one provided!" 
         vals ->  
             let (state', obj, removalKey) = fsPop2 state
             in case (obj, removalKey) of 
                 (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     case (M.lookup name fs) of 
-                            Just i -> return (fsPush  Object{fields = M.delete name fs} state')
-                            Nothing -> throwError ("Operator (removeField) error. Field " ++ name ++ " doesn't exist in given object!") state'
+                            Just i -> Left (fsPush  Object{fields = M.delete name fs} state')
+                            Nothing -> Right ("Operator (removeField) error. Field " ++ name ++ " doesn't exist in given object!") 
                 (a, b) -> 
                     let (aType, bType) = findTypeStrsForError a b
-                    in throwError ("Operator (removeField) error. Operands need to be of type Object and String. Attempted types: "
-                        ++ aType ++ " and " ++ bType) state
+                    in Right ("Operator (removeField) error. Operands need to be of type Object and String. Attempted types: "
+                        ++ aType ++ " and " ++ bType)
 
 --Grabs the value of a field in an object or throws an error if it doesn't exist.
-doGetField :: EDState -> IO EDState
+doGetField :: EDState -> Either EDState String
 doGetField state = 
     case (stack state) of 
-        [] -> throwError "Operator (getField) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (getField) error. Two operands needed; only one provided!" state
+        [] -> Right "Operator (getField) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (getField) error. Two operands needed; only one provided!" 
         vals ->  
             let (state', obj, findKey) = fsPop2 state 
             in case (obj, findKey) of 
                 (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     case (M.lookup name fs) of 
-                        Just i -> return (fsPush i (fsPush obj state'))
-                        Nothing -> throwError ("Operator (getField) error. Field " ++ name ++ " doesn't exist in given object!") state
+                        Just i -> Left (fsPush i (fsPush obj state'))
+                        Nothing -> Right ("Operator (getField) error. Field " ++ name ++ " doesn't exist in given object!") 
 
                 (a, b) ->
                     let (aType, bType) = findTypeStrsForError a b
-                    in throwError ("Operator (getField) error. Operands need to be type Object and String. Attempted types: "
-                        ++ aType ++ " and " ++ bType) state
+                    in Right ("Operator (getField) error. Operands need to be type Object and String. Attempted types: "
+                        ++ aType ++ " and " ++ bType)
 
 --Mutates the value of a field in the object assuming the field exists 
 -- and the types match for the old and new values.
-doMutateField :: EDState -> IO EDState
+doMutateField :: EDState -> Either EDState String
 doMutateField state = 
     case (stack state) of 
-        [] -> throwError "Operator (mutateField) error. Three operands needed; none provided!" state
-        [x] -> throwError "Operator (mutateField) error. Three operands needed; only one provided!" state
-        [x, y] -> throwError "Operator (mutateField) error. Three operands needed; only two provided!" state
+        [] -> Right "Operator (mutateField) error. Three operands needed; none provided!" 
+        [x] -> Right "Operator (mutateField) error. Three operands needed; only one provided!" 
+        [x, y] -> Right "Operator (mutateField) error. Three operands needed; only two provided!" 
         vals ->
             let (state', obj, mutKey, newVal) = fsPop3 state 
             in case (obj, mutKey) of 
                 (Object{fields = fs}, String{chrs = name, len = l}) -> 
                     case (M.lookup name fs) of 
                         Just i -> if (compareTypesForMut i newVal) 
-                            then return $ fsPush Object{fields = (M.insert name newVal fs)} state' 
-                            else throwError ("Operator (mutateField) error. New value is of type: "
+                            then Left $ fsPush Object{fields = (M.insert name newVal fs)} state' 
+                            else Right ("Operator (mutateField) error. New value is of type: "
                                 ++ (chrs $ doQueryType' newVal) ++ " which doesn't match field " 
-                                ++ name ++ " of type " ++ (chrs $ doQueryType' i) ++ ". The types must match for consistency!") state'
+                                ++ name ++ " of type " ++ (chrs $ doQueryType' i) ++ ". The types must match for consistency!")
 
-                        Nothing -> throwError ("Operator (mutateField) error. Field " ++ name ++ " doesn't exist in given object!") state'
+                        Nothing -> Right ("Operator (mutateField) error. Field " ++ name ++ " doesn't exist in given object!") 
                 (a, b) -> 
                     let (aType, bType) = findTypeStrsForError a b
-                    in throwError ("Operator (mutateField) error. Operands need to be of type Object String Value. Attempted types: "
-                        ++ aType ++ ", " ++ bType ++ ", and " ++ (chrs $ doQueryType' newVal)) state'
+                    in Right ("Operator (mutateField) error. Operands need to be of type Object String Value. Attempted types: "
+                        ++ aType ++ ", " ++ bType ++ ", and " ++ (chrs $ doQueryType' newVal))
 
 --Reads in the contents of a file to a string.
 doReadFile :: EDState -> IO EDState 
@@ -1253,13 +1257,13 @@ doWriteFile state =
                         ++ aType ++ " and " ++ bType) state' 
 
 --Determines the type of an item on the stack.
-doQueryType :: EDState -> IO EDState
+doQueryType :: EDState -> Either EDState String
 doQueryType state =  
     case (stack state) of 
-        [] -> throwError "Operator (queryType) error. One operand needed; none provided!" state
+        [] -> Right "Operator (queryType) error. One operand needed; none provided!" 
         vals -> 
             let (state', val) = fsPop state
-            in return (fsPush (doQueryType' val) state)
+            in Left (fsPush (doQueryType' val) state)
 
 --Uses pattern matching to find type of given value.
 doQueryType' :: Value -> Value
@@ -1285,141 +1289,152 @@ doDebugPrintStack state = do
     putStrLn "DEBUG END\n----------------------------------------------"
     return state
 
-doBitOr :: EDState -> IO EDState
+doBitOr :: EDState -> Either EDState String
 doBitOr state = 
     let grabFirstInTriple = \(x, _, _) -> x
     in case (stack state) of 
-        [] -> throwError "Operator (bitOr) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (bitOr) error. Two operands needed; only one provided!" state
-        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
-        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
+        [] -> Right "Operator (bitOr) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (bitOr) error. Two operands needed; only one provided!" 
+        (Integer x1):(Integer x2):xs -> Left $ fsPush (Integer (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> Left $ fsPush (BigInteger (x1 .|. x2)) (grabFirstInTriple $ fsPop2 state)
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
-            throwError ("Operator (bitOr) error. Bitwise OR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+            Right ("Operator (bitOr) error. Bitwise OR requires two operands \
+                \with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type)
 
-doBitAnd :: EDState -> IO EDState
+doBitAnd :: EDState -> Either EDState String
 doBitAnd state = 
     let grabFirstInTriple = \(x, _, _) -> x
     in case (stack state) of 
-        [] -> throwError "Operator (bitAnd) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (bitAnd) error. Two operands needed; only one provided!" state
-        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 .&. x2)) (grabFirstInTriple $ fsPop2 state)
-        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 .&. x2)) (grabFirstInTriple $ fsPop2 state)
+        [] -> Right "Operator (bitAnd) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (bitAnd) error. Two operands needed; only one provided!" 
+        (Integer x1):(Integer x2):xs -> Left $ fsPush (Integer (x1 .&. x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> Left $ fsPush (BigInteger (x1 .&. x2)) (grabFirstInTriple $ fsPop2 state)
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
-            throwError ("Operator (bitAnd) error. Bitwise AND requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+            Right ("Operator (bitAnd) error. Bitwise AND requires two operands \
+                \with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type)
 
-doBitXor :: EDState -> IO EDState
+doBitXor :: EDState -> Either EDState String
 doBitXor state = 
     let grabFirstInTriple = \(x, _, _) -> x
     in case (stack state) of 
-        [] -> throwError "Operator (bitXor) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (bitXor) error. Two operands needed; only one provided!" state
-        (Integer x1):(Integer x2):xs -> return $ fsPush (Integer (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
-        (BigInteger x1):(BigInteger x2):xs -> return $ fsPush (BigInteger (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
+        [] -> Right "Operator (bitXor) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (bitXor) error. Two operands needed; only one provided!" 
+        (Integer x1):(Integer x2):xs -> Left $ fsPush (Integer (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
+        (BigInteger x1):(BigInteger x2):xs -> Left $ fsPush (BigInteger (x1 `xor` x2)) (grabFirstInTriple $ fsPop2 state)
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; in
-            throwError ("Operator (bitXor) error. Bitwise XOR requires two operands with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+            Right ("Operator (bitXor) error. Bitwise XOR requires two operands \
+                \with matching types Integer or BigInteger! Attempted types: " ++ x2Type ++ " and " ++ x1Type) 
 
-doBitNot :: EDState -> IO EDState
+doBitNot :: EDState -> Either EDState String
 doBitNot state =
     case (stack state) of
-        [] -> throwError "Operator (bitNot) error. One operand needed; none provided!" state
-        (Integer x):xs -> return $ fsPush (Integer (complement x)) (fst $ fsPop state)
-        (BigInteger x):xs -> return $ fsPush (BigInteger (complement x)) (fst $ fsPop state)
+        [] -> Right "Operator (bitNot) error. One operand needed; none provided!" 
+        (Integer x):xs -> Left $ fsPush (Integer (complement x)) (fst $ fsPop state)
+        (BigInteger x):xs -> Left $ fsPush (BigInteger (complement x)) (fst $ fsPop state)
         x:xs -> let xType = chrs $ doQueryType' x ; 
-            in throwError ("Operator (bitNot) error. Bitwise NOT requires one operand of type Integer or BigInteger! Attempted type: " ++ xType) state 
+            in Right ("Operator (bitNot) error. Bitwise NOT requires one operand of type Integer or BigInteger! Attempted type: " ++ xType)  
 
-doBitShift :: EDState -> IO EDState
+doBitShift :: EDState -> Either EDState String
 doBitShift state =
     let grabFirstInTriple = \(x, _, _) -> x
     in case (stack state) of
-        [] -> throwError "Operator (bitShift) error. Two operands needed; none provided!" state
-        [x] -> throwError "Operator (bitShift) error. Two operands needed; only one provided!" state
-        (Integer shiftAmount):(Integer x):xs -> return $ fsPush (Integer $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
-        (Integer shiftAmount):(BigInteger x):xs -> return $ fsPush (BigInteger $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
+        [] -> Right "Operator (bitShift) error. Two operands needed; none provided!" 
+        [x] -> Right "Operator (bitShift) error. Two operands needed; only one provided!" 
+        (Integer shiftAmount):(Integer x):xs -> Left $ fsPush (Integer $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
+        (Integer shiftAmount):(BigInteger x):xs -> Left $ fsPush (BigInteger $ shift x shiftAmount) (grabFirstInTriple $ fsPop2 state)
         x1:x2:xs -> let (x1Type, x2Type) = findTypeStrsForError x1 x2 ; 
-            in throwError ("Operator (bitShift) error. Top of stack must be type Integer and second \
-                \to top must be either type Integer or BigInteger! Valid types: Integer/BigInteger Integer. Attempted types: " ++ x2Type ++ " and " ++ x1Type) state
+            in Right ("Operator (bitShift) error. Top of stack must be type Integer and second \
+                \to top must be either type Integer or BigInteger! \
+                \Valid types: Integer/BigInteger Integer. Attempted types: " ++ x2Type ++ " and " ++ x1Type) 
 
--- performs the operation identified by the string. for example, doOp state "+"
--- will perform the "+" operation, meaning that it will pop two values, sum them,
--- and push the result. 
-doOp :: String -> EDState -> IO EDState
--- here's how we turn the strings into their corresponding operation. 
-doOp "+"  = doAdd
-doOp "-"  = doSub
-doOp "*"  = doMul
-doOp "/"  = doDiv  
-doOp "swap"  = doSwap  
-doOp "drop"  = doDrop  
-doOp "dropStack" = doDropStack
-doOp "rot"  = doRot  
-doOp "dup"  = doDup 
-doOp "=="  = doEqual 
-doOp "/="  = doNotEqual 
-doOp ">"  = doGreaterThan 
-doOp "<"  = doLessThan 
-doOp ">="  = doGreaterThanEqualTo 
-doOp "<=" = doLessThanEqualTo 
-doOp "%" = doModulo
-doOp "++" = doConcat
-doOp "and" = doAnd 
-doOp "or" = doOr 
-doOp "xor" = doXor
-doOp "not" = doNot
-doOp "pow" = doPow --Exponential operation
---List operations
-doOp "push" = doPush
-doOp "p" = doPush --Alias for push
-doOp "pop" = doPop
-doOp "po" = doPop --Alias for pop
-doOp "fpush" = doFpush
-doOp "fp" = doFpush --Alias for fpush
-doOp "fpop" = doFpop
-doOp "fpo" = doFpop --Alias for fpop
-doOp "index" = doIndex 
-doOp "length" = doLength
-doOp "len" = doLength --Alias for length
-doOp "isEmpty" = doIsEmpty
-doOp "clear" = doClear
-doOp "contains" = doContains
-doOp "changeItemAt" = doChangeItemAt --Changes item in list at a specified index.
-doOp "isWhitespace" = doIsWhite --Checks if character is whitespace.
+createOpsHashes :: (HM.HashMap String (EDState -> Either EDState String), HM.HashMap String (EDState -> IO EDState))
+createOpsHashes = 
+    let opsList = 
+            [
+                --Basic arithmetic ops.
+                ("+", doAdd),
+                ("-", doSub),
+                ("*", doMul),
+                ("/", doDiv),
+                ("%", doModulo),
+                ("pow", doPow),
 
---Type stuff
-doOp "cast" = doCast
-doOp "queryType" = doQueryType
---IO stuff
-doOp "printLine" = doPrintLine
-doOp "readLine" = doReadLine
-doOp "printChar" = doPrintChar
-doOp "readChar" = doReadChar
-doOp "print" = doPrint
-doOp "read" = doRead
+                --Basic stack operators.
+                ("swap", doSwap),
+                ("drop", doDrop),
+                ("dropStack", doDropStack),
+                ("rot", doRot),
+                ("dup", doDup),
 
---Error display
-doOp "printError" = doPrintError
+                --Basic comparison operators.
+                ("==", doEqual),
+                ("/=", doNotEqual),
+                (">", doGreaterThan),
+                ("<", doLessThan),
+                (">=", doGreaterThanEqualTo),
+                ("<=", doLessThanEqualTo),
 
---Debug Operator
-doOp "debugPrintStack" = doDebugPrintStack
+                ("++", doConcat),
 
---Object Operators
-doOp "addField" = doAddField 
-doOp "removeField" = doRemoveField 
-doOp "getField" = doGetField 
-doOp "mutateField" = doMutateField 
+                --Basic logical operators.
+                ("and", doAnd),
+                ("or", doOr),
+                ("xor", doXor),
+                ("not", doNot),
 
---File IO Operators
-doOp "readFile" = doReadFile 
-doOp "writeFile" = doWriteFile
+                --Basic list operations.
+                ("push", doPush),
+                ("p", doPush),
+                ("pop", doPop),
+                ("po", doPop),
+                ("fpush", doFpush),
+                ("fp", doFpush),
+                ("fpop", doFpop),
+                ("fpo", doFpop),
+                ("index", doIndex),
+                ("length", doLength),
+                ("len", doLength),
+                ("isEmpty", doIsEmpty),
+                ("clear", doClear),
+                ("contains", doContains),
+                ("changeItemAt", doChangeItemAt),
+                
+                ("isWhitespace", doIsWhite),
+                
+                --Type stuff.
+                ("cast", doCast),
+                ("queryType", doQueryType),
 
---Bitwise operators
-doOp "bitOr" = doBitOr
-doOp "bitAnd" = doBitAnd
-doOp "bitXor" = doBitXor
-doOp "bitNot" = doBitNot
-doOp "bitShift" = doBitShift
+                --Object operators.
+                ("addField", doAddField),
+                ("removeField", doRemoveField),
+                ("getField", doGetField),
+                ("mutateField", doMutateField),
 
--- Error thrown if reached here.
-doOp op = throwError ("Unrecognized operator: " ++ op)  
+                --Bitwise operators.
+                ("bitOr", doBitOr),
+                ("bitAnd", doBitAnd),
+                ("bitXor", doBitXor),
+                ("bitNot", doBitNot),
+                ("bitShift", doBitShift)
+            ]
+        ioOpsList = 
+            [
+                --IO stuff.
+                ("printLine", doPrintLine),
+                ("readLine", doReadLine),
+                ("printChar", doPrintChar),
+                ("readChar", doReadChar),
+                ("print", doPrint),
+                ("read", doRead),
+                ("printError", doPrintError),
+                ("debugPrintStack", doDebugPrintStack),
+
+                --File IO Operations.
+                ("readFile", doReadFile),
+                ("writeFile", doWriteFile)
+            ]
+    in (HM.fromList opsList, HM.fromList ioOpsList)
 
 astNodeToString :: AstNode -> String
 astNodeToString (Terminal (Word w)) = w
@@ -1465,14 +1480,14 @@ compareTypesForMut _ _ = False
 
 --Used to add a stack frame when the scope increases. 
 addFrame :: EDState -> EDState
-addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state)), heap = heap state}
+addFrame state = EDState {stack = (stack state), fns = (fns state), vars = (vars state), frames = ((M.empty):(frames state)), heap = heap state, ops = ops state, ioOps = ioOps state}
 
 --Removes stack frame if not at global scope.
 removeFrame :: EDState -> EDState
-removeFrame EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp} = 
-    EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp}
-removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs), heap = hp} =
-    EDState{stack = s, fns = f, vars = v, frames = (xs), heap = hp}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp, ops = o, ioOps = io} = 
+    EDState{stack = s, fns = f, vars = v, frames = [x], heap = hp, ops = o, ioOps = io}
+removeFrame EDState{stack = s, fns = f, vars = v, frames = (x:xs), heap = hp, ops = o, ioOps = io} =
+    EDState{stack = s, fns = f, vars = v, frames = (xs), heap = hp, ops = o, ioOps = io}
 
 --Determines if desired box number is valid on the heap.
 -- Returns a value if the box number is valid and returns an error string if not.
@@ -1495,7 +1510,7 @@ doNode :: AstNode -> EDState -> IO EDState
 
 --Attempt on Error doNode case where it tries to run code in attempt branch 
 -- and instead runs the code in on Error if there's a problem.
-doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame state)) handler 
+doNode (Expression((AttErr{attempt = att, onError = err}):rest)) state = (catch (doNode att (addFrame state)) handler) >>= (\state' -> doNode (Expression rest) state') 
     where 
         handler :: GeneralException -> IO EDState
         handler (GeneralException msg) = 
@@ -1504,11 +1519,12 @@ doNode AttErr{attempt = att, onError = err} state = catch (doNode att (addFrame 
 
 --Pattern matches TempStackChange block. In this block, the code inside it runs but importantly 
 -- without a stack change like with other operators like this.
-doNode (TempStackChange runBlock) state =
-    (doNode runBlock (addFrame state)) >>= (\state' -> return EDState{stack = stack state, fns = fns state', vars = vars state', frames = frames state', heap = heap state'})
+doNode (Expression ((TempStackChange runBlock):rest)) state =
+    (doNode runBlock (addFrame state)) >>= (\state' -> doNode (Expression rest) (EDState{stack = stack state, fns = fns state', vars = vars state', 
+            frames = frames state', heap = heap state', ops = ops state', ioOps = ioOps state'}))
 
 --Parses box command.
-doNode (BoxOp cmd) state =
+doNode (Expression ((BoxOp cmd):rest)) state =
     case (astNodeToString cmd) of
         "make" -> 
             if (null $ stack state)
@@ -1524,15 +1540,15 @@ doNode (BoxOp cmd) state =
                             let hp' = M.insert hs v hp
                                 hs' = hs + 1
                                 state'' = fsPush (Box hs) state'
-                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'',
-                                frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}}
+                            in doNode (Expression rest) (EDState{stack = stack state'', fns = fns state'', vars = vars state'',
+                                frames = frames state'', heap = Heap{freeList = fl, h = hp', heapSize = hs'}, ops = ops state'', ioOps = ioOps state''})
                         else
                             let ((replaceBn, _), fl') = M.deleteFindMin fl
                                 hp' = M.insert replaceBn v hp
                                 state'' = fsPush (Box replaceBn) state'
-                            in return EDState{stack = stack state'', fns = fns state'', 
+                            in doNode (Expression rest) (EDState{stack = stack state'', fns = fns state'', 
                                 vars = vars state'', frames = frames state'', 
-                                heap = Heap{freeList = fl', h = hp', heapSize = hs}}
+                                heap = Heap{freeList = fl', h = hp', heapSize = hs}, ops = ops state'', ioOps = ioOps state''})
 
         "open" -> 
             if (null $ stack state)
@@ -1542,7 +1558,7 @@ doNode (BoxOp cmd) state =
                     case (fsTop state) of
                         Box n -> 
                             case (validateBox (heap state) n) of
-                                Left v -> return $ fsPush v state
+                                Left v -> doNode (Expression rest) (fsPush v state)
                                 Right err -> throwError err state 
                         x -> 
                             let xType = chrs $ doQueryType' x 
@@ -1561,8 +1577,9 @@ doNode (BoxOp cmd) state =
                                         then
                                             let h' = M.insert bn v (h $ heap state')
                                                 state'' = fsPush (Box bn) state'
-                                            in return EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
-                                                frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', heapSize = heapSize $ heap state}}
+                                            in doNode (Expression rest) (EDState{stack = stack state'', fns = fns state'', vars = vars state'', 
+                                                frames = frames state'', heap = Heap{freeList = freeList $ heap state'', h = h', 
+                                                heapSize = heapSize $ heap state}, ops = ops state'', ioOps = ioOps state''})
                                         else
                                             let (oldVType, vType) = findTypeStrsForError oldV v
                                             in throwError ("Operator (box altr) error. New value for Box " ++ (show bn) ++ 
@@ -1584,33 +1601,35 @@ doNode (BoxOp cmd) state =
                             case (validateBox (heap state) freeBn) of
                                 Left _ ->
                                     let fl' = M.insert freeBn () (freeList $ heap state')
-                                    in return EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
-                                        heap = Heap{freeList = fl', h = (h $ heap state'), heapSize = (heapSize $ heap state')}}
+                                    in doNode (Expression rest) (EDState{stack = stack state', fns = fns state', vars = vars state', frames = frames state', 
+                                        heap = Heap{freeList = fl', h = (h $ heap state'), 
+                                        heapSize = (heapSize $ heap state')}, ops = ops state', ioOps = ioOps state'})
                                 Right err -> throwError err state'
                         x ->
                             let xType = chrs $ doQueryType' x
                             in throwError ("Operator (box free) error. Top of stack needs to be of type Box to be free'd! Attempted type: " 
                                 ++ xType) state
-        "null" -> return $ fsPush (Box (-1)) state
+        "null" -> doNode (Expression rest) (fsPush (Box (-1)) state)
         x -> throwError ("Operator (box) error. Invalid Box command " ++ x ++ " given! Valid commands: make, open, altr, free, null") state
 
 -- Runs true branch if top of stack is true 
 --and false branch if top of stack is false.
-doNode If { ifTrue = trueBranch, ifFalse = falseBranch } state = 
+doNode (Expression((If { ifTrue = trueBranch, ifFalse = falseBranch }):rest)) state = 
     if (null $ stack state)
         then
             throwError "If statement error. No Boolean for if to check because stack is empty!" state
-        else
-            case (fsTop state) of 
+        else do
+            state' <- case (fsTop state) of 
                 (Boolean True) -> doNode trueBranch (addFrame state)
                 (Boolean False) -> doNode falseBranch (addFrame state)
                 x ->
                     let xType = chrs $ doQueryType' x
                     in throwError ("If statement error. If statement requires top of the stack" 
                         ++ " to be type Boolean to branch! Attempted type: " ++ xType) state
+            doNode (Expression rest) state'
 
 --Pattern matches function def and call.
-doNode Function {funcCmd = cmd, funcName = name, funcBod = body} state =
+doNode (Expression((Function {funcCmd = cmd, funcName = name, funcBod = body}):rest)) state =
     case (astNodeToString cmd) of 
         "def" -> 
             let fName = astNodeToString name
@@ -1618,20 +1637,21 @@ doNode Function {funcCmd = cmd, funcName = name, funcBod = body} state =
                     Just bod -> throwError ("Function Def Error. Function " ++ fName ++ " already exists!") state
                     Nothing ->
                         let fns' = M.insert fName body (fns state)
-                        in return EDState{stack = (stack state), fns = fns', vars = (vars state), frames = (frames state), heap = heap state}
+                        in doNode (Expression rest) (EDState{stack = (stack state), fns = fns', vars = (vars state), 
+                            frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state})
 
         "call" -> 
             let fName = astNodeToString name
             in case (M.lookup fName (fns state)) of
                 Just bod -> 
-                    (doNode bod (addFrame state)) >>= (\state' -> return state')
+                    (doNode bod (addFrame state)) >>= (\state' -> doNode (Expression rest) state')
                 
                 Nothing -> throwError ("Function Call Error. Function " ++ fName ++ " isn't defined!") state
 
         other -> throwError ("Function Error. Invalid function command given. Given: " ++ other ++ " Valid: def, call") state
 
 --Runs all the different cases of variable actions.
-doNode Variable{varName = name, varCmd = cmd} state =
+doNode (Expression((Variable{varName = name, varCmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
         --Used in making a new variable in vars.
         "mak" ->
@@ -1644,13 +1664,14 @@ doNode Variable{varName = name, varCmd = cmd} state =
                         Just _ -> throwError ("Variable (var) Mak Error. Variable " ++ vName ++ " already exists.") state
                         Nothing -> 
                             let vars' = M.insert vName (fsTop state) (vars state)
-                            in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+                            in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', 
+                                frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state})
                            
         --Pushes variable value to stack.
         "get" -> 
             let vName = astNodeToString name
             in case (M.lookup vName (vars state)) of
-                Just v -> return (fsPush v state)
+                Just v -> doNode (Expression rest) (fsPush v state)
                 Nothing -> throwError ("Variable (var) Get Error. Variable " ++ vName ++ " doesn't exist or was deleted!") state
 
         --Removes variable from existence since var is manually scoped.
@@ -1659,7 +1680,8 @@ doNode Variable{varName = name, varCmd = cmd} state =
             in case (M.lookup vName (vars state)) of 
                 Just v -> 
                     let vars' = M.delete vName (vars state)
-                    in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state} 
+                    in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', frames = 
+                        (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}) 
                 Nothing -> throwError ("Variable (var) Del Error. Variable " ++ vName ++ " doesn't exist or was already deleted!") state
 
         --Alters variable to new value on top of stack if the types match.
@@ -1675,7 +1697,8 @@ doNode Variable{varName = name, varCmd = cmd} state =
                             if (compareTypesForMut v newVal)
                                 then 
                                     let vars' = M.insert vName newVal (vars state)
-                                    in return EDState{stack = (stack state), fns = (fns state), vars = vars', frames = (frames state), heap = heap state}
+                                    in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = vars', 
+                                        frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state})
                                 else
                                     throwError ("Variable (var) Mut Error. Can't mutate variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1686,7 +1709,7 @@ doNode Variable{varName = name, varCmd = cmd} state =
         other -> throwError ("Variable Command Error. Invalid variable command given! Given: " ++ other ++ " Valid: mak, get, mut, del") state
 
 --Runs all the different cases of local variable actions.
-doNode LocVar{name = name, cmd = cmd} state =
+doNode (Expression((LocVar{name = name, cmd = cmd}):rest)) state =
     case (astNodeToString cmd) of
         "mak" ->
             let vName = astNodeToString name
@@ -1697,11 +1720,12 @@ doNode LocVar{name = name, cmd = cmd} state =
                         Just _ -> throwError ("Local Variable (loc) Mak Error. Local variable " ++ vName ++ " already exists in current scope.") state
                         Nothing ->
                             let frame' = M.insert vName (fsTop state) (head $ frames state)
-                            in return EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (frame' : (tail $ frames state)), heap = heap state}
+                            in doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = (vars state), 
+                                frames = (frame' : (tail $ frames state)), heap = heap state, ops = ops state, ioOps = ioOps state})
                            
         "get" ->  
             case (getLoc (frames state) (astNodeToString name)) of
-                Just value -> return (fsPush value state)
+                Just value -> doNode (Expression rest) (fsPush value state)
                 Nothing -> throwError ("Local Variable (loc) Get Error. Local Variable " ++ (astNodeToString name) ++ " not defined in any scope!") state
 
         "mut" -> 
@@ -1713,7 +1737,8 @@ doNode LocVar{name = name, cmd = cmd} state =
                         Just v -> 
                             if (compareTypesForMut (fsTop state) v)
                                 then
-                                    return EDState{stack = (stack state), fns = (fns state), vars = (vars state), frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state}
+                                    doNode (Expression rest) (EDState{stack = (stack state), fns = (fns state), vars = (vars state), 
+                                        frames = (updateFrames (frames state) [] (fsTop state) vName False), heap = heap state, ops = ops state, ioOps = ioOps state})
                                 else
                                     throwError ("Local Variable (loc) Mut Error. Can't mutate local variable " 
                                         ++ vName ++ " of type " ++ (chrs $ doQueryType' v) 
@@ -1725,44 +1750,43 @@ doNode LocVar{name = name, cmd = cmd} state =
 
 --This code looks sus but basically it runs the loop body 
 -- and then runs the whole loop recursion if it needs to run again.                                                                                                                      
-doNode ( While loopBody ) state = 
-    if (null $ stack state)
-        then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
-        else do 
-            newState <- case (fsTop state) of 
-                Boolean True -> doNode loopBody (addFrame state)
-                Boolean False -> return state
-                x -> 
-                    let xType = chrs $ doQueryType' x 
-                    in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
-                        ++ xType) state
+doNode (Expression((While loopBody):rest)) state = 
+    let emptyStackErrorThrow = \state -> throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
+        nonBooleanTypeErrorThrow = \state x -> 
+            let xType = chrs $ doQueryType' x 
+            in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
+                ++ xType) state
+    
+    --Determines first if loop needs to run at all, then checks to see if it needs ot run again.
+    in case (stack state) of
+        [] -> emptyStackErrorThrow state
+        ((Boolean True):_) -> 
+            (doNode loopBody (addFrame state)) >>= \state' ->
+                case (stack state') of
+                    [] -> emptyStackErrorThrow state'
+                    ((Boolean True):_) -> doNode (Expression((While loopBody):rest)) state'
+                    ((Boolean False):_) -> doNode (Expression rest) state'
+                    (x:_) -> nonBooleanTypeErrorThrow state' x
 
-            --Checks to see if loop can run again or not.
-            if (null $ stack newState)
-                then throwError "While Loop Error. No Boolean value for while loop to check because stack is empty!" state
-                else 
-                    case (fsTop newState) of 
-                        Boolean True -> doNode (While loopBody) newState
-                        Boolean False -> return newState
-                        x -> 
-                            let xType = chrs $ doQueryType' x 
-                            in throwError ("While Loop Error. Top of stack needs to be type Boolean for loop to try and run! Attempted type: " 
-                                ++ xType) newState
+        ((Boolean False):_) -> doNode (Expression rest) state
+        (x:_) -> nonBooleanTypeErrorThrow state x 
 
 -- doing a terminal changes depending on whether it's a word or a number. 
 -- if it's a number, push it...
-doNode ( Terminal ( Val v ) ) state = return $ fsPush v state
+doNode (Expression((Terminal(Val v)):rest)) state = doNode (Expression rest) (fsPush v state)
 
--- ...if it's a word, execute the operation
-doNode ( Terminal ( Word o ) ) state = doOp o state
+--Operation executes either functionally or monadically.
+doNode (Expression( (Terminal(Word o)):rest )) state = 
+    case HM.lookup o (ops state) of
+        Just func -> case (func state) of 
+                Left state' -> doNode (Expression rest) state'
+                Right err -> throwError err state
+        Nothing -> case HM.lookup o (ioOps state) of
+            Just ioFunc -> (ioFunc state) >>= (\state' -> doNode (Expression rest) state')
+            Nothing -> throwError ("Unrecognized operator: " ++ o) state 
 
 -- "doing" an empty expression does nothing
-doNode ( Expression [] ) state = return $ removeFrame state
-
--- "doing" a non-empty expression tries to execute every node in the expression
-doNode ( Expression ( first:rest ) ) state = do  
-    stateAfterFirst <- doNode first state
-    doNode (Expression (rest)) stateAfterFirst                                     
+doNode ( Expression [] ) state = return $ removeFrame state                                   
 
 -- arguments:
 --  alreadyParsed :: [AstNode]: a list of nodes parsed so far. Starts empty.
@@ -1917,26 +1941,26 @@ parseWhile tokens = let (loopBod, remTokens, terminator) = parseExpression' [] t
                     in (Expression $ reverse loopBod, (remTokens))
     
 --Makes new interpretor state with default values.
-fsNew :: IO EDState
-fsNew = return EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, h = M.empty, heapSize = 0}}
+edStateNew :: EDState
+edStateNew = let opsTup = createOpsHashes in EDState { stack = [], fns = M.empty, vars = M.empty, frames = [M.empty], heap = Heap{freeList = M.empty, h = M.empty, heapSize = 0}, ops = fst opsTup, ioOps = snd opsTup}
 
 -- push a new value onto the stack
 fsPush :: Value -> EDState -> EDState
-fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}
+fsPush val state = EDState { stack = (val : (stack state)), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}
 
 --Removes value from top of stack, returning it.
 fsPop :: EDState -> ( EDState, Value )
 fsPop state = 
     let top = head (stack state) 
         newStack = tail (stack state)  
-    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, top )
+    in  ( EDState { stack = newStack, fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}, top )
 
 --Removes the top two elements from the stack, returning them.
 fsPop2 :: EDState -> ( EDState, Value, Value )
 fsPop2 state = 
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
-    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, secondToTop, top)
+    in  (EDState {stack = (stack state''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}, secondToTop, top)
 
 --Removes top three elements from stack.
 fsPop3 :: EDState -> ( EDState, Value, Value, Value )
@@ -1944,7 +1968,7 @@ fsPop3 state =
     let (state', top) = fsPop state
         (state'', secondToTop) = fsPop state'
         (state''', thirdToTop) = fsPop state''
-    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state}, thirdToTop, secondToTop, top)
+    in (EDState {stack = (stack state'''), fns = (fns state), vars = (vars state), frames = (frames state), heap = heap state, ops = ops state, ioOps = ioOps state}, thirdToTop, secondToTop, top)
 
 --Returns value at top of stack. 
 fsTop :: EDState -> Value 
@@ -2130,12 +2154,11 @@ main = do
         code <- hGetContents file
 
         -- convert it into a list of tokens
-        let tokens = code `deepseq` removeComments False [] ( tokenize code )
+        let tokens = removeComments False [] ( tokenize code )
 
         --Parse and run AST, printing result.
         let ast = parseExpression tokens
-        stateInit <- fsNew
-        finalState <- (doNode ast stateInit)
+        finalState <- (doNode ast edStateNew)
         
         --putStrLn $ show $ length $ frames finalState
 
